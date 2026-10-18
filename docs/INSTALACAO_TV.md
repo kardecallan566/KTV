@@ -27,8 +27,8 @@ Se a conta develop, o IP Setting ou a sincronização não aparecerem, registre 
 
 ## Parte C — teste opcional pelo pendrive
 
-1. Com o servidor executado pelo menos uma vez, ele terá criado `release/usb/userwidget/KTV_0.2.0_BR_20261017.zip`.
-2. Faça backup do pendrive; formate como FAT32 e **copie a pasta `userwidget` inteira para a raiz**.
+1. Na **cópia local** do repositório (não na página do GitHub), execute `preparar_pendrive.bat` ou inicie `start_ktv.bat`. Esses comandos geram `release/usb/userwidget/KTV_0.2.0_BR_20261017.zip`. A pasta `release/` é ignorada pelo Git e não existe na página do repositório. O arquivo `.bat` de preparação abre automaticamente a pasta `release/usb` no Explorador.
+2. Faça backup do pendrive; formate como FAT32 e **copie a pasta `userwidget` inteira para a raiz**. Não descompacte o ZIP no pendrive.
 3. Coloque o pendrive na TV e veja se o Smart Hub reconhece o aplicativo.
 4. Se nada aparecer, não force: teste o método de rede. Algumas instalações Orsay por USB necessitam de assinatura `.sig` da Samsung.
 5. **Jamais selecione `Atualização de Software` para esse ZIP.**

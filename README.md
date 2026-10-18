@@ -17,7 +17,8 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 4. O terminal mostrará o IP, a URL do painel, o token administrativo e o ZIP USB.
 5. No navegador do PC, abra `http://IP_DO_PC/admin/`, insira o **TOKEN ADMIN** do terminal e envie uma imagem JPG/PNG.
 6. Para o primeiro teste sem TV, abra `http://IP_DO_PC/preview/` em outra aba e clique em **+ Adicionar** e **Salvar e enviar à TV**.
-7. Para instalar, tente o método **sincronização LAN**, descrito em [`docs/INSTALACAO_TV.md`](docs/INSTALACAO_TV.md). Também geramos um ZIP de teste em `release/usb/userwidget/` para a hipótese USB.
+7. **Pendrive (teste experimental):** na pasta do projeto, dê dois cliques em `preparar_pendrive.bat`. Ele gera o pacote e abre a pasta `release\usb`. Copie **a pasta `userwidget` inteira** para a raiz de um pendrive FAT32. Não extraia o ZIP contido nela. A instalação por USB pode ser bloqueada pelo firmware da Samsung.
+8. Se o USB não funcionar, tente a **sincronização LAN**, descrita em [`docs/INSTALACAO_TV.md`](docs/INSTALACAO_TV.md).
 
 > **Importante:** para sincronização Orsay, a TV costuma solicitar apenas o IP, e o instalador usa **porta 80**. `--port 8000` é bom para testar no computador, mas provavelmente não serve para sincronização pela TV.
 
@@ -47,6 +48,32 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 - O servidor **não deve ser publicado na internet**; token via HTTP é aceitável somente como teste em LAN confiável.
 - Estado e mídias ficam em `.ktv/` e não são versionados.
 - A sincronização USB pode exigir assinatura `.sig` ou não estar habilitada no firmware. Não altere firmware nem use menu de atualização de software.
+
+## Onde está a pasta do pendrive?
+
+**A pasta `release/` não aparece no GitHub de propósito:** ela está no `.gitignore` porque contém arquivos gerados com o IPv4 local do computador. Portanto, só aparece **na cópia local do projeto, depois de executar** `start_ktv.bat`, `preparar_pendrive.bat` ou o gerador Python. Não procure o arquivo em `github.com` nem use um ZIP gerado para outro IP.
+
+Passo mais fácil no Windows:
+
+1. Abra a pasta local onde você clonou o KTV.
+2. Clique duas vezes em **`preparar_pendrive.bat`**. O Explorador de Arquivos abrirá automaticamente `KTV\release\usb`.
+3. Copie a **pasta `userwidget`** que está lá para a **raiz de um pendrive FAT32**, mantendo o ZIP dentro dela, sem extrair.
+4. Mantenha `start_ktv.bat` (o servidor) aberto enquanto testa o aplicativo. O PC e a TV precisam estar na mesma rede.
+5. Não use o menu "Atualização de Software" da Samsung para esse ZIP: ele é um aplicativo, não firmware.
+
+Se o computador tiver mais de uma rede ou o IP estiver incorreto, confira o IPv4 no `ipconfig` e execute no Prompt de Comando: `preparar_pendrive.bat --ip SEU_IPV4`. O IPv4 deve corresponder ao endereço que o servidor anuncia no terminal. Um IP incorreto pode fazer o aplicativo abrir sem conectar.
+
+Saída esperada:
+
+```text
+KTV/
+└── release/
+    └── usb/
+        └── userwidget/
+            └── KTV_0.2.0_BR_20261017.zip
+```
+
+Se essa pasta não for criada, olhe o erro na janela do script: Python não encontrado, falha no gerador ou servidor não iniciado. **USB Orsay não é uma instalação oficialmente garantida na UN43J5200AG firmware 1080**; a TV pode ignorar esse pacote sem assinatura Samsung.
 
 ## Construção manual
 
