@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="css/style.css" />
   <!-- Sobrescrito no empacotamento: endereço IP local do computador -->
   <script src="js/runtime-config.js"></script>
+  <script>
+  // Sinal de abertura do HTML, mesmo que app.js nao consiga iniciar na TV.
+  try {
+    var bootXHR = new XMLHttpRequest();
+    var bootClient = (window.KTV_CONFIG && window.KTV_CONFIG.client) || 'preview';
+    var bootServer = (window.KTV_CONFIG && window.KTV_CONFIG.server) || '';
+    bootXHR.open('GET', bootServer + '/api/event?client=' + bootClient + '&event=html-start&ts=' + (new Date()).getTime(), true);
+    bootXHR.send(null);
+  } catch (bootError) {}
+  </script>
   <script src="js/app.js"></script>
 </head>
 <body onload="KTV.start()">
@@ -18,12 +28,10 @@
       <p class="muted" id="server-url"></p>
     </div>
     <img id="image-player" alt="Midia KTV" />
-    <video id="video-player" preload="auto"></video>
-    <!-- O plugin Legacy existe apenas no widget instalado, nao no WebBrowser/Tizen. -->
-    <object id="legacy-player" classid="clsid:SAMSUNG-INFOLINK-PLAYER" style="display:none;position:absolute;left:0;top:0;width:1280px;height:720px;"></object>
+    <!-- Videos e plugin Samsung so sao criados depois da acao ENTER (modo seguro). -->
     <div id="error-banner" class="hidden"></div>
     <div id="hud">
-      <span class="brand">KTV <span class="label">LOCAL</span></span>
+      <span class="brand">KTV <span class="label">LOCAL 0.4.1</span></span>
       <span id="media-name">Aguardando conteudo</span>
       <span id="network-status">Iniciando...</span>
     </div>

@@ -6,7 +6,7 @@
 
 1. Coloque PC e TV na mesma rede local; desligue VPN apenas se interferir nas rotas de LAN.
 2. Execute `start_ktv.bat` (ou `py -3 installer-local/server.py --ip 192.168.0.XX`).
-3. Abra no PC `http://IP-DO-PC/widgetlist.xml`, confira o endereço e baixe `http://IP-DO-PC/Widget/KTV_0.4.0_BR_20261018.zip`.
+3. Abra no PC `http://IP-DO-PC/widgetlist.xml`, confira o endereço e baixe `http://IP-DO-PC/Widget/KTV_0.4.1_BR_20261018.zip`.
 4. Abra `http://IP-DO-PC/admin/`, informe o token mostrado no terminal, faça upload de JPG ou PNG, adicione à playlist e salve.
 5. Abra `http://IP-DO-PC/preview/`: a imagem deve aparecer após poucos segundos. Se o painel no celular não abrir, teste rede e firewall do Windows.
 
@@ -27,7 +27,7 @@ Se a conta develop, o IP Setting ou a sincronização não aparecerem, registre 
 
 ## Parte C — teste opcional pelo pendrive
 
-1. Com o servidor executado pelo menos uma vez, ele terá criado `release/usb/userwidget/KTV_0.4.0_BR_20261018.zip`.
+1. Com o servidor executado pelo menos uma vez, ele terá criado `release/usb/userwidget/KTV_0.4.1_BR_20261018.zip`.
 2. Faça backup do pendrive; formate como FAT32 e **copie a pasta `userwidget` inteira para a raiz**.
 3. Coloque o pendrive na TV e veja se o Smart Hub reconhece o aplicativo.
 4. Se nada aparecer, não force: teste o método de rede. Algumas instalações Orsay por USB necessitam de assinatura `.sig` da Samsung.

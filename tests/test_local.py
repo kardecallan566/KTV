@@ -46,11 +46,13 @@ class KTVTests(unittest.TestCase):
         root = ET.fromstring(raw)
         url = root.find('./list/widget/download').text
         self.assertTrue(url.endswith('.zip'))
-        _, contents, _ = self.get('/Widget/KTV_0.4.0_BR_20261018.zip')
+        _, contents, _ = self.get('/Widget/KTV_0.4.1_BR_20261018.zip')
         self.assertEqual(int(root.find('./list/widget/compression').attrib['size']), len(contents))
         with zipfile.ZipFile(self.server.output['archive']) as z:
             self.assertIn('config.xml', z.namelist())
             self.assertIn('index.html', z.namelist())
+            self.assertIn(b'<ver>0.401</ver>', z.read('config.xml'))
+            self.assertNotIn(b'clsid:SAMSUNG-INFOLINK-PLAYER', z.read('index.html'))
             self.assertIn(self.url, z.read('js/runtime-config.js').decode('utf-8'))
 
     def test_auth_required_and_upload_and_playlist(self):
@@ -83,6 +85,9 @@ class KTVTests(unittest.TestCase):
         with self.assertRaises(HTTPError) as err:
             self.get('/api/event?client=orsay&event=unknown')
         self.assertEqual(err.exception.code, 400)
+        _, _, _ = self.get('/api/event?client=orsay&event=html-start')
+        _, _, _ = self.get('/api/event?client=orsay&event=app-start')
+        _, _, _ = self.get('/api/event?client=orsay&event=hls-deferred')
         _, _, _ = self.get('/api/state?client=preview')
         _, payload, _ = self.get('/api/status', token)
         self.assertIn('preview', json.loads(payload)['clients'])

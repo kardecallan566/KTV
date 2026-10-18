@@ -3,6 +3,7 @@ var KTV = (function () {
   var cfg = window.KTV_CONFIG || {server: '', pollMs: 4000};
   var state = {version: -1, items: [], index: 0, playing: true};
   var imageTimer = null, pollTimer = null, controlsVisible = true, broken = false, legacyActive = false;
+  var hlsGranted = '', videoGranted = ''; // nada de inicializar player nativo durante o boot
   function $(id) {return document.getElementById(id);}
   function text(id, value) { if ($(id)) {$(id).innerHTML = ''; $(id).appendChild(document.createTextNode(String(value)));} }
   function showError(message) { broken = true; text('error-banner', message); $('error-banner').className = ''; }
@@ -25,6 +26,29 @@ var KTV = (function () {
       request.send(body || null);
     } catch (e) {callback(0, '');}
   }
+  function ensureVideo() {
+    var video = $('video-player');
+    if (!video) {
+      video = document.createElement('video');
+      video.id = 'video-player';
+      video.setAttribute('preload', 'none');
+      $('frame').appendChild(video);
+    }
+    return video;
+  }
+  function ensureLegacy() {
+    var legacy = $('legacy-player');
+    if (!legacy) {
+      legacy = document.createElement('object');
+      legacy.id = 'legacy-player';
+      legacy.setAttribute('classid', 'clsid:SAMSUNG-INFOLINK-PLAYER');
+      legacy.style.position = 'absolute';
+      legacy.style.left = '0'; legacy.style.top = '0';
+      legacy.style.width = '1280px'; legacy.style.height = '720px';
+      $('frame').appendChild(legacy);
+    }
+    return legacy;
+  }
   function stopMedia() {
     if (imageTimer) {clearTimeout(imageTimer); imageTimer = null;}
     var legacy = $('legacy-player');
@@ -34,14 +58,18 @@ var KTV = (function () {
     }
     if (legacy) {legacy.style.display = 'none';}
     var v = $('video-player');
-    v.onerror = null; v.onplaying = null; v.onloadeddata = null; v.onended = null;
+    if (v) {v.onerror = null; v.onplaying = null; v.onloadeddata = null; v.onended = null;}
     var oldImage = $('image-player'); oldImage.onerror = null; oldImage.onload = null;
-    try {v.pause(); v.removeAttribute('src'); v.load();} catch(e) {}
-    v.style.display = 'none'; $('image-player').style.display = 'none';
+    if (v) {
+      try {v.pause(); v.removeAttribute('src'); v.load();} catch(e) {}
+      v.style.display = 'none';
+    }
+    $('image-player').style.display = 'none';
   }
   function advance(step) {
     if (!state.items.length) {return;}
     state.index = (state.index + step + state.items.length) % state.items.length;
+    hlsGranted = ''; videoGranted = '';
     render();
   }
   function render() {
@@ -63,8 +91,15 @@ var KTV = (function () {
       img.style.display = 'block'; img.src = item.url;
       if (state.playing) {imageTimer = setTimeout(function () {advance(1);}, item.duration * 1000 || 10000);}
     } else if (item.type === 'hls') {
+      if (hlsGranted !== item.url) {
+        $('welcome').style.display = 'block';
+        setWelcome('Canal pronto para testar', 'Pressione ENTER para iniciar o HLS. O plugin Samsung permanece desligado ate la.');
+        setStatus('HLS AGUARDANDO ENTER');
+        report('hls-deferred');
+        return;
+      }
       if (cfg.client === 'orsay') {
-        var legacy = $('legacy-player');
+        var legacy = ensureLegacy();
         if (!legacy || typeof legacy.Play !== 'function') {
           report('hls-unavailable');
           showError('Player HLS Legacy nao disponivel neste firmware.');
@@ -87,14 +122,21 @@ var KTV = (function () {
         } catch (e) {report('hls-error'); showError('O plugin Samsung nao conseguiu iniciar o HLS.');}
       } else {
         // Preview web: suporte HLS HTML5 varia por navegador. Nao inclui hls.js no firmware antigo.
-        var hv = $('video-player');
+        var hv = ensureVideo();
         hv.onerror = function () {report('hls-error'); showError('Este navegador nao reproduz HLS nativamente. Teste no app Orsay.');};
         hv.onplaying = function () {report('video-playing');};
         hv.style.display = 'block'; hv.src = item.url;
         try {var promise = hv.play(); if (promise && promise.catch) {promise.catch(function () {report('hls-error');});}} catch(e) {report('hls-error');}
       }
     } else if (item.type === 'video') {
-      var vid = $('video-player');
+      if (videoGranted !== item.url) {
+        $('welcome').style.display = 'block';
+        setWelcome('Video pronto para testar', 'Pressione ENTER para iniciar o video.');
+        setStatus('VIDEO AGUARDANDO ENTER');
+        report('video-deferred');
+        return;
+      }
+      var vid = ensureVideo();
       vid.onerror = function () {report('video-error'); showError('Video nao suportado ou indisponivel. Teste MP4 H.264/AAC; o player Legacy pode exigir API propria.');};
       vid.onloadeddata = function () {report('video-ready');};
       vid.onplaying = function () {report('video-playing');};
@@ -131,6 +173,7 @@ var KTV = (function () {
       setStatus('CONECTADO');
       if (state.version !== next.version) {
         state.version = next.version;
+        hlsGranted = ''; videoGranted = '';
         state.items = next.items;
         state.index = next.index || 0;
         state.playing = next.playing !== false;
@@ -145,12 +188,23 @@ var KTV = (function () {
     else if (code === 39) {advance(1);} // direita
     else if (code === 38) {controlsVisible = !controlsVisible; $('frame').className = controlsVisible ? '' : 'hide-chrome';}
     else if (code === 13) {
+      var current = state.items.length ? state.items[state.index] : null;
+      if (current && current.type === 'hls' && hlsGranted !== current.url) {
+        hlsGranted = current.url;
+        state.playing = true;
+        render();
+      } else if (current && current.type === 'video' && videoGranted !== current.url) {
+        videoGranted = current.url;
+        state.playing = true;
+        render();
+      } else {
       state.playing = !state.playing;
       if (state.items.length && state.items[state.index].type === 'hls' && legacyActive) {
         try {if (state.playing) {$('legacy-player').Resume();} else {$('legacy-player').Pause();}} catch(e) {report('hls-error');}
       } else if (state.items.length && state.items[state.index].type === 'video') {
         try {if (state.playing) {$('video-player').play();} else {$('video-player').pause();}} catch(e) {}
       } else {render();}
+      }
     } else if (code === 40) {refresh();}
     else if (code === 10009 || code === 27) {
       try {if (window.widgetAPI && window.widgetAPI.sendExitEvent) {window.widgetAPI.sendExitEvent();}} catch(e) {}
@@ -159,8 +213,13 @@ var KTV = (function () {
     event.returnValue = false;
   }
   function start() {
-    text('server-url', cfg.server);
+    text('server-url', cfg.server + '  |  APP 0.4.1');
+    window.onerror = function () {
+      try {report('js-error'); setStatus('ERRO DE SCRIPT'); showError('Falha no player KTV. Veja o painel de diagnostico.');} catch (ignore) {}
+      return true;
+    };
     document.onkeydown = key;
+    report('app-start');
     refresh();
     pollTimer = setInterval(refresh, cfg.pollMs || 4000);
     // Samsung Legacy widgetAPI é opcional; inicializacao nao pode depender dela.
@@ -171,5 +230,10 @@ var KTV = (function () {
       }
     } catch(e) {}
   }
-  return {start:start, refresh:refresh};
+  function safeStart() {
+    try {start();} catch (e) {
+      try {showError('Erro ao iniciar o KTV. Reinstale o widget e veja os logs.'); report('js-error');} catch (ignore) {}
+    }
+  }
+  return {start:safeStart, refresh:refresh};
 }());
