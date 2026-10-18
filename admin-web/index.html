@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KTV Admin — servidor local</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#0b1020;color:#eef5ff}*{box-sizing:border-box}
+body{margin:0;padding:30px;background:radial-gradient(circle at 15% 5%,#18284a 0,#0b1020 42%);min-height:100vh}
+main{max-width:1000px;margin:0 auto}header{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+h1{margin:0;font-size:32px;letter-spacing:-1.3px}.accent{color:#6fa5ff}.tag{font-size:12px;background:#1a3156;color:#a8c7ff;border-radius:5px;padding:4px 7px;vertical-align:middle;letter-spacing:1px}
+p{color:#a3b6d5;line-height:1.6}h2{font-size:19px;margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.panel{background:#141e32;border:1px solid #2a3953;border-radius:14px;padding:22px;margin-bottom:18px;box-shadow:0 12px 30px #0002}
+button,label.filebutton{border:0;color:#fff;background:#3066df;padding:11px 16px;border-radius:8px;cursor:pointer;font:600 14px system-ui;display:inline-block}
+button:hover,.filebutton:hover{background:#467ee9}button.secondary{background:#253653}button.secondary:hover{background:#334c72}button.danger{background:#782b42}
+button:disabled{opacity:.4;cursor:not-allowed}input[type=file]{display:none}input[type=password]{padding:12px;background:#0a1324;color:white;border:1px solid #425675;border-radius:8px;max-width:100%;width:320px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}.media-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2b3952}.media-row:last-child{border:0}.media-name{flex:1;overflow-wrap:anywhere;font-size:14px}.sub{font-size:12px;color:#91a5c2}.pill{font-size:12px;color:#82dfaf;background:#163a2e;padding:6px 11px;border-radius:30px;display:inline-block}
+#error{color:#ffb4bb;min-height:23px}#message{color:#9ce9c9;min-height:23px}.dim{color:#9badcb;font-size:13px}.tile{background:#0d1729;border:1px solid #294063;border-radius:10px;padding:14px;margin-bottom:10px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}body{padding:17px}header{align-items:start}h1{font-size:28px}}
+</style></head><body><main>
+<header><div><h1><span class="accent">K</span>TV <span class="tag">LOCAL / MVP</span></h1><p>Controle sua Samsung pela rede local, sem nuvem.</p></div><div><span id="status" class="pill">Conectando...</span></div></header>
+<section class="panel" id="auth-panel"><h2>Acesso ao painel</h2><p>Use o token ADMIN mostrado no terminal onde o servidor KTV está aberto.</p><input type="password" id="token" placeholder="Cole seu token administrativo" autocomplete="off"> <button id="login">Entrar</button><p class="dim">O token fica apenas nesta aba do navegador. Não exponha este servidor à internet.</p></section>
+<div id="controls" hidden>
+<section class="grid"><div class="panel"><h2>Televisão</h2><p id="tv-status">Aguardando consulta da TV...</p><div class="actions"><button id="previous" class="secondary">◀ Anterior</button><button id="play">▶ Reproduzir</button><button id="pause" class="secondary">Ⅱ Pausar</button><button id="next" class="secondary">Próximo ▶</button></div><p class="dim">A TV consulta mudanças a cada 4 segundos. O modo pausa depende do player do aparelho.</p></div>
+<div class="panel"><h2>Adicionar mídia</h2><p>Imagens PNG/JPG/GIF ou vídeo MP4 de até 100 MB. Para vídeo, comece com H.264 + AAC.</p><label class="filebutton" for="file">+ Escolher arquivo</label><input id="file" type="file" accept=".png,.jpg,.jpeg,.gif,.mp4"><p class="dim" id="upload-status">Os arquivos são salvos no computador que roda o servidor.</p></div></section>
+<section class="grid"><div class="panel"><h2>Biblioteca local</h2><div id="library"><p>Sem arquivos.</p></div></div><div class="panel"><h2>Playlist ativa</h2><div id="playlist"><p>Sem conteúdo.</p></div><div class="actions"><button id="send">Salvar e enviar à TV</button><button id="clear" class="danger">Limpar reprodução</button></div><p class="dim">Use os botões de adicionar, subir e remover para organizar a playlist.</p></div></section>
+<section class="panel"><h2>Diagnóstico</h2><p class="dim" id="urls"></p><div class="actions"><a href="/widgetlist.xml" target="_blank" rel="noopener">widgetlist.xml</a><a href="/preview/" target="_blank" rel="noopener">Preview web da TV</a></div><p class="dim">Instalação Orsay: aponte o menu de sincronização para o IP deste computador (normalmente porta 80). A TV e o PC precisam estar na mesma rede.</p></section>
+</div><p id="error" role="alert"></p><p id="message" role="status"></p>
+</main><script>
+(function(){'use strict';
+var token=sessionStorage.getItem('ktv_admin_token')||'', library=[], selected=[];
+function el(id){return document.getElementById(id)}
+function text(id,s){el(id).textContent=s}function message(s,err){text(err?'error':'message',s);text(err?'message':'error','')}
+function request(method,path,body,cb,isFile){var xhr=new XMLHttpRequest();xhr.open(method,path,true);if(token)xhr.setRequestHeader('X-KTV-Token',token);if(body&&!isFile)xhr.setRequestHeader('Content-Type','application/json');xhr.onload=function(){var value={};try{value=JSON.parse(xhr.responseText)}catch(e){};if(xhr.status>=200&&xhr.status<300){cb(null,value)}else{cb(value.error||('Erro HTTP '+xhr.status),value)}};xhr.onerror=function(){cb('Sem conexão com servidor')};xhr.send(isFile?body:(body?JSON.stringify(body):null))}
+function login(){token=el('token').value.trim();request('GET','/api/media',null,function(err,data){if(err){message(err,true);return}sessionStorage.setItem('ktv_admin_token',token);el('auth-panel').hidden=true;el('controls').hidden=false;library=data.items;render();refreshStatus();text('urls','Servidor: '+location.origin+' — teste: '+location.origin+'/preview/');})}
+function button(label,cls,action){var b=document.createElement('button');b.type='button';b.textContent=label;b.className=cls||'secondary';b.onclick=action;return b}
+function row(name,desc,actions){var r=document.createElement('div');r.className='media-row';var d=document.createElement('div');d.className='media-name';var title=document.createElement('div');title.textContent=name;var sub=document.createElement('div');sub.className='sub';sub.textContent=desc;d.appendChild(title);d.appendChild(sub);r.appendChild(d);for(var i=0;i<actions.length;i++)r.appendChild(actions[i]);return r}
+function render(){var box=el('library');box.textContent='';if(!library.length){box.textContent='Nenhum arquivo enviado.'}for(var i=0;i<library.length;i++){(function(file){box.appendChild(row(file.name,file.type+' · '+(file.bytes/1048576).toFixed(2)+' MB',[button('+ Adicionar','secondary',function(){selected.push(file.id);render()})]))})(library[i])}var queue=el('playlist');queue.textContent='';if(!selected.length)queue.textContent='Sua playlist está vazia.';
+for(var j=0;j<selected.length;j++){(function(idx){var id=selected[idx],found=library.filter(function(m){return m.id===id})[0];queue.appendChild(row(found?found.name:id,(idx+1)+'º item',[button('↑','secondary',function(){if(idx>0){var x=selected[idx-1];selected[idx-1]=selected[idx];selected[idx]=x;render()}}),button('×','danger',function(){selected.splice(idx,1);render()})]))})(j)}}
+function sync(){request('GET','/api/media',null,function(err,data){if(err){message(err,true);return}library=data.items;render()})}
+function refreshStatus(){request('GET','/api/status',null,function(err,data){if(err){text('tv-status',err);return}var n=data.last_poll_seconds;text('tv-status',n===null?'A TV ainda não consultou o servidor.':('Última consulta: há '+n+' segundo(s).'));text('status',n!==null&&n<20?'TV consultando':'Servidor ativo');})}
+function command(cmd){request('POST','/api/admin/command',{command:cmd},function(err){message(err||('Comando enviado: '+cmd),!!err)})}
+el('login').onclick=login;el('token').onkeydown=function(e){if(e.key==='Enter')login()};
+el('file').onchange=function(){var file=this.files[0];if(!file)return;text('upload-status','Enviando '+file.name+'...');request('POST','/api/admin/upload?filename='+encodeURIComponent(file.name),file,function(err){text('upload-status',err||'Upload concluído: '+file.name);if(!err)sync();message(err||'Arquivo adicionado à biblioteca.',!!err)},true);this.value=''};
+el('send').onclick=function(){request('POST','/api/admin/state',{ids:selected},function(err){message(err||'Playlist enviada! A TV atualizará em alguns segundos.',!!err)})};
+el('clear').onclick=function(){selected=[];render();command('clear')};
+[['previous','previous'],['next','next'],['pause','pause'],['play','play']].forEach(function(pair){el(pair[0]).onclick=function(){command(pair[1])}});
+if(token){el('token').value=token;login()};setInterval(function(){if(!el('controls').hidden)refreshStatus()},5000)
+})();
+</script></body></html>
