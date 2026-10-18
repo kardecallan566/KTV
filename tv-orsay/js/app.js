@@ -2,7 +2,7 @@
 var KTV = (function () {
   var cfg = window.KTV_CONFIG || {server: '', pollMs: 4000};
   var state = {version: -1, items: [], index: 0, playing: true};
-  var imageTimer = null, pollTimer = null, controlsVisible = true, broken = false;
+  var imageTimer = null, pollTimer = null, controlsVisible = true, broken = false, legacyActive = false;
   function $(id) {return document.getElementById(id);}
   function text(id, value) { if ($(id)) {$(id).innerHTML = ''; $(id).appendChild(document.createTextNode(String(value)));} }
   function showError(message) { broken = true; text('error-banner', message); $('error-banner').className = ''; }
@@ -27,6 +27,12 @@ var KTV = (function () {
   }
   function stopMedia() {
     if (imageTimer) {clearTimeout(imageTimer); imageTimer = null;}
+    var legacy = $('legacy-player');
+    if (legacyActive) {
+      try {legacy.Stop();} catch (e) {}
+      legacyActive = false;
+    }
+    if (legacy) {legacy.style.display = 'none';}
     var v = $('video-player');
     v.onerror = null; v.onplaying = null; v.onloadeddata = null; v.onended = null;
     var oldImage = $('image-player'); oldImage.onerror = null; oldImage.onload = null;
@@ -56,6 +62,37 @@ var KTV = (function () {
       img.onload = function () {report('image-loaded'); clearError();};
       img.style.display = 'block'; img.src = item.url;
       if (state.playing) {imageTimer = setTimeout(function () {advance(1);}, item.duration * 1000 || 10000);}
+    } else if (item.type === 'hls') {
+      if (cfg.client === 'orsay') {
+        var legacy = $('legacy-player');
+        if (!legacy || typeof legacy.Play !== 'function') {
+          report('hls-unavailable');
+          showError('Player HLS Legacy nao disponivel neste firmware.');
+          return;
+        }
+        legacy.OnBufferingStart = function () {report('hls-buffering'); setStatus('BUFFER HLS');};
+        legacy.OnBufferingComplete = function () {report('hls-buffer-complete'); setStatus('HLS PRONTO');};
+        legacy.OnConnectionFailed = function () {report('hls-error'); showError('Conexao do fluxo HLS falhou.');};
+        legacy.OnRenderError = function () {report('hls-error'); showError('Erro ao renderizar o fluxo HLS.');};
+        legacy.OnRenderingComplete = function () {advance(1);};
+        legacy.style.display = 'block';
+        try {
+          if (typeof legacy.SetDisplayArea === 'function') {legacy.SetDisplayArea(0, 0, 1280, 720);}
+          report('hls-start-requested');
+          var result = legacy.Play(item.url + '|COMPONENT=HLS');
+          if (result === false || (typeof result === 'number' && result < 0)) {
+            throw new Error('plugin rejeitou o fluxo');
+          }
+          legacyActive = true;
+        } catch (e) {report('hls-error'); showError('O plugin Samsung nao conseguiu iniciar o HLS.');}
+      } else {
+        // Preview web: suporte HLS HTML5 varia por navegador. Nao inclui hls.js no firmware antigo.
+        var hv = $('video-player');
+        hv.onerror = function () {report('hls-error'); showError('Este navegador nao reproduz HLS nativamente. Teste no app Orsay.');};
+        hv.onplaying = function () {report('video-playing');};
+        hv.style.display = 'block'; hv.src = item.url;
+        try {var promise = hv.play(); if (promise && promise.catch) {promise.catch(function () {report('hls-error');});}} catch(e) {report('hls-error');}
+      }
     } else if (item.type === 'video') {
       var vid = $('video-player');
       vid.onerror = function () {report('video-error'); showError('Video nao suportado ou indisponivel. Teste MP4 H.264/AAC; o player Legacy pode exigir API propria.');};
@@ -109,7 +146,9 @@ var KTV = (function () {
     else if (code === 38) {controlsVisible = !controlsVisible; $('frame').className = controlsVisible ? '' : 'hide-chrome';}
     else if (code === 13) {
       state.playing = !state.playing;
-      if (state.items.length && state.items[state.index].type === 'video') {
+      if (state.items.length && state.items[state.index].type === 'hls' && legacyActive) {
+        try {if (state.playing) {$('legacy-player').Resume();} else {$('legacy-player').Pause();}} catch(e) {report('hls-error');}
+      } else if (state.items.length && state.items[state.index].type === 'video') {
         try {if (state.playing) {$('video-player').play();} else {$('video-player').pause();}} catch(e) {}
       } else {render();}
     } else if (code === 40) {refresh();}

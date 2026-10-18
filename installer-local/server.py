@@ -25,6 +25,22 @@ from build import RELEASE, FILENAME, build, guess_ip
 
 MAX_UPLOAD = 100 * 1024 * 1024
 MAX_JSON = 64 * 1024
+MAX_CHANNELS = 40
+# URLs autorizadas pelo administrador: sem embeds de paginas, credenciais ou parametros proprietarios de plugin.
+def valid_stream_url(value):
+    if not isinstance(value, str) or len(value) > 1600 or any(ord(c) < 32 for c in value):
+        return False
+    if '|' in value or '\\' in value or '#' in value or any(c.isspace() for c in value):
+        return False
+    try:
+        parsed = urlsplit(value)
+        return (parsed.scheme in ('http', 'https') and bool(parsed.hostname) and
+                parsed.username is None and parsed.password is None and
+                parsed.path.lower().endswith('.m3u8') and
+                parsed.port != 0)
+    except (ValueError, AttributeError):
+        return False
+
 ALLOWED = {'.png': ('image', 'image/png'), '.jpg': ('image', 'image/jpeg'),
            '.jpeg': ('image', 'image/jpeg'), '.gif': ('image', 'image/gif'),
            '.mp4': ('video', 'video/mp4')}
@@ -57,6 +73,18 @@ class KTVServer(ThreadingHTTPServer):
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.media = self.workspace / 'media'
         self.media.mkdir(exist_ok=True)
+        self.hls = self.workspace / 'hls'
+        self.hls.mkdir(exist_ok=True)
+        self.channels_file = self.workspace / 'channels.json'
+        if self.channels_file.exists():
+            try:
+                self.channels = json.loads(self.channels_file.read_text(encoding='utf-8'))
+                if not isinstance(self.channels, list): raise ValueError('channels must be list')
+            except (ValueError, OSError):
+                raise RuntimeError('channels.json invalido. Faca backup e corrija manualmente.')
+        else:
+            self.channels = []
+
         self.token_file = self.workspace / 'admin_token'
         if not self.token_file.exists():
             # Only created on first run; survives restarts.
@@ -86,6 +114,11 @@ class KTVServer(ThreadingHTTPServer):
         temp = self.state_file.with_suffix('.json.tmp')
         temp.write_text(json.dumps(self.state, indent=2, ensure_ascii=False), encoding='utf-8')
         os.replace(temp, self.state_file)
+
+    def save_channels(self):
+        tmp = self.channels_file.with_suffix('.json.tmp')
+        tmp.write_text(json.dumps(self.channels, indent=2, ensure_ascii=False), encoding='utf-8')
+        os.replace(tmp, self.channels_file)
 
     def media_items(self):
         result = []
@@ -181,7 +214,7 @@ class KTVRequest(BaseHTTPRequestHandler):
         if path in ('/', '/admin', '/admin/'):
             return self.file_response(ROOT / 'admin-web' / 'index.html', 'text/html; charset=utf-8')
         if path == '/api/health':
-            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.3.0'})
+            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.4.0'})
         if path == '/api/state':
             client = parse_qs(url.query).get('client', ['legacy'])[0]
             if client not in ('orsay', 'preview', 'legacy'):
@@ -190,7 +223,8 @@ class KTVRequest(BaseHTTPRequestHandler):
                 self.server.last_seen = time.time()
                 self.server.clients[client] = {'seen': self.server.last_seen, 'ip': self.client_address[0]}
                 data = dict(self.server.state)
-                data['items'] = [dict(item, url=self.server.base_url + '/media/' + item['id'])
+                data['items'] = [dict(item, url=(item['url'] if item.get('type') == 'hls'
+                                             else self.server.base_url + '/media/' + item['id']))
                                  for item in data['items']]
             return self.json(200, data, cors=True)
         if path == '/api/event':
@@ -198,13 +232,26 @@ class KTVRequest(BaseHTTPRequestHandler):
             client = params.get('client', [''])[0]
             event = params.get('event', [''])[0]
             if client not in ('orsay', 'preview') or event not in (
-                'image-loaded', 'image-error', 'video-ready', 'video-playing', 'video-error', 'video-play-rejected'
+                'image-loaded', 'image-error', 'video-ready', 'video-playing', 'video-error', 'video-play-rejected',
+                'hls-start-requested', 'hls-buffering', 'hls-buffer-complete', 'hls-error', 'hls-unavailable'
             ):
                 return self.json(400, {'error': 'Evento invalido'})
             with self.server.lock:
                 self.server.media_events[client] = {'event': event, 'seen': time.time(),
                                                     'ip': self.client_address[0]}
             return self.json(200, {'ok': True}, cors=True)
+        if path == '/api/channels':
+            if not self.authorized(): return
+            with self.server.lock: channels = [dict(x) for x in self.server.channels]
+            return self.json(200, {'channels': channels})
+        if path.startswith('/hls/'):
+            # Apenas artefatos locais gerados pelo FFmpeg. Nao funciona como proxy para sites externos.
+            name = path[len('/hls/'):]
+            if name == 'demo.m3u8':
+                return self.file_response(self.server.hls / name, 'application/vnd.apple.mpegurl')
+            if re.fullmatch(r'demo_\d{5}\.ts', name):
+                return self.file_response(self.server.hls / name, 'video/mp2t')
+            return self.json(404, {'error': 'Segmento HLS desconhecido'})
         if path == '/api/media':
             if not self.authorized(): return
             return self.json(200, {'items': self.server.media_items()})
@@ -251,7 +298,7 @@ class KTVRequest(BaseHTTPRequestHandler):
     def do_POST(self):
         url = urlsplit(self.path)
         path = url.path
-        if path not in ('/api/admin/upload', '/api/admin/state', '/api/admin/command'):
+        if path not in ('/api/admin/upload', '/api/admin/state', '/api/admin/command', '/api/admin/channels', '/api/admin/tune'):
             return self.json(404, {'error': 'Nao encontrado'})
         if not self.authorized(): return
         try: size = int(self.headers.get('Content-Length', '-1'))
@@ -287,7 +334,35 @@ class KTVRequest(BaseHTTPRequestHandler):
         if not isinstance(data, dict): return self.json(400, {'error': 'Objeto JSON esperado'})
         with self.server.lock:
             current = self.server.state
-            if path == '/api/admin/state':
+            if path == '/api/admin/channels':
+                action = data.get('action')
+                if action == 'add':
+                    name, stream = data.get('name'), data.get('url')
+                    if (not isinstance(name, str) or not 1 <= len(name.strip()) <= 70 or
+                            not valid_stream_url(stream)):
+                        return self.json(400, {'error': 'Nome ou URL de HLS invalida (.m3u8 direta)'})
+                    if len(self.server.channels) >= MAX_CHANNELS:
+                        return self.json(400, {'error': 'Limite de canais atingido'})
+                    channel = {'id': secrets.token_hex(8), 'name': name.strip(), 'url': stream, 'type': 'hls'}
+                    self.server.channels.append(channel)
+                elif action == 'delete':
+                    identity = data.get('id')
+                    if not isinstance(identity, str) or not any(i['id'] == identity for i in self.server.channels):
+                        return self.json(404, {'error': 'Canal nao encontrado'})
+                    self.server.channels = [i for i in self.server.channels if i['id'] != identity]
+                else:
+                    return self.json(400, {'error': 'Acao invalida'})
+                self.server.save_channels()
+                return self.json(200, {'channels': list(self.server.channels)})
+            if path == '/api/admin/tune':
+                identity = data.get('id')
+                channel = next((c for c in self.server.channels if c['id'] == identity), None)
+                if channel is None: return self.json(404, {'error': 'Canal nao encontrado'})
+                # Nao fazemos fetch/proxy da URL. O player acessa diretamente a origem autorizada.
+                item = dict(channel)
+                self.server.state = {'version': current['version'] + 1, 'items': [item],
+                                     'index': 0, 'playing': True}
+            elif path == '/api/admin/state':
                 ids = data.get('ids')
                 if not isinstance(ids, list) or len(ids) > 200 or any(not isinstance(i, str) for i in ids):
                     return self.json(400, {'error': 'Lista de ids invalida'})
@@ -329,13 +404,14 @@ def main():
     except OSError as exc:
         print('Falha ao abrir servidor. Porta 80 ocupada/bloqueada? {}'.format(exc))
         sys.exit(1)
-    print('\n=== KTV LOCAL v0.3 ===')
+    print('\n=== KTV LOCAL v0.4 ===')
     print('IP LAN:     ', args.ip)
     print('Instalador: ', server.base_url + '/widgetlist.xml')
     print('Painel:     ', server.base_url + '/admin/')
     print('Preview:    ', server.base_url + '/preview/')
     print('TOKEN ADMIN:', server.token)
     print('USB:        ', server.output['usb'])
+    print('HLS local:  ', server.base_url + '/hls/demo.m3u8 (execute gerar_hls_teste.bat)')
     print('\nATENCAO: apenas rede local confiavel. Nao encaminhe a porta para a Internet.')
     print('CTRL+C para encerrar.\n', flush=True)
     try: server.serve_forever(poll_interval=0.2)

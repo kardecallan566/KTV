@@ -11,7 +11,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'installer-local'))
-from server import KTVServer, safe_name, valid_signature
+from server import KTVServer, safe_name, valid_signature, valid_stream_url
 from build import build
 
 
@@ -46,7 +46,7 @@ class KTVTests(unittest.TestCase):
         root = ET.fromstring(raw)
         url = root.find('./list/widget/download').text
         self.assertTrue(url.endswith('.zip'))
-        _, contents, _ = self.get('/Widget/KTV_0.3.0_BR_20261018.zip')
+        _, contents, _ = self.get('/Widget/KTV_0.4.0_BR_20261018.zip')
         self.assertEqual(int(root.find('./list/widget/compression').attrib['size']), len(contents))
         with zipfile.ZipFile(self.server.output['archive']) as z:
             self.assertIn('config.xml', z.namelist())
@@ -94,6 +94,45 @@ class KTVTests(unittest.TestCase):
         self.assertEqual(status,206)
         self.assertEqual(raw,b'\0\0\0\x18')
         self.assertEqual(headers['Content-Range'],'bytes 0-3/22')
+
+    def test_channel_admin_and_tune(self):
+        auth = {'X-KTV-Token': self.server.token}
+        with self.assertRaises(HTTPError) as err:
+            self.get('/api/channels')
+        self.assertEqual(err.exception.code, 401)
+        stream = 'http://127.0.0.1:{}/hls/demo.m3u8'.format(self.port)
+        self.assertTrue(valid_stream_url(stream))
+        for bad in ('javascript:alert(1)', 'https://user:pass@example.com/live.m3u8',
+                    'https://site.example/embed', 'http://site.example/canal.m3u8|COMPONENT=WV',
+                    'https://site.example/canal.m3u8#fragment'):
+            self.assertFalse(valid_stream_url(bad), bad)
+        _, result = self.post('/api/admin/channels', json.dumps({'action': 'add', 'name':'Teste local', 'url':stream}).encode(), auth)
+        channel = result['channels'][0]
+        _, result = self.post('/api/admin/tune', json.dumps({'id':channel['id']}).encode(), auth)
+        self.assertEqual(result['items'][0]['type'], 'hls')
+        _, content, _ = self.get('/api/state?client=orsay')
+        self.assertEqual(json.loads(content)['items'][0]['url'], stream)
+        # Lista permanece persistida em arquivo; nenhuma URL externa foi consultada.
+        self.assertEqual(json.loads((self.server.workspace/'channels.json').read_text())[0]['name'],'Teste local')
+        _, result = self.post('/api/admin/channels', json.dumps({'action':'delete', 'id':channel['id']}).encode(), auth)
+        self.assertEqual(result['channels'], [])
+
+    def test_local_hls_serving(self):
+        index = self.server.hls / 'demo.m3u8'
+        index.write_text('#EXTM3U\n#EXTINF:4,\ndemo_00000.ts\n', encoding='utf-8')
+        segment = self.server.hls / 'demo_00000.ts'
+        segment.write_bytes(b'\x47' + b'\x00' * 187)
+        code, raw, headers = self.get('/hls/demo.m3u8')
+        self.assertEqual(code, 200)
+        self.assertTrue(raw.startswith(b'#EXTM3U'))
+        self.assertEqual(headers['Content-Type'], 'application/vnd.apple.mpegurl')
+        code, raw, headers = self.get('/hls/demo_00000.ts')
+        self.assertEqual(code, 200)
+        self.assertEqual(len(raw), 188)
+        self.assertEqual(headers['Content-Type'], 'video/mp2t')
+        with self.assertRaises(HTTPError) as err:
+            self.get('/hls/../state.json')
+        self.assertEqual(err.exception.code, 404)
 
     def test_untrusted_filename(self):
         self.assertEqual(safe_name('../some\\path\\hi.png'), 'hi.png')
