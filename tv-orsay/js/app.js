@@ -8,6 +8,7 @@ var KTV = (function () {
   function showError(message) { broken = true; text('error-banner', message); $('error-banner').className = ''; }
   function clearError() { broken = false; $('error-banner').className = 'hidden'; }
   function setStatus(message) {text('network-status', message);}
+  function setWelcome(title, detail) {text('welcome-title', title); text('welcome-detail', detail);}
   function xhr(method, path, callback, body) {
     try {
       var request = new XMLHttpRequest();
@@ -34,7 +35,8 @@ var KTV = (function () {
     stopMedia(); clearError();
     if (!state.items.length) {
       $('welcome').style.display = 'block';
-      text('media-name', 'Aguardando midias no painel');
+      text('media-name', 'Playlist vazia');
+      setWelcome('Conectado - aguardando midias', 'Abra o painel KTV no computador, envie uma imagem e salve a playlist.');
       return;
     }
     var item = state.items[state.index];
@@ -59,11 +61,23 @@ var KTV = (function () {
   }
   function refresh() {
     xhr('GET', '/api/state?ts=' + (new Date()).getTime(), function (status, payload) {
-      if (status !== 200) {setStatus('SEM CONEXAO'); return;}
+      if (status !== 200) {
+        setStatus('SEM CONEXAO (HTTP ' + status + ')');
+        if (!state.items.length) {setWelcome('Servidor indisponivel', 'Verifique se o servidor Python continua aberto e confira o IP.');}
+        return;
+      }
       var next;
-      try {next = JSON.parse(payload);} catch(e) {setStatus('JSON INVALIDO');return;}
+      try {next = JSON.parse(payload);} catch(e) {
+        setStatus('JSON INVALIDO');
+        if (!state.items.length) {setWelcome('Resposta invalida', 'O servidor respondeu, mas a TV nao conseguiu interpretar os dados.');}
+        return;
+      }
+      if (!next || typeof next.version !== 'number' || !next.items || typeof next.items.length !== 'number') {
+        setStatus('RESPOSTA INCOMPATIVEL');
+        if (!state.items.length) {setWelcome('Resposta incompativel', 'Confira os registros do servidor KTV no computador.');}
+        return;
+      }
       setStatus('CONECTADO');
-      if (typeof next.version !== 'number' || !next.items) {return;}
       if (state.version !== next.version) {
         state.version = next.version;
         state.items = next.items;
