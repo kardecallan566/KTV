@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget>
+  <ThumbIcon>icon/ktv_106x86.png</ThumbIcon>
+  <BigThumbIcon>icon/ktv_115x95.png</BigThumbIcon>
+  <ListIcon>icon/ktv_85x70.png</ListIcon>
+  <BigListIcon>icon/ktv_95x78.png</BigListIcon>
+  <category>Information</category>
+  <type>user</type>
+  <cpname></cpname>
+  <cplogo></cplogo>
+  <cpauthjs></cpauthjs>
+  <login>n</login>
+  <ver>0.200</ver>
+  <mgrver>1.000</mgrver>
+  <fullwidget>y</fullwidget>
+  <srcctl>y</srcctl>
+  <ticker>n</ticker>
+  <childlock>n</childlock>
+  <audiomute>n</audiomute>
+  <videomute>n</videomute>
+  <dcont>y</dcont>
+  <network>y</network>
+  <widgetname>KTV Local</widgetname>
+  <description>Player local experimental para Samsung Legacy / Orsay.</description>
+  <width>1280</width>
+  <height>720</height>
+  <author><name>KTV</name></author>
+</widget>

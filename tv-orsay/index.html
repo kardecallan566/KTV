@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>KTV Local</title>
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Sobrescrito no empacotamento: endereço IP local do computador -->
+  <script src="js/runtime-config.js"></script>
+  <script src="js/app.js"></script>
+</head>
+<body onload="KTV.start()">
+  <div id="frame">
+    <div id="welcome">
+      <div class="logo">K<span>TV</span></div>
+      <h1>Conectando ao servidor local</h1>
+      <p>Deixe o servidor KTV aberto no computador.</p>
+      <p class="muted" id="server-url"></p>
+    </div>
+    <img id="image-player" alt="Midia KTV" />
+    <video id="video-player" preload="auto"></video>
+    <div id="error-banner" class="hidden"></div>
+    <div id="hud">
+      <span class="brand">KTV <span class="label">LOCAL</span></span>
+      <span id="media-name">Aguardando conteudo</span>
+      <span id="network-status">Iniciando...</span>
+    </div>
+    <div id="hint">ESQUERDA / DIREITA: trocar &nbsp; · &nbsp; ENTER: pausar &nbsp; · &nbsp; CIMA: detalhes</div>
+  </div>
+</body>
+</html>
