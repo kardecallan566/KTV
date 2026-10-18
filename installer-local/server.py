@@ -132,7 +132,7 @@ class KTVServer(ThreadingHTTPServer):
 
 
 class KTVRequest(BaseHTTPRequestHandler):
-    server_version = 'KTV-Local/0.3'
+    server_version = 'KTV-Local/0.4.1'
 
     def log_message(self, fmt, *args):
         # Log only paths/methods. Tokens live in headers, not URL.
@@ -214,7 +214,7 @@ class KTVRequest(BaseHTTPRequestHandler):
         if path in ('/', '/admin', '/admin/'):
             return self.file_response(ROOT / 'admin-web' / 'index.html', 'text/html; charset=utf-8')
         if path == '/api/health':
-            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.4.0'})
+            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.4.1'})
         if path == '/api/state':
             client = parse_qs(url.query).get('client', ['legacy'])[0]
             if client not in ('orsay', 'preview', 'legacy'):
@@ -233,7 +233,8 @@ class KTVRequest(BaseHTTPRequestHandler):
             event = params.get('event', [''])[0]
             if client not in ('orsay', 'preview') or event not in (
                 'image-loaded', 'image-error', 'video-ready', 'video-playing', 'video-error', 'video-play-rejected',
-                'hls-start-requested', 'hls-buffering', 'hls-buffer-complete', 'hls-error', 'hls-unavailable'
+                'hls-start-requested', 'hls-buffering', 'hls-buffer-complete', 'hls-error', 'hls-unavailable',
+                'html-start', 'app-start', 'js-error', 'hls-deferred', 'video-deferred'
             ):
                 return self.json(400, {'error': 'Evento invalido'})
             with self.server.lock:
@@ -404,7 +405,7 @@ def main():
     except OSError as exc:
         print('Falha ao abrir servidor. Porta 80 ocupada/bloqueada? {}'.format(exc))
         sys.exit(1)
-    print('\n=== KTV LOCAL v0.4 ===')
+    print('\n=== KTV LOCAL v0.4.1 ===')
     print('IP LAN:     ', args.ip)
     print('Instalador: ', server.base_url + '/widgetlist.xml')
     print('Painel:     ', server.base_url + '/admin/')

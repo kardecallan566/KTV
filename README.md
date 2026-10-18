@@ -28,7 +28,7 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 | `/admin/` | Painel administrativo (token do terminal) |
 | `/preview/` | Simulação do player no navegador |
 | `/widgetlist.xml` | Lista de aplicativos Samsung Orsay |
-| `/Widget/KTV_0.4.0_BR_20261018.zip` | Pacote de widget para sincronização |
+| `/Widget/KTV_0.4.1_BR_20261018.zip` | Pacote de widget para sincronização |
 | `/api/state` | Playlist e comandos consultados pela TV |
 | `/api/health` | Status do servidor |
 
@@ -88,3 +88,7 @@ Nenhuma transmissao e feita pela nuvem nesta fase; nao encaminhe a porta 80 no r
 ## Checkpoint: HLS local v0.4
 
 Integração experimental da reprodução de HLS pelo plugin Samsung Legacy, com cadastro de canais diretos `.m3u8` no painel e gerador local de teste `gerar_hls_teste.bat`. **Ainda depende de verificação física na Samsung J5200 firmware 1080.** Requer `git pull`, reiniciar servidor e executar uma nova sincronização do aplicativo. Consulte [docs/HLS_TESTE.md](docs/HLS_TESTE.md). O navegador web pode não reproduzir HLS: use o aplicativo instalado. Não faça proxy de canais não autorizados.
+
+## KTV 0.4.1 — Correção de abertura
+
+Corrigida a divergência entre o nome do pacote e a versão interna do widget Orsay. Agora o plugin HLS só é criado ao pressionar ENTER, evitando acionar vídeo nativo na inicialização. Consulte [docs/DIAGNOSTICO_INICIALIZACAO.md](docs/DIAGNOSTICO_INICIALIZACAO.md) para atualizar a Samsung e validar o diagnóstico.
