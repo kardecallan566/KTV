@@ -17,8 +17,7 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 4. O terminal mostrará o IP, a URL do painel, o token administrativo e o ZIP USB.
 5. No navegador do PC, abra `http://IP_DO_PC/admin/`, insira o **TOKEN ADMIN** do terminal e envie uma imagem JPG/PNG.
 6. Para o primeiro teste sem TV, abra `http://IP_DO_PC/preview/` em outra aba e clique em **+ Adicionar** e **Salvar e enviar à TV**.
-7. **Pendrive (teste experimental):** na pasta do projeto, dê dois cliques em `preparar_pendrive.bat`. Ele gera o pacote e abre a pasta `release\usb`. Copie **a pasta `userwidget` inteira** para a raiz de um pendrive FAT32. Não extraia o ZIP contido nela. A instalação por USB pode ser bloqueada pelo firmware da Samsung.
-8. Se o USB não funcionar, tente a **sincronização LAN**, descrita em [`docs/INSTALACAO_TV.md`](docs/INSTALACAO_TV.md).
+7. Para instalar, tente o método **sincronização LAN**, descrito em [`docs/INSTALACAO_TV.md`](docs/INSTALACAO_TV.md). Também geramos um ZIP de teste em `release/usb/userwidget/` para a hipótese USB.
 
 > **Importante:** para sincronização Orsay, a TV costuma solicitar apenas o IP, e o instalador usa **porta 80**. `--port 8000` é bom para testar no computador, mas provavelmente não serve para sincronização pela TV.
 
@@ -29,7 +28,7 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 | `/admin/` | Painel administrativo (token do terminal) |
 | `/preview/` | Simulação do player no navegador |
 | `/widgetlist.xml` | Lista de aplicativos Samsung Orsay |
-| `/Widget/KTV_0.3.0_BR_20261018.zip` | Pacote de widget para sincronização |
+| `/Widget/KTV_0.4.0_BR_20261018.zip` | Pacote de widget para sincronização |
 | `/api/state` | Playlist e comandos consultados pela TV |
 | `/api/health` | Status do servidor |
 
@@ -48,32 +47,6 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 - O servidor **não deve ser publicado na internet**; token via HTTP é aceitável somente como teste em LAN confiável.
 - Estado e mídias ficam em `.ktv/` e não são versionados.
 - A sincronização USB pode exigir assinatura `.sig` ou não estar habilitada no firmware. Não altere firmware nem use menu de atualização de software.
-
-## Onde está a pasta do pendrive?
-
-**A pasta `release/` não aparece no GitHub de propósito:** ela está no `.gitignore` porque contém arquivos gerados com o IPv4 local do computador. Portanto, só aparece **na cópia local do projeto, depois de executar** `start_ktv.bat`, `preparar_pendrive.bat` ou o gerador Python. Não procure o arquivo em `github.com` nem use um ZIP gerado para outro IP.
-
-Passo mais fácil no Windows:
-
-1. Abra a pasta local onde você clonou o KTV.
-2. Clique duas vezes em **`preparar_pendrive.bat`**. O Explorador de Arquivos abrirá automaticamente `KTV\release\usb`.
-3. Copie a **pasta `userwidget`** que está lá para a **raiz de um pendrive FAT32**, mantendo o ZIP dentro dela, sem extrair.
-4. Mantenha `start_ktv.bat` (o servidor) aberto enquanto testa o aplicativo. O PC e a TV precisam estar na mesma rede.
-5. Não use o menu "Atualização de Software" da Samsung para esse ZIP: ele é um aplicativo, não firmware.
-
-Se o computador tiver mais de uma rede ou o IP estiver incorreto, confira o IPv4 no `ipconfig` e execute no Prompt de Comando: `preparar_pendrive.bat --ip SEU_IPV4`. O IPv4 deve corresponder ao endereço que o servidor anuncia no terminal. Um IP incorreto pode fazer o aplicativo abrir sem conectar.
-
-Saída esperada:
-
-```text
-KTV/
-└── release/
-    └── usb/
-        └── userwidget/
-            └── KTV_0.3.0_BR_20261018.zip
-```
-
-Se essa pasta não for criada, olhe o erro na janela do script: Python não encontrado, falha no gerador ou servidor não iniciado. **USB Orsay não é uma instalação oficialmente garantida na UN43J5200AG firmware 1080**; a TV pode ignorar esse pacote sem assinatura Samsung.
 
 ## Construção manual
 
@@ -99,14 +72,19 @@ Também execute `node --check tv-orsay/js/app.js` se tiver Node.js. Consulte [`d
 - [Emby Orsay — instalação para séries H e J5200](https://emby.media/community/topic/9869-samsung-orsay-smarttv-2011-2015-community-app-install-instructions/)
 
 
-## Etapa 2 — Diagnóstico de mídia (v0.3.0)
+## Fase 2 - validar reproducao na Samsung
 
-A instalação via sincronização LAN foi confirmada em uma Samsung UN43J5200AG com firmware 1080. Esta versão adiciona telemetria **local, experimental e não autenticada do dispositivo** para ajudar a distinguir o aplicativo instalado do teste pelo navegador, além de registrar eventos de carregamento de imagens/vídeos. Não expor o servidor para a internet.
+A sincronizacao LAN foi confirmada na linha J5200, firmware 1080. Atualize o projeto e sincronize novamente para instalar a versao **0.3.0**. O navegador e o aplicativo instalado sao identificados separadamente pelo servidor, sem autenticacao do aparelho (uso somente LAN).
 
-1. Na cópia local, execute `git pull origin main`, reinicie o servidor com `python installer-local/server.py` e entre em `http://IP_DO_PC/admin/`.
-2. Faça upload de uma **imagem JPG** pequena, clique em **+ Adicionar** na biblioteca e depois em **Salvar e enviar à TV**.
-3. Reinstale/atualize o KTV no Smart Hub via `Start User App Sync` apontando para o IP do PC. O pacote agora é `KTV_0.3.0_BR_20261018.zip`; só atualizar o código do computador **não atualiza o widget instalado**.
-4. Abra o **KTV Local instalado** (não o WebBrowser). O painel deverá informar **App Orsay online** e, após carregar a imagem, o evento **image-loaded**.
-5. Confirme visualmente a imagem na tela da TV. Depois teste um vídeo curto MP4 (H.264/AAC). Vídeo pode exigir o player proprietário Orsay, ainda não integrado.
+1. Pare o servidor com Ctrl+C e execute `git pull origin main`. Reinicie `python installer-local/server.py`.
+2. No painel `http://IP_DO_PC/admin/`, faca upload de uma imagem JPG pequena, adicione a playlist e clique em **Salvar e enviar a TV**.
+3. Abra o **KTV Local** instalado no Smart Hub e acompanhe o painel **Televisao**: deve aparecer `App Orsay online` e depois `image-loaded`. Esse evento indica que o navegador carregou o arquivo, nao comprova que o painel de LCD exibiu os pixels; confira visualmente.
+4. Se carregar a imagem, faca o teste com MP4 H.264/AAC curto. A API HTML5 da Samsung Legacy pode nao decodificar MP4 e exigira integracao com o player Orsay.
+5. Se o painel disser `Preview online` mas nao `App Orsay online`, confira se abriu o aplicativo instalado em vez do WebBrowser, e se a versao 0.3 foi sincronizada no Smart Hub.
 
-O indicador `image-loaded` significa apenas que o navegador carregou o recurso; não comprova que a TV realmente o apresentou. Clientes antigos podem aparecer como **Player antigo** até a sincronização da nova versão.
+Nenhuma transmissao e feita pela nuvem nesta fase; nao encaminhe a porta 80 no roteador. A API `/api/event` e diagnostica e **nao autentica o aparelho**; qualquer dispositivo na LAN pode enviar esses eventos.
+
+
+## Checkpoint: HLS local v0.4
+
+Integração experimental da reprodução de HLS pelo plugin Samsung Legacy, com cadastro de canais diretos `.m3u8` no painel e gerador local de teste `gerar_hls_teste.bat`. **Ainda depende de verificação física na Samsung J5200 firmware 1080.** Requer `git pull`, reiniciar servidor e executar uma nova sincronização do aplicativo. Consulte [docs/HLS_TESTE.md](docs/HLS_TESTE.md). O navegador web pode não reproduzir HLS: use o aplicativo instalado. Não faça proxy de canais não autorizados.

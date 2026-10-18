@@ -9,7 +9,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'tv-orsay'
 RELEASE = ROOT / 'release'
-FILENAME = 'KTV_0.3.0_BR_20261018.zip'
+FILENAME = 'KTV_0.4.0_BR_20261018.zip'
 
 
 def guess_ip():

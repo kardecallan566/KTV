@@ -6,7 +6,7 @@
 
 1. Coloque PC e TV na mesma rede local; desligue VPN apenas se interferir nas rotas de LAN.
 2. Execute `start_ktv.bat` (ou `py -3 installer-local/server.py --ip 192.168.0.XX`).
-3. Abra no PC `http://IP-DO-PC/widgetlist.xml`, confira o endereço e baixe `http://IP-DO-PC/Widget/KTV_0.3.0_BR_20261018.zip`.
+3. Abra no PC `http://IP-DO-PC/widgetlist.xml`, confira o endereço e baixe `http://IP-DO-PC/Widget/KTV_0.4.0_BR_20261018.zip`.
 4. Abra `http://IP-DO-PC/admin/`, informe o token mostrado no terminal, faça upload de JPG ou PNG, adicione à playlist e salve.
 5. Abra `http://IP-DO-PC/preview/`: a imagem deve aparecer após poucos segundos. Se o painel no celular não abrir, teste rede e firewall do Windows.
 
@@ -27,8 +27,8 @@ Se a conta develop, o IP Setting ou a sincronização não aparecerem, registre 
 
 ## Parte C — teste opcional pelo pendrive
 
-1. Na **cópia local** do repositório (não na página do GitHub), execute `preparar_pendrive.bat` ou inicie `start_ktv.bat`. Esses comandos geram `release/usb/userwidget/KTV_0.3.0_BR_20261018.zip`. A pasta `release/` é ignorada pelo Git e não existe na página do repositório. O arquivo `.bat` de preparação abre automaticamente a pasta `release/usb` no Explorador.
-2. Faça backup do pendrive; formate como FAT32 e **copie a pasta `userwidget` inteira para a raiz**. Não descompacte o ZIP no pendrive.
+1. Com o servidor executado pelo menos uma vez, ele terá criado `release/usb/userwidget/KTV_0.4.0_BR_20261018.zip`.
+2. Faça backup do pendrive; formate como FAT32 e **copie a pasta `userwidget` inteira para a raiz**.
 3. Coloque o pendrive na TV e veja se o Smart Hub reconhece o aplicativo.
 4. Se nada aparecer, não force: teste o método de rede. Algumas instalações Orsay por USB necessitam de assinatura `.sig` da Samsung.
 5. **Jamais selecione `Atualização de Software` para esse ZIP.**
@@ -47,15 +47,14 @@ Se a conta develop, o IP Setting ou a sincronização não aparecerem, registre 
 Não desligue ou coloque o computador em repouso durante os testes. Uma atualização automática de IP do roteador também pode exigir reconstruir e reinstalar o widget.
 
 
-## Validação do aplicativo instalado (KTV 0.3)
+## Depois de instalar o KTV no Smart Hub
 
-Os registros do servidor confirmaram download do widget e consultas periódicas à API na Samsung J5200, firmware 1080. Para validar a mídia na TV real:
+- Com o app instalado aberto, mantenha o servidor local ativo e abra o painel administrativo.
+- A versao 0.3 separa `App Orsay online` de `Preview online` e registra `image-loaded`, `image-error`, `video-ready`, `video-playing` e `video-error`.
+- Depois de atualizar o computador, execute outra sincronizacao de aplicativos pelo Smart Hub para instalar a versao nova; atualizar o codigo no PC **nao atualiza automaticamente** o aplicativo instalado.
+- Se a TV indicar `image-loaded`, confira na tela se a imagem realmente apareceu. Esse evento sozinho e diagnostico de carregamento.
 
-1. Pare o servidor com Ctrl+C, rode `git pull origin main` e reinicie `python installer-local/server.py`.
-2. Atualize o aplicativo pelo menu **Start User App Sync**. O pacote agora é **KTV_0.3.0_BR_20261018.zip**.
-3. Faça upload de imagem JPG no painel `http://IP_DO_PC/admin/`, adicione à playlist e salve.
-4. Abra o **KTV Local** instalado no Smart Hub (não a aba do navegador) e aguarde até 4 segundos.
-5. Veja se a imagem aparece. No painel, **App Orsay online** identifica o cliente, enquanto **image-loaded** confirma que o recurso foi carregado. Nenhum desses estados substitui a verificação visual.
-6. Em caso de falha, reporte a mensagem na TV, a seção Televisão do painel e as linhas `/api/state`, `/api/event` e `/media/` do terminal. Não envie o TOKEN ADMIN.
 
-A comunicação diagnóstica usa somente a rede local e não autentica o dispositivo. Não encaminhe a porta 80 para a internet.
+## HLS experimental — KTV 0.4
+
+Novo canal de teste local, gerado por `gerar_hls_teste.bat` com FFmpeg. Configure uma URL `.m3u8` direta no painel, clique em Assistir e sincronize novamente o widget via User App Sync. Consulte [HLS_TESTE.md](HLS_TESTE.md). A execução no plugin Samsung ainda precisa de teste no hardware real.
