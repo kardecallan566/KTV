@@ -9,7 +9,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'tv-orsay'
 RELEASE = ROOT / 'release'
-FILENAME = 'KTV_0.2.0_BR_20261017.zip'
+FILENAME = 'KTV_0.3.0_BR_20261018.zip'
 
 
 def guess_ip():
@@ -45,7 +45,7 @@ def build(ip, port=80):
                 continue
             name = path.relative_to(SOURCE).as_posix()
             if name == 'js/runtime-config.js':
-                js = 'window.KTV_CONFIG = {server: %r, pollMs: 4000};\n' % base
+                js = 'window.KTV_CONFIG = {server: %r, pollMs: 4000, client: \"orsay\"};\n' % base
                 z.writestr(name, js)
             else:
                 z.write(path, name)

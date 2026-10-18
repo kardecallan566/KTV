@@ -46,7 +46,7 @@ class KTVTests(unittest.TestCase):
         root = ET.fromstring(raw)
         url = root.find('./list/widget/download').text
         self.assertTrue(url.endswith('.zip'))
-        _, contents, _ = self.get('/Widget/KTV_0.2.0_BR_20261017.zip')
+        _, contents, _ = self.get('/Widget/KTV_0.3.0_BR_20261018.zip')
         self.assertEqual(int(root.find('./list/widget/compression').attrib['size']), len(contents))
         with zipfile.ZipFile(self.server.output['archive']) as z:
             self.assertIn('config.xml', z.namelist())
@@ -68,6 +68,24 @@ class KTVTests(unittest.TestCase):
         self.assertEqual(json.loads(raw)['items'][0]['id'], mid)
         _, result = self.post('/api/admin/command', b'{"command":"pause"}', auth)
         self.assertFalse(result['playing'])
+
+    def test_client_telemetry(self):
+        _, raw, _ = self.get('/api/state?client=orsay')
+        self.assertEqual(json.loads(raw)['version'], 1)
+        token = {'X-KTV-Token': self.server.token}
+        _, payload, _ = self.get('/api/status', token)
+        status = json.loads(payload)
+        self.assertEqual(status['clients']['orsay']['ip'], '127.0.0.1')
+        self.assertNotIn('preview', status['clients'])
+        _, _, _ = self.get('/api/event?client=orsay&event=image-loaded')
+        _, payload, _ = self.get('/api/status', token)
+        self.assertEqual(json.loads(payload)['media_events']['orsay']['event'], 'image-loaded')
+        with self.assertRaises(HTTPError) as err:
+            self.get('/api/event?client=orsay&event=unknown')
+        self.assertEqual(err.exception.code, 400)
+        _, _, _ = self.get('/api/state?client=preview')
+        _, payload, _ = self.get('/api/status', token)
+        self.assertIn('preview', json.loads(payload)['clients'])
 
     def test_range(self):
         with (self.server.media / 'f_test.mp4').open('wb') as out:
