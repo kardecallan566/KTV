@@ -2,13 +2,18 @@
 var KTV = (function () {
   var cfg = window.KTV_CONFIG || {server: '', pollMs: 4000};
   var state = {version: -1, items: [], index: 0, playing: true};
-  var imageTimer = null, pollTimer = null, lastVideo = '', controlsVisible = true, broken = false;
+  var imageTimer = null, pollTimer = null, controlsVisible = true, broken = false;
   function $(id) {return document.getElementById(id);}
   function text(id, value) { if ($(id)) {$(id).innerHTML = ''; $(id).appendChild(document.createTextNode(String(value)));} }
   function showError(message) { broken = true; text('error-banner', message); $('error-banner').className = ''; }
   function clearError() { broken = false; $('error-banner').className = 'hidden'; }
   function setStatus(message) {text('network-status', message);}
   function setWelcome(title, detail) {text('welcome-title', title); text('welcome-detail', detail);}
+  function report(event) {
+    // Mesmo transporte XMLHttpRequest usado pela API no navegador Legacy.
+    xhr('GET', '/api/event?client=' + encodeURIComponent(cfg.client || 'preview') +
+      '&event=' + encodeURIComponent(event) + '&ts=' + (new Date()).getTime(), function () {});
+  }
   function xhr(method, path, callback, body) {
     try {
       var request = new XMLHttpRequest();
@@ -23,6 +28,8 @@ var KTV = (function () {
   function stopMedia() {
     if (imageTimer) {clearTimeout(imageTimer); imageTimer = null;}
     var v = $('video-player');
+    v.onerror = null; v.onplaying = null; v.onloadeddata = null; v.onended = null;
+    var oldImage = $('image-player'); oldImage.onerror = null; oldImage.onload = null;
     try {v.pause(); v.removeAttribute('src'); v.load();} catch(e) {}
     v.style.display = 'none'; $('image-player').style.display = 'none';
   }
@@ -45,22 +52,29 @@ var KTV = (function () {
     text('media-name', (state.index + 1) + '/' + state.items.length + '  ' + item.name);
     if (item.type === 'image') {
       var img = $('image-player');
-      img.onerror = function () {showError('Erro ao carregar imagem. Confira a rede e o arquivo.');};
-      img.onload = function () {clearError();};
+      img.onerror = function () {report('image-error'); showError('Erro ao carregar imagem. Confira a rede e o arquivo.');};
+      img.onload = function () {report('image-loaded'); clearError();};
       img.style.display = 'block'; img.src = item.url;
       if (state.playing) {imageTimer = setTimeout(function () {advance(1);}, item.duration * 1000 || 10000);}
     } else if (item.type === 'video') {
       var vid = $('video-player');
-      vid.onerror = function () {showError('Video nao suportado ou indisponivel. Teste MP4 H.264/AAC; o player Legacy pode exigir API propria.');};
+      vid.onerror = function () {report('video-error'); showError('Video nao suportado ou indisponivel. Teste MP4 H.264/AAC; o player Legacy pode exigir API propria.');};
+      vid.onloadeddata = function () {report('video-ready');};
+      vid.onplaying = function () {report('video-playing');};
       vid.onended = function () {advance(1);};
       vid.style.display = 'block'; vid.src = item.url;
       if (state.playing) {
-        try {vid.play();} catch (e) {showError('Player HTML5 nao conseguiu iniciar.');}
+        try {
+          var promise = vid.play();
+          if (promise && typeof promise.catch === 'function') {
+            promise.catch(function () {report('video-play-rejected'); showError('O navegador impediu a reproducao do video.');});
+          }
+        } catch (e) {report('video-play-rejected'); showError('Player HTML5 nao conseguiu iniciar.');}
       }
     } else {showError('Tipo de conteudo desconhecido');}
   }
   function refresh() {
-    xhr('GET', '/api/state?ts=' + (new Date()).getTime(), function (status, payload) {
+    xhr('GET', '/api/state?client=' + encodeURIComponent(cfg.client || 'preview') + '&ts=' + (new Date()).getTime(), function (status, payload) {
       if (status !== 200) {
         setStatus('SEM CONEXAO (HTTP ' + status + ')');
         if (!state.items.length) {setWelcome('Servidor indisponivel', 'Verifique se o servidor Python continua aberto e confira o IP.');}

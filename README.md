@@ -29,7 +29,7 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 | `/admin/` | Painel administrativo (token do terminal) |
 | `/preview/` | Simulação do player no navegador |
 | `/widgetlist.xml` | Lista de aplicativos Samsung Orsay |
-| `/Widget/KTV_0.2.0_BR_20261017.zip` | Pacote de widget para sincronização |
+| `/Widget/KTV_0.3.0_BR_20261018.zip` | Pacote de widget para sincronização |
 | `/api/state` | Playlist e comandos consultados pela TV |
 | `/api/health` | Status do servidor |
 
@@ -70,7 +70,7 @@ KTV/
 └── release/
     └── usb/
         └── userwidget/
-            └── KTV_0.2.0_BR_20261017.zip
+            └── KTV_0.3.0_BR_20261018.zip
 ```
 
 Se essa pasta não for criada, olhe o erro na janela do script: Python não encontrado, falha no gerador ou servidor não iniciado. **USB Orsay não é uma instalação oficialmente garantida na UN43J5200AG firmware 1080**; a TV pode ignorar esse pacote sem assinatura Samsung.
@@ -97,3 +97,16 @@ Também execute `node --check tv-orsay/js/app.js` se tiver Node.js. Consulte [`d
 - [Samsung — código legado Orsay](https://github.com/Samsung/cordova-sectv-orsay)
 - [Jellyfin Orsay Installer — sincronização via rede](https://github.com/Apps2Samsung/Jellyfin-Orsay-Installer)
 - [Emby Orsay — instalação para séries H e J5200](https://emby.media/community/topic/9869-samsung-orsay-smarttv-2011-2015-community-app-install-instructions/)
+
+
+## Etapa 2 — Diagnóstico de mídia (v0.3.0)
+
+A instalação via sincronização LAN foi confirmada em uma Samsung UN43J5200AG com firmware 1080. Esta versão adiciona telemetria **local, experimental e não autenticada do dispositivo** para ajudar a distinguir o aplicativo instalado do teste pelo navegador, além de registrar eventos de carregamento de imagens/vídeos. Não expor o servidor para a internet.
+
+1. Na cópia local, execute `git pull origin main`, reinicie o servidor com `python installer-local/server.py` e entre em `http://IP_DO_PC/admin/`.
+2. Faça upload de uma **imagem JPG** pequena, clique em **+ Adicionar** na biblioteca e depois em **Salvar e enviar à TV**.
+3. Reinstale/atualize o KTV no Smart Hub via `Start User App Sync` apontando para o IP do PC. O pacote agora é `KTV_0.3.0_BR_20261018.zip`; só atualizar o código do computador **não atualiza o widget instalado**.
+4. Abra o **KTV Local instalado** (não o WebBrowser). O painel deverá informar **App Orsay online** e, após carregar a imagem, o evento **image-loaded**.
+5. Confirme visualmente a imagem na tela da TV. Depois teste um vídeo curto MP4 (H.264/AAC). Vídeo pode exigir o player proprietário Orsay, ainda não integrado.
+
+O indicador `image-loaded` significa apenas que o navegador carregou o recurso; não comprova que a TV realmente o apresentou. Clientes antigos podem aparecer como **Player antigo** até a sincronização da nova versão.

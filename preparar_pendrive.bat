@@ -31,7 +31,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "release\usb\userwidget\KTV_0.2.0_BR_20261017.zip" (
+if not exist "release\usb\userwidget\KTV_0.3.0_BR_20261018.zip" (
     echo [ERRO] Pacote esperado nao encontrado.
     pause
     exit /b 1

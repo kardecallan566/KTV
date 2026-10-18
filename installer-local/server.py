@@ -67,6 +67,8 @@ class KTVServer(ThreadingHTTPServer):
         self.state_file = self.workspace / 'state.json'
         self.lock = threading.Lock()
         self.last_seen = 0
+        self.clients = {}  # Ultima consulta real por tipo de player
+        self.media_events = {}  # Diagnostico de carregamento de midia
         if self.state_file.exists():
             try:
                 self.state = json.loads(self.state_file.read_text(encoding='utf-8'))
@@ -97,7 +99,7 @@ class KTVServer(ThreadingHTTPServer):
 
 
 class KTVRequest(BaseHTTPRequestHandler):
-    server_version = 'KTV-Local/0.2'
+    server_version = 'KTV-Local/0.3'
 
     def log_message(self, fmt, *args):
         # Log only paths/methods. Tokens live in headers, not URL.
@@ -179,22 +181,46 @@ class KTVRequest(BaseHTTPRequestHandler):
         if path in ('/', '/admin', '/admin/'):
             return self.file_response(ROOT / 'admin-web' / 'index.html', 'text/html; charset=utf-8')
         if path == '/api/health':
-            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.2.0'})
+            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.3.0'})
         if path == '/api/state':
-            self.server.last_seen = time.time()
+            client = parse_qs(url.query).get('client', ['legacy'])[0]
+            if client not in ('orsay', 'preview', 'legacy'):
+                client = 'legacy'
             with self.server.lock:
+                self.server.last_seen = time.time()
+                self.server.clients[client] = {'seen': self.server.last_seen, 'ip': self.client_address[0]}
                 data = dict(self.server.state)
                 data['items'] = [dict(item, url=self.server.base_url + '/media/' + item['id'])
                                  for item in data['items']]
             return self.json(200, data, cors=True)
+        if path == '/api/event':
+            params = parse_qs(url.query)
+            client = params.get('client', [''])[0]
+            event = params.get('event', [''])[0]
+            if client not in ('orsay', 'preview') or event not in (
+                'image-loaded', 'image-error', 'video-ready', 'video-playing', 'video-error', 'video-play-rejected'
+            ):
+                return self.json(400, {'error': 'Evento invalido'})
+            with self.server.lock:
+                self.server.media_events[client] = {'event': event, 'seen': time.time(),
+                                                    'ip': self.client_address[0]}
+            return self.json(200, {'ok': True}, cors=True)
         if path == '/api/media':
             if not self.authorized(): return
             return self.json(200, {'items': self.server.media_items()})
         if path == '/api/status':
             if not self.authorized(): return
-            with self.server.lock: version = self.server.state['version']
+            with self.server.lock:
+                version = self.server.state['version']
+                last_seen = self.server.last_seen
+                clients = {client: {'last_poll_seconds': round(time.time() - item['seen']),
+                                    'ip': item['ip']} for client, item in self.server.clients.items()}
+                events = {client: {'event': item['event'],
+                                   'seconds_ago': round(time.time() - item['seen']),
+                                   'ip': item['ip']} for client, item in self.server.media_events.items()}
             return self.json(200, {'version': version, 'last_poll_seconds':
-                                    round(time.time() - self.server.last_seen) if self.server.last_seen else None,
+                                    round(time.time() - last_seen) if last_seen else None,
+                                    'clients': clients, 'media_events': events,
                                     'base_url': self.server.base_url})
         if path == '/widgetlist.xml':
             return self.file_response(RELEASE / 'widgetlist.xml', 'application/xml; charset=utf-8')
@@ -214,7 +240,7 @@ class KTVRequest(BaseHTTPRequestHandler):
         if path.startswith('/preview/'):
             name = path[len('/preview/'):]
             if name == 'js/runtime-config.js':
-                return self.reply(200, 'window.KTV_CONFIG = {server: "' + self.server.base_url + '", pollMs: 4000};\n',
+                return self.reply(200, 'window.KTV_CONFIG = {server: "' + self.server.base_url + '", pollMs: 4000, client: "preview"};\n',
                                   'application/javascript; charset=utf-8')
             if name not in ('js/app.js', 'css/style.css'):
                 return self.json(404, {'error': 'Nao encontrado'})
@@ -303,7 +329,7 @@ def main():
     except OSError as exc:
         print('Falha ao abrir servidor. Porta 80 ocupada/bloqueada? {}'.format(exc))
         sys.exit(1)
-    print('\n=== KTV LOCAL v0.2 ===')
+    print('\n=== KTV LOCAL v0.3 ===')
     print('IP LAN:     ', args.ip)
     print('Instalador: ', server.base_url + '/widgetlist.xml')
     print('Painel:     ', server.base_url + '/admin/')
