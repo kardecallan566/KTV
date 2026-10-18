@@ -23,3 +23,19 @@ A Samsung J5200 (firmware 1080) acessou `/api/state` e solicitou o ZIP, mas o us
 Se o app não abrir ou só aparecer requisição sem `client=orsay`, faça uma foto da lista de aplicativos/versão no Smart Hub, confira se o widget foi realmente substituído. Em caso de conflito de versão, remover só o app KTV de desenvolvedor e sincronizar de novo pode ser um teste, mas não redefina o Smart Hub e não mexa nos outros aplicativos.
 
 Não poste o token do painel. Use LAN confiável; nunca expor HTTP porta 80 à internet.
+
+
+## Checkpoint 0.4.2 — confirmação do gerenciador Samsung
+
+A TV baixou o pacote 0.4.1 (`GET /Widget/KTV_0.4.1...zip 200`), mas nao fez nenhuma chamada `client=orsay` apos iniciar o Smart Hub. Foi detectada ausencia da biblioteca `Widget.js`, que fornece `sendReadyEvent()`, chamada na documentacao Samsung Legacy para notificar que o app esta pronto. A v0.4.2 importa esta biblioteca e faz a notificacao **antes de consultar a API**. Isto e uma correcao concreta; a causa exata da mensagem do Smart Hub ainda nao foi provada.
+
+### Procedimento isolado
+
+1. Pare Python com Ctrl+C, atualize via `git pull origin main` e inicie `python installer-local/server.py`.
+2. Confira em `http://192.168.1.10/widgetlist.xml` a existencia dos itens `KTV Local` (0.4.2) e `KTVDiag` (0.1).
+3. Faca `Start User App Sync` no Smart Hub. Verifique se o terminal registra **dois** downloads distintos em `/Widget/`. Se vier so um, anote qual.
+4. No Smart Hub, abra **KTVDiag** primeiro. Ele **nao abre video**: mostra uma tela azul com `KTV DIAGNOSTICO`, o estado da biblioteca Samsung, a conectividade e um teste de ENTER. O servidor deve mostrar `192.168.1.42 GET /api/health?client=diagnostic&ts=...`.
+5. Se o KTVDiag abrir, abra KTV Local 0.4.2 com playlist vazia e aguarde 30 segundos. Se funcionar, teste JPG e somente depois HLS.
+6. Se ambos exibirem `Tente novamente mais tarde`, pode ser um problema do Smart Hub, da instalacao ou de um requisito de pacote. Nao significa que o HLS causou a falha. Evite reset de fabrica, firmware ou alteracao de aplicativos existentes.
+
+O ZIP de diagnostico esta em `release/Widget/KTVDiag_0.1.0_BR_20261018.zip`. A TV **nao precisa do pendrive** para o teste, pois a sincronizacao e via LAN.

@@ -21,7 +21,7 @@ import time
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-from build import RELEASE, FILENAME, build, guess_ip
+from build import RELEASE, FILENAME, DIAGNOSTIC_FILENAME, build, guess_ip
 
 MAX_UPLOAD = 100 * 1024 * 1024
 MAX_JSON = 64 * 1024
@@ -132,7 +132,7 @@ class KTVServer(ThreadingHTTPServer):
 
 
 class KTVRequest(BaseHTTPRequestHandler):
-    server_version = 'KTV-Local/0.4.1'
+    server_version = 'KTV-Local/0.4.2'
 
     def log_message(self, fmt, *args):
         # Log only paths/methods. Tokens live in headers, not URL.
@@ -214,7 +214,7 @@ class KTVRequest(BaseHTTPRequestHandler):
         if path in ('/', '/admin', '/admin/'):
             return self.file_response(ROOT / 'admin-web' / 'index.html', 'text/html; charset=utf-8')
         if path == '/api/health':
-            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.4.1'})
+            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.4.2'})
         if path == '/api/state':
             client = parse_qs(url.query).get('client', ['legacy'])[0]
             if client not in ('orsay', 'preview', 'legacy'):
@@ -274,8 +274,9 @@ class KTVRequest(BaseHTTPRequestHandler):
             return self.file_response(RELEASE / 'widgetlist.xml', 'application/xml; charset=utf-8')
         if path.startswith('/Widget/'):
             name = path[len('/Widget/'):]
-            if name != FILENAME: return self.json(404, {'error':'Widget desconhecido'})
-            return self.file_response(RELEASE / 'Widget' / FILENAME, 'application/zip')
+            if name not in (FILENAME, DIAGNOSTIC_FILENAME):
+                return self.json(404, {'error': 'Widget desconhecido'})
+            return self.file_response(RELEASE / 'Widget' / name, 'application/zip')
         if path.startswith('/media/'):
             name = path[len('/media/'):]
             if '/' in name or '\\' in name or name.startswith('.') or not name:
@@ -405,13 +406,14 @@ def main():
     except OSError as exc:
         print('Falha ao abrir servidor. Porta 80 ocupada/bloqueada? {}'.format(exc))
         sys.exit(1)
-    print('\n=== KTV LOCAL v0.4.1 ===')
+    print('\n=== KTV LOCAL v0.4.2 ===')
     print('IP LAN:     ', args.ip)
     print('Instalador: ', server.base_url + '/widgetlist.xml')
     print('Painel:     ', server.base_url + '/admin/')
     print('Preview:    ', server.base_url + '/preview/')
     print('TOKEN ADMIN:', server.token)
     print('USB:        ', server.output['usb'])
+    print('Diagnostico:', server.output['diagnostic_archive'])
     print('HLS local:  ', server.base_url + '/hls/demo.m3u8 (execute gerar_hls_teste.bat)')
     print('\nATENCAO: apenas rede local confiavel. Nao encaminhe a porta para a Internet.')
     print('CTRL+C para encerrar.\n', flush=True)

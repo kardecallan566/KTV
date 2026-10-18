@@ -9,7 +9,9 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'tv-orsay'
 RELEASE = ROOT / 'release'
-FILENAME = 'KTV_0.4.1_BR_20261018.zip'
+FILENAME = 'KTV_0.4.2_BR_20261018.zip'
+DIAGNOSTIC_FILENAME = 'KTVDiag_0.1.0_BR_20261018.zip'
+DIAGNOSTIC_SOURCE = ROOT / 'tv-diagnostic'
 
 
 def guess_ip():
@@ -50,16 +52,35 @@ def build(ip, port=80):
             else:
                 z.write(path, name)
     shutil.copy2(archive, usb_dir / FILENAME)
-    # This static XML is useful to inspect, but the server generates it dynamically too.
+    # Publicar app de diagnostico independente, mantendo o KTV original disponivel.
+    diagnostic_archive = widget_dir / DIAGNOSTIC_FILENAME
+    with zipfile.ZipFile(diagnostic_archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+        for path in sorted(DIAGNOSTIC_SOURCE.rglob('*')):
+            if not path.is_file() or path.name.endswith('.pyc'):
+                continue
+            name = path.relative_to(DIAGNOSTIC_SOURCE).as_posix()
+            if name == 'js/runtime-config.js':
+                z.writestr(name, 'window.KTV_DIAG_CONFIG = {server: %r};\n' % base)
+            else:
+                z.write(path, name)
+    shutil.copy2(diagnostic_archive, usb_dir / DIAGNOSTIC_FILENAME)
     size = archive.stat().st_size
+    diagnostic_size = diagnostic_archive.stat().st_size
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
-           '<rsp stat="ok"><list><widget id="KTV">'
-           '<title>KTV Local</title><compression type="zip" size="{}"/>'
+           '<rsp stat="ok"><list>'
+           '<widget id="KTV"><title>KTV Local</title>'
+           '<compression type="zip" size="{}"/>'
            '<description>Player KTV para Samsung Legacy</description>'
-           '<download>{}/Widget/{}</download>'
-           '</widget></list></rsp>\n').format(size, base, FILENAME)
+           '<download>{}/Widget/{}</download></widget>'
+           '<widget id="KTVDiag"><title>KTVDiag</title>'
+           '<compression type="zip" size="{}"/>'
+           '<description>Teste minimo Samsung Legacy</description>'
+           '<download>{}/Widget/{}</download></widget>'
+           '</list></rsp>\n').format(size, base, FILENAME, diagnostic_size, base, DIAGNOSTIC_FILENAME)
     (RELEASE / 'widgetlist.xml').write_text(xml, encoding='utf-8')
-    return {'archive': archive, 'usb': usb_dir / FILENAME, 'xml': RELEASE / 'widgetlist.xml', 'base': base}
+    return {'archive': archive, 'usb': usb_dir / FILENAME, 'xml': RELEASE / 'widgetlist.xml',
+            'base': base, 'diagnostic_archive': diagnostic_archive,
+            'diagnostic_usb': usb_dir / DIAGNOSTIC_FILENAME}
 
 
 if __name__ == '__main__':
