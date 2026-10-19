@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'tv-orsay'
 RELEASE = ROOT / 'release'
-FILENAME = 'KTV_0.4.2_BR_20261018.zip'
+FILENAME = 'KTV_0.4.3_BR_20261018.zip'
 DIAGNOSTIC_FILENAME = 'KTVDiag_0.1.0_BR_20261018.zip'
 DIAGNOSTIC_SOURCE = ROOT / 'tv-diagnostic'
 BARE_FILENAME = 'KTVBare_0.1.0_BR_20261018.zip'
@@ -33,6 +33,44 @@ def guess_ip():
             return '127.0.0.1'
     finally:
         sock.close()
+
+
+SAMSUNG_NAMESPACE = 'http://www.samsung.com/'
+
+
+def verify_main_widget_archive(path):
+    """Confere o ZIP Orsay antes de publicar; nao comprova compatibilidade na TV."""
+    with zipfile.ZipFile(path) as archive:
+        paths = archive.namelist()
+        if len(paths) != len(set(paths)):
+            raise ValueError('Widget contem nomes de arquivos duplicados')
+        for required in ('config.xml', 'widget.info', 'index.html', 'js/app.js', 'js/runtime-config.js'):
+            if required not in paths:
+                raise ValueError('Widget sem arquivo obrigatorio: ' + required)
+        if archive.testzip() is not None:
+            raise ValueError('Widget ZIP corrompido')
+        config = ET.fromstring(archive.read('config.xml'))
+        if config.tag != '{' + SAMSUNG_NAMESPACE + '}widget':
+            raise ValueError('config.xml sem namespace Samsung Legacy')
+        ns = '{' + SAMSUNG_NAMESPACE + '}'
+        name = config.find(ns + 'widgetname')
+        ver = config.find(ns + 'ver')
+        category = config.find(ns + 'category')
+        if (name is None or name.text != 'KTV Local' or
+                ver is None or ver.text != '0.403' or
+                category is None or category.get('itemtype') != 'Video'):
+            raise ValueError('config.xml Samsung Legacy invalido')
+        for tag in ('ThumbIcon', 'BigThumbIcon', 'ListIcon', 'BigListIcon'):
+            el = config.find(ns + tag)
+            if el is None or not el.text or el.text not in paths:
+                raise ValueError('Icone faltando: ' + tag)
+        body = archive.read('index.html').decode('utf-8')
+        if ('$MANAGER_WIDGET/Common/API/Widget.js' not in body or
+                'KTV.start()' not in body):
+            raise ValueError('Biblioteca Samsung e inicio do player ausentes')
+        if 'sendReadyEvent()' not in archive.read('js/app.js').decode('utf-8'):
+            raise ValueError('Player nao notifica Smart Hub')
+    return True
 
 
 SYNC_OPTIONS = ('all', 'KTV', 'KTVDiag', 'KTVBare', 'KTVFlat', 'reference')
@@ -95,6 +133,7 @@ def build(ip, port=80, sync_only='all', reference_zip=None):
                 z.writestr(name, js)
             else:
                 z.write(path, name)
+    verify_main_widget_archive(archive)
     shutil.copy2(archive, usb_dir / FILENAME)
     # Publicar app de diagnostico independente, mantendo o KTV original disponivel.
     diagnostic_archive = widget_dir / DIAGNOSTIC_FILENAME

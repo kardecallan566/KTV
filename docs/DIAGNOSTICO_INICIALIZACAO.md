@@ -60,3 +60,10 @@ Criamos dois widgets minimos separados, de identificadores novos, com **o mesmo 
 6. Para informacoes oficiais: Menu > Suporte > Contato Samsung (nomes variam). Registre modelo completo, versao de software e codigo de modelo; **nao compartilhe numero de serie, MAC ou identificadores pessoais**.
 
 Se ambos os widgets offline falharem, focar Smart Hub, pacote e firmware. Se so KTVBare abrir, priorizar correcoes no XML do app KTV. Se ambos abrirem, isolar o JavaScript e chamadas de rede do KTV em pequenos checkpoints. Nao mexer em firmware ou menu de servico.
+
+
+## KTV 0.4.3 — alinhamento do manifesto
+
+Comparado o `config.xml` do KTV com o [Emby/Jellyfin Orsay](https://github.com/Apps2Samsung/Jellyfin-Orsay-App/blob/master/config.xml): agora usa o namespace Samsung, `itemtype`, categoria de video e tags de autoria compatíveis. A tela HTML deixa de enviar XHR antes de `sendReadyEvent()`. No `installer-local/build.py`, uma validacao verifica o pacote principal e rejeita arquivos ou metadados ausentes.
+
+**Teste**: `git pull origin main`, depois `python installer-local/server.py --sync-only KTV`. No Smart Hub, faça uma sincronização. O pacote agora será `KTV_0.4.3_BR_20261018.zip`. Verifique se KTV Local abre e mantém tela por 30 segundos. A instalacao de outros aplicativos de desenvolvimento nao é exigida neste checkpoint. Se ainda exibir 'Tente novamente mais tarde', isso é incompatibilidade ainda não resolvida; compare com um ZIP Orsay independente conforme `docs/TESTE_REFERENCIA_ORSAY.md`. Não mexa no firmware.

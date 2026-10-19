@@ -12,7 +12,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'installer-local'))
 from server import KTVServer, safe_name, valid_signature, valid_stream_url
-from build import build, DIAGNOSTIC_FILENAME, BARE_FILENAME, FLAT_FILENAME
+from build import build, DIAGNOSTIC_FILENAME, BARE_FILENAME, FLAT_FILENAME, verify_main_widget_archive
 
 
 class KTVTests(unittest.TestCase):
@@ -46,12 +46,12 @@ class KTVTests(unittest.TestCase):
         root = ET.fromstring(raw)
         url = root.find('./list/widget/download').text
         self.assertTrue(url.endswith('.zip'))
-        _, contents, _ = self.get('/Widget/KTV_0.4.2_BR_20261018.zip')
+        _, contents, _ = self.get('/Widget/KTV_0.4.3_BR_20261018.zip')
         self.assertEqual(int(root.find('./list/widget/compression').attrib['size']), len(contents))
         with zipfile.ZipFile(self.server.output['archive']) as z:
             self.assertIn('config.xml', z.namelist())
             self.assertIn('index.html', z.namelist())
-            self.assertIn(b'<ver>0.402</ver>', z.read('config.xml'))
+            self.assertIn(b'<ver itemtype="string">0.403</ver>', z.read('config.xml'))
             self.assertNotIn(b'clsid:SAMSUNG-INFOLINK-PLAYER', z.read('index.html'))
             self.assertIn(self.url, z.read('js/runtime-config.js').decode('utf-8'))
 
@@ -111,7 +111,7 @@ class KTVTests(unittest.TestCase):
         with zipfile.ZipFile(self.server.output['archive']) as z:
             self.assertIn('$MANAGER_WIDGET/Common/API/Widget.js', z.read('index.html').decode('utf-8'))
             self.assertIn('window.widgetAPI.sendReadyEvent();', z.read('js/app.js').decode('utf-8'))
-            self.assertIn('<ver>0.402</ver>', z.read('config.xml').decode('utf-8'))
+            self.assertIn('<ver itemtype="string">0.403</ver>', z.read('config.xml').decode('utf-8'))
 
     def test_minimal_ab_boot_widgets(self):
         for name, filename in (('KTVBare', BARE_FILENAME), ('KTVFlat', FLAT_FILENAME)):
@@ -142,6 +142,33 @@ class KTVTests(unittest.TestCase):
         entries = json.loads(status)['tv_probes']
         self.assertEqual(entries[-1]['ip'], '127.0.0.1')
         self.assertEqual(entries[-1]['user_agent'], 'SamsungSmartTV Maple')
+
+    def test_orsay_manifest_namespace_and_boot_order(self):
+        self.assertTrue(verify_main_widget_archive(self.server.output['archive']))
+        with zipfile.ZipFile(self.server.output['archive']) as archive:
+            root = ET.fromstring(archive.read('config.xml'))
+            ns = '{http://www.samsung.com/}'
+            self.assertEqual(root.tag, ns + 'widget')
+            self.assertEqual(root.find(ns + 'category').text, 'Videos')
+            self.assertEqual(root.find(ns + 'ver').text, '0.403')
+            html = archive.read('index.html').decode('utf-8')
+            self.assertNotIn('bootXHR', html)
+            js = archive.read('js/app.js').decode('utf-8')
+            ready = js.index('window.widgetAPI.sendReadyEvent();')
+            start = js.index("report('html-start');", ready)
+            self.assertLess(ready, start)
+
+    def test_orsay_archive_validator_rejects_bad_manifest(self):
+        with tempfile.TemporaryDirectory() as dirname:
+            altered = Path(dirname) / 'invalid.zip'
+            with zipfile.ZipFile(self.server.output['archive']) as old, zipfile.ZipFile(altered, 'w') as new:
+                for name in old.namelist():
+                    value = old.read(name)
+                    if name == 'config.xml':
+                        value = value.replace(b'http://www.samsung.com/', b'urn:unknown:samsung')
+                    new.writestr(name, value)
+            with self.assertRaisesRegex(ValueError, 'namespace Samsung'):
+                verify_main_widget_archive(altered)
 
     def test_range(self):
         with (self.server.media / 'f_test.mp4').open('wb') as out:

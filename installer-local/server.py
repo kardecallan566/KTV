@@ -134,7 +134,7 @@ class KTVServer(ThreadingHTTPServer):
 
 
 class KTVRequest(BaseHTTPRequestHandler):
-    server_version = 'KTV-Local/0.4.2'
+    server_version = 'KTV-Local/0.4.3'
 
     def log_message(self, fmt, *args):
         # Log only paths/methods. Tokens live in headers, not URL.
@@ -230,7 +230,7 @@ class KTVRequest(BaseHTTPRequestHandler):
                 self.server.tv_probes = self.server.tv_probes[-10:]
             return self.json(200, {'ok': True, 'message': 'Diagnostico local recebido'}, cors=True)
         if path == '/api/health':
-            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.4.2'})
+            return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.4.3'})
         if path == '/api/state':
             client = parse_qs(url.query).get('client', ['legacy'])[0]
             if client not in ('orsay', 'preview', 'legacy'):
@@ -425,7 +425,7 @@ def main():
     except (OSError, ValueError) as exc:
         print('Falha ao preparar servidor/instalador: {}'.format(exc))
         sys.exit(1)
-    print('\n=== KTV LOCAL v0.4.2 ===')
+    print('\n=== KTV LOCAL v0.4.3 ===')
     print('IP LAN:     ', args.ip)
     print('Instalador: ', server.base_url + '/widgetlist.xml')
     print('Sincroniza: ', ', '.join(server.output['published_titles']))
