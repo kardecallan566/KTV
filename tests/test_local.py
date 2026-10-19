@@ -12,7 +12,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'installer-local'))
 from server import KTVServer, safe_name, valid_signature, valid_stream_url
-from build import build
+from build import build, DIAGNOSTIC_FILENAME
 
 
 class KTVTests(unittest.TestCase):
@@ -46,12 +46,12 @@ class KTVTests(unittest.TestCase):
         root = ET.fromstring(raw)
         url = root.find('./list/widget/download').text
         self.assertTrue(url.endswith('.zip'))
-        _, contents, _ = self.get('/Widget/KTV_0.4.1_BR_20261018.zip')
+        _, contents, _ = self.get('/Widget/KTV_0.4.2_BR_20261018.zip')
         self.assertEqual(int(root.find('./list/widget/compression').attrib['size']), len(contents))
         with zipfile.ZipFile(self.server.output['archive']) as z:
             self.assertIn('config.xml', z.namelist())
             self.assertIn('index.html', z.namelist())
-            self.assertIn(b'<ver>0.401</ver>', z.read('config.xml'))
+            self.assertIn(b'<ver>0.402</ver>', z.read('config.xml'))
             self.assertNotIn(b'clsid:SAMSUNG-INFOLINK-PLAYER', z.read('index.html'))
             self.assertIn(self.url, z.read('js/runtime-config.js').decode('utf-8'))
 
@@ -91,6 +91,27 @@ class KTVTests(unittest.TestCase):
         _, _, _ = self.get('/api/state?client=preview')
         _, payload, _ = self.get('/api/status', token)
         self.assertIn('preview', json.loads(payload)['clients'])
+
+    def test_diagnostic_widget_bootstrap(self):
+        _, raw, _ = self.get('/widgetlist.xml')
+        root = ET.fromstring(raw)
+        apps = root.findall('./list/widget')
+        self.assertEqual([app.attrib['id'] for app in apps], ['KTV', 'KTVDiag'])
+        info = root.find("./list/widget[@id='KTVDiag']")
+        _, content, _ = self.get('/Widget/' + DIAGNOSTIC_FILENAME)
+        self.assertEqual(int(info.find('compression').attrib['size']), len(content))
+        with zipfile.ZipFile(self.server.output['diagnostic_archive']) as z:
+            html = z.read('index.html').decode('utf-8')
+            self.assertIn('widgetAPI.sendReadyEvent();', html)
+            self.assertIn('$MANAGER_WIDGET/Common/API/Widget.js', html)
+            self.assertIn(self.url, z.read('js/runtime-config.js').decode('utf-8'))
+            self.assertIn('<widgetname>KTVDiag</widgetname>', z.read('config.xml').decode('utf-8'))
+
+    def test_main_widget_sends_ready(self):
+        with zipfile.ZipFile(self.server.output['archive']) as z:
+            self.assertIn('$MANAGER_WIDGET/Common/API/Widget.js', z.read('index.html').decode('utf-8'))
+            self.assertIn('window.widgetAPI.sendReadyEvent();', z.read('js/app.js').decode('utf-8'))
+            self.assertIn('<ver>0.402</ver>', z.read('config.xml').decode('utf-8'))
 
     def test_range(self):
         with (self.server.media / 'f_test.mp4').open('wb') as out:

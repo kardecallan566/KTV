@@ -92,3 +92,8 @@ Integração experimental da reprodução de HLS pelo plugin Samsung Legacy, com
 ## KTV 0.4.1 — Correção de abertura
 
 Corrigida a divergência entre o nome do pacote e a versão interna do widget Orsay. Agora o plugin HLS só é criado ao pressionar ENTER, evitando acionar vídeo nativo na inicialização. Consulte [docs/DIAGNOSTICO_INICIALIZACAO.md](docs/DIAGNOSTICO_INICIALIZACAO.md) para atualizar a Samsung e validar o diagnóstico.
+
+
+## Recuperacao / teste do Smart Hub (0.4.2)
+
+O pacote 0.4.2 importa a biblioteca `$MANAGER_WIDGET/Common/API/Widget.js` e envia `sendReadyEvent()` antes da primeira requisicao de rede. A sincronizacao LAN agora oferece o **KTV Local** e um aplicativo de diagnostico independente chamado **KTVDiag**. O diagnostico nao usa player de video: se abrir, ajuda a distinguir problemas no KTV principal de falhas gerais do Smart Hub. Consulte [instrucoes de diagnostico](docs/DIAGNOSTICO_INICIALIZACAO.md).

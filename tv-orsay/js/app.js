@@ -213,7 +213,14 @@ var KTV = (function () {
     event.returnValue = false;
   }
   function start() {
-    text('server-url', cfg.server + '  |  APP 0.4.1');
+    // Sinal de prontidao deve vir ANTES de qualquer consulta HTTP.
+    try {
+      if (window.Common && window.Common.API && window.Common.API.Widget) {
+        window.widgetAPI = new window.Common.API.Widget();
+        window.widgetAPI.sendReadyEvent();
+      }
+    } catch (readyError) {}
+    text('server-url', cfg.server + '  |  APP 0.4.2');
     window.onerror = function () {
       try {report('js-error'); setStatus('ERRO DE SCRIPT'); showError('Falha no player KTV. Veja o painel de diagnostico.');} catch (ignore) {}
       return true;
@@ -222,13 +229,6 @@ var KTV = (function () {
     report('app-start');
     refresh();
     pollTimer = setInterval(refresh, cfg.pollMs || 4000);
-    // Samsung Legacy widgetAPI é opcional; inicializacao nao pode depender dela.
-    try {
-      if (window.Common && window.Common.API && window.Common.API.Widget) {
-        window.widgetAPI = new window.Common.API.Widget();
-        window.widgetAPI.sendReadyEvent();
-      }
-    } catch(e) {}
   }
   function safeStart() {
     try {start();} catch (e) {
