@@ -21,7 +21,7 @@ import time
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-from build import RELEASE, FILENAME, DIAGNOSTIC_FILENAME, build, guess_ip
+from build import RELEASE, FILENAME, DIAGNOSTIC_FILENAME, BARE_FILENAME, FLAT_FILENAME, build, guess_ip
 
 MAX_UPLOAD = 100 * 1024 * 1024
 MAX_JSON = 64 * 1024
@@ -97,6 +97,7 @@ class KTVServer(ThreadingHTTPServer):
         self.last_seen = 0
         self.clients = {}  # Ultima consulta real por tipo de player
         self.media_events = {}  # Diagnostico de carregamento de midia
+        self.tv_probes = []  # Acesso ao diagnostico via browser, sem credenciais/serial
         if self.state_file.exists():
             try:
                 self.state = json.loads(self.state_file.read_text(encoding='utf-8'))
@@ -213,6 +214,20 @@ class KTVRequest(BaseHTTPRequestHandler):
         path = unquote(url.path)
         if path in ('/', '/admin', '/admin/'):
             return self.file_response(ROOT / 'admin-web' / 'index.html', 'text/html; charset=utf-8')
+        if path in ('/tv-info', '/tv-info/'):
+            return self.file_response(ROOT / 'tv-tools' / 'index.html', 'text/html; charset=utf-8')
+        if path == '/api/tv-probe':
+            # Coleta minima sem serial, MAC, credenciais ou varredura de rede.
+            # Apenas IP de origem e User-Agent declarado pelo navegador (pode ser falsificado).
+            now = time.time()
+            with self.server.lock:
+                self.server.tv_probes.append({
+                    'ip': self.client_address[0],
+                    'user_agent': self.headers.get('User-Agent', '')[:300],
+                    'seen': now
+                })
+                self.server.tv_probes = self.server.tv_probes[-10:]
+            return self.json(200, {'ok': True, 'message': 'Diagnostico local recebido'}, cors=True)
         if path == '/api/health':
             return self.json(200, {'app': 'KTV Local', 'status': 'ok', 'version': '0.4.2'})
         if path == '/api/state':
@@ -269,12 +284,13 @@ class KTVRequest(BaseHTTPRequestHandler):
             return self.json(200, {'version': version, 'last_poll_seconds':
                                     round(time.time() - last_seen) if last_seen else None,
                                     'clients': clients, 'media_events': events,
-                                    'base_url': self.server.base_url})
+                                    'base_url': self.server.base_url,
+                                    'tv_probes': list(self.server.tv_probes)})
         if path == '/widgetlist.xml':
             return self.file_response(RELEASE / 'widgetlist.xml', 'application/xml; charset=utf-8')
         if path.startswith('/Widget/'):
             name = path[len('/Widget/'):]
-            if name not in (FILENAME, DIAGNOSTIC_FILENAME):
+            if name not in (FILENAME, DIAGNOSTIC_FILENAME, BARE_FILENAME, FLAT_FILENAME):
                 return self.json(404, {'error': 'Widget desconhecido'})
             return self.file_response(RELEASE / 'Widget' / name, 'application/zip')
         if path.startswith('/media/'):
@@ -414,6 +430,9 @@ def main():
     print('TOKEN ADMIN:', server.token)
     print('USB:        ', server.output['usb'])
     print('Diagnostico:', server.output['diagnostic_archive'])
+    print('KTVBare:    ', server.output['bare_archive'])
+    print('KTVFlat:    ', server.output['flat_archive'])
+    print('Info TV:    ', server.base_url + '/tv-info/')
     print('HLS local:  ', server.base_url + '/hls/demo.m3u8 (execute gerar_hls_teste.bat)')
     print('\nATENCAO: apenas rede local confiavel. Nao encaminhe a porta para a Internet.')
     print('CTRL+C para encerrar.\n', flush=True)

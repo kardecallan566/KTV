@@ -12,6 +12,10 @@ RELEASE = ROOT / 'release'
 FILENAME = 'KTV_0.4.2_BR_20261018.zip'
 DIAGNOSTIC_FILENAME = 'KTVDiag_0.1.0_BR_20261018.zip'
 DIAGNOSTIC_SOURCE = ROOT / 'tv-diagnostic'
+BARE_FILENAME = 'KTVBare_0.1.0_BR_20261018.zip'
+FLAT_FILENAME = 'KTVFlat_0.1.0_BR_20261018.zip'
+BARE_SOURCE = ROOT / 'tv-bare'
+FLAT_SOURCE = ROOT / 'tv-flat'
 
 
 def guess_ip():
@@ -64,8 +68,22 @@ def build(ip, port=80):
             else:
                 z.write(path, name)
     shutil.copy2(diagnostic_archive, usb_dir / DIAGNOSTIC_FILENAME)
+    # A/B minimo: mesmo HTML, duas variantes de config.xml.
+    # Bare usa namespace e itemtype do aplicativo Orsay Emby conhecido.
+    # Flat usa o formato XML legado simplificado usado no KTV.
+    for source, filename in ((BARE_SOURCE, BARE_FILENAME), (FLAT_SOURCE, FLAT_FILENAME)):
+        archive_path = widget_dir / filename
+        with zipfile.ZipFile(archive_path, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+            for path in sorted(source.rglob('*')):
+                if path.is_file():
+                    z.write(path, path.relative_to(source).as_posix())
+        shutil.copy2(archive_path, usb_dir / filename)
+    bare_archive = widget_dir / BARE_FILENAME
+    flat_archive = widget_dir / FLAT_FILENAME
     size = archive.stat().st_size
     diagnostic_size = diagnostic_archive.stat().st_size
+    bare_size = bare_archive.stat().st_size
+    flat_size = flat_archive.stat().st_size
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
            '<rsp stat="ok"><list>'
            '<widget id="KTV"><title>KTV Local</title>'
@@ -76,11 +94,21 @@ def build(ip, port=80):
            '<compression type="zip" size="{}"/>'
            '<description>Teste minimo Samsung Legacy</description>'
            '<download>{}/Widget/{}</download></widget>'
-           '</list></rsp>\n').format(size, base, FILENAME, diagnostic_size, base, DIAGNOSTIC_FILENAME)
+           '<widget id="KTVBare"><title>KTVBare</title>'
+           '<compression type="zip" size="{}"/>'
+           '<description>Teste minimo com configuracao Samsung</description>'
+           '<download>{}/Widget/{}</download></widget>'
+           '<widget id="KTVFlat"><title>KTVFlat</title>'
+           '<compression type="zip" size="{}"/>'
+           '<description>Teste minimo com configuracao simplificada</description>'
+           '<download>{}/Widget/{}</download></widget>'
+           '</list></rsp>\n').format(size, base, FILENAME, diagnostic_size, base, DIAGNOSTIC_FILENAME,
+                                    bare_size, base, BARE_FILENAME, flat_size, base, FLAT_FILENAME)
     (RELEASE / 'widgetlist.xml').write_text(xml, encoding='utf-8')
     return {'archive': archive, 'usb': usb_dir / FILENAME, 'xml': RELEASE / 'widgetlist.xml',
             'base': base, 'diagnostic_archive': diagnostic_archive,
-            'diagnostic_usb': usb_dir / DIAGNOSTIC_FILENAME}
+            'diagnostic_usb': usb_dir / DIAGNOSTIC_FILENAME,
+            'bare_archive': bare_archive, 'flat_archive': flat_archive}
 
 
 if __name__ == '__main__':
