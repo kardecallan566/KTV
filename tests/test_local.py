@@ -12,7 +12,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'installer-local'))
 from server import KTVServer, safe_name, valid_signature, valid_stream_url
-from build import build, DIAGNOSTIC_FILENAME, BARE_FILENAME, FLAT_FILENAME, verify_main_widget_archive
+from build import build, DIAGNOSTIC_FILENAME, STALE_DIAGNOSTIC_ZIPS, verify_main_widget_archive
 
 
 class KTVTests(unittest.TestCase):
@@ -96,7 +96,7 @@ class KTVTests(unittest.TestCase):
         _, raw, _ = self.get('/widgetlist.xml')
         root = ET.fromstring(raw)
         apps = root.findall('./list/widget')
-        self.assertEqual([app.attrib['id'] for app in apps], ['KTV', 'KTVDiag', 'KTVBare', 'KTVFlat'])
+        self.assertEqual([app.attrib['id'] for app in apps], ['KTV', 'KTVDiag'])
         info = root.find("./list/widget[@id='KTVDiag']")
         _, content, _ = self.get('/Widget/' + DIAGNOSTIC_FILENAME)
         self.assertEqual(int(info.find('compression').attrib['size']), len(content))
@@ -112,25 +112,6 @@ class KTVTests(unittest.TestCase):
             self.assertIn('$MANAGER_WIDGET/Common/API/Widget.js', z.read('index.html').decode('utf-8'))
             self.assertIn('window.widgetAPI.sendReadyEvent();', z.read('js/app.js').decode('utf-8'))
             self.assertIn('<ver itemtype="string">0.403</ver>', z.read('config.xml').decode('utf-8'))
-
-    def test_minimal_ab_boot_widgets(self):
-        for name, filename in (('KTVBare', BARE_FILENAME), ('KTVFlat', FLAT_FILENAME)):
-            _, binary, _ = self.get('/Widget/' + filename)
-            with zipfile.ZipFile(self.server.output['bare_archive' if name == 'KTVBare' else 'flat_archive']) as archive:
-                self.assertGreater(len(binary), 200)
-                self.assertIn('index.html', archive.namelist())
-                self.assertIn('config.xml', archive.namelist())
-                html = archive.read('index.html').decode('utf-8')
-                config = archive.read('config.xml').decode('utf-8')
-                self.assertIn('$MANAGER_WIDGET/Common/API/Widget.js', html)
-                self.assertIn('sendReadyEvent()', html)
-                self.assertNotIn('XMLHttpRequest', html)
-                self.assertIn('<widgetname', config)
-                if name == 'KTVBare':
-                    self.assertIn('xmlns="http://www.samsung.com/"', config)
-                    self.assertIn('itemtype=', config)
-                else:
-                    self.assertNotIn('xmlns="http://www.samsung.com/"', config)
 
     def test_tv_browser_information_probe(self):
         _, html, headers = self.get('/tv-info/')
@@ -221,7 +202,7 @@ class KTVTests(unittest.TestCase):
         self.server.shutdown()
         self.server.server_close()
         self.thread.join(timeout=2)
-        self.server = KTVServer(('127.0.0.1', 0), '127.0.0.1', Path(self.tmp.name), sync_only='KTVBare')
+        self.server = KTVServer(('127.0.0.1', 0), '127.0.0.1', Path(self.tmp.name), sync_only='KTV')
         self.port = self.server.server_address[1]
         self.url = 'http://127.0.0.1:{}'.format(self.port)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
@@ -229,7 +210,7 @@ class KTVTests(unittest.TestCase):
         _, raw, hdr = self.get('/widgetlist.xml')
         root = ET.fromstring(raw)
         self.assertEqual(hdr['Content-Type'], 'text/xml; charset=utf-8')
-        self.assertEqual([e.attrib['id'] for e in root.findall('./list/widget')], ['KTVBare'])
+        self.assertEqual([e.attrib['id'] for e in root.findall('./list/widget')], ['KTV'])
         with self.assertRaises(HTTPError) as err:
             self.get('/Widget/' + DIAGNOSTIC_FILENAME)
         self.assertEqual(err.exception.code, 404)
@@ -238,18 +219,35 @@ class KTVTests(unittest.TestCase):
         import hashlib
         from build import validate_reference_zip
         # Pacote local existente representa uma referencia confiavel nos testes.
-        zpath = self.server.output['bare_archive']
+        from shutil import copy2
+        zpath = Path(self.tmp.name) / 'reference.zip'
+        copy2(self.server.output['diagnostic_archive'], zpath)
         before = hashlib.sha256(zpath.read_bytes()).digest()
         candidate, title, identity = validate_reference_zip(zpath)
-        self.assertEqual(identity, 'KTVBare')
+        self.assertEqual(identity, 'KTVDiag')
         self.assertEqual(candidate, zpath)
         self.assertEqual(hashlib.sha256(zpath.read_bytes()).digest(), before)
         from build import build
         data = build('127.0.0.1', self.port, sync_only='reference', reference_zip=str(zpath))
         tree = ET.parse(data['xml'])
-        self.assertEqual(tree.find('./list/widget').attrib['id'], 'KTVBare')
+        self.assertEqual(tree.find('./list/widget').attrib['id'], 'KTVDiag')
         self.assertEqual(data['published_files'], [zpath.name])
         self.assertEqual(hashlib.sha256(zpath.read_bytes()).digest(), before)
+
+    def test_removed_widgets_not_generated_or_advertised(self):
+        from build import RELEASE
+        for name in STALE_DIAGNOSTIC_ZIPS:
+            for folder in (RELEASE / 'Widget', RELEASE / 'usb' / 'userwidget'):
+                # Simular arquivos de versoes antigas para confirmar a limpeza.
+                (folder / name).write_bytes(b'old-test-package')
+        result = build('127.0.0.1', self.port)
+        xml = ET.parse(result['xml'])
+        self.assertEqual([w.attrib['id'] for w in xml.findall('./list/widget')], ['KTV', 'KTVDiag'])
+        for name in STALE_DIAGNOSTIC_ZIPS:
+            for folder in (RELEASE / 'Widget', RELEASE / 'usb' / 'userwidget'):
+                self.assertFalse((folder / name).exists())
+        self.assertNotIn('bare_archive', result)
+        self.assertNotIn('flat_archive', result)
 
     def test_untrusted_filename(self):
         self.assertEqual(safe_name('../some\\path\\hi.png'), 'hi.png')

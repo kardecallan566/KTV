@@ -21,7 +21,7 @@ import time
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-from build import RELEASE, FILENAME, DIAGNOSTIC_FILENAME, BARE_FILENAME, FLAT_FILENAME, build, guess_ip
+from build import RELEASE, FILENAME, DIAGNOSTIC_FILENAME, build, guess_ip
 
 MAX_UPLOAD = 100 * 1024 * 1024
 MAX_JSON = 64 * 1024
@@ -417,7 +417,7 @@ def main():
     parser.add_argument('--ip', default=guess_ip(), help='IPv4 do computador visto pela TV')
     parser.add_argument('--port', type=int, default=80, help='Porta HTTP. A sincronizacao Samsung usa normalmente 80.')
     parser.add_argument('--listen', default='0.0.0.0', help='Endereco de escuta (padrao: LAN)')
-    parser.add_argument('--sync-only', choices=('all','KTV','KTVDiag','KTVBare','KTVFlat','reference'), default='all', help='Somente um app no widgetlist.xml')
+    parser.add_argument('--sync-only', choices=('all','KTV','KTVDiag','reference'), default='all', help='Somente um app no widgetlist.xml')
     parser.add_argument('--reference-zip', help='Caminho para ZIP Orsay de referencia confiavel')
     args = parser.parse_args()
     try:
@@ -434,8 +434,6 @@ def main():
     print('TOKEN ADMIN:', server.token)
     print('USB:        ', server.output['usb'])
     print('Diagnostico:', server.output['diagnostic_archive'])
-    print('KTVBare:    ', server.output['bare_archive'])
-    print('KTVFlat:    ', server.output['flat_archive'])
     print('Info TV:    ', server.base_url + '/tv-info/')
     print('HLS local:  ', server.base_url + '/hls/demo.m3u8 (execute gerar_hls_teste.bat)')
     print('\nATENCAO: apenas rede local confiavel. Nao encaminhe a porta para a Internet.')

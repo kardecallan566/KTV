@@ -99,16 +99,21 @@ Corrigida a divergência entre o nome do pacote e a versão interna do widget Or
 O pacote 0.4.2 importa a biblioteca `$MANAGER_WIDGET/Common/API/Widget.js` e envia `sendReadyEvent()` antes da primeira requisicao de rede. A sincronizacao LAN agora oferece o **KTV Local** e um aplicativo de diagnostico independente chamado **KTVDiag**. O diagnostico nao usa player de video: se abrir, ajuda a distinguir problemas no KTV principal de falhas gerais do Smart Hub. Consulte [instrucoes de diagnostico](docs/DIAGNOSTICO_INICIALIZACAO.md).
 
 
-## Diagnosticos minimos — KTVBare/KTVFlat e navegador da TV
+## Diagnóstico pelo WebBrowser da TV
 
-Se o KTV nao abrir no Smart Hub, execute a sincronizacao LAN: agora ha dois **widgets offline**, `KTVBare` (XML Samsung com namespace e itemtype) e `KTVFlat` (XML simplificado), que so chamam `sendReadyEvent()` e exibem texto. Eles nao fazem requisicoes ao servidor na abertura; resultado visual e essencial. Para obter informacoes do sistema, no WebBrowser da Samsung abra `http://IP_DO_PC/tv-info/`, que exibe User-Agent e capacidades sem exigir instalacao. Consulte `docs/DIAGNOSTICO_INICIALIZACAO.md`.
+Use `http://IP_DO_PC/tv-info/` no WebBrowser Samsung para obter informações sobre plataforma, resolução e conectividade sem instalar widgets de teste.
 
 
 ## Teste controlado de instalacao de widgets (J5200)
 
-Para separar falha do nosso pacote de falha do Smart Hub, o servidor aceita `--sync-only KTVBare` (sincronizar **um unico widget**) e `--sync-only reference --reference-zip "CAMINHO_PARA_UM_ZIP_ORSAY_CONFIAVEL"` (publicar arquivo Orsay original **sem recompactar**). A lista padrao ainda publica os quatro apps existentes. Veja [TESTE_REFERENCIA_ORSAY.md](docs/TESTE_REFERENCIA_ORSAY.md).
+O servidor permite `--sync-only KTV` ou `--sync-only KTVDiag` para sincronizar somente um dos aplicativos mantidos, e `--sync-only reference --reference-zip "CAMINHO_PARA_UM_ZIP_ORSAY_CONFIAVEL"` para testar um ZIP de referência sem recompactá-lo. A lista padrão contém **somente KTV Local e KTVDiag**. Veja [TESTE_REFERENCIA_ORSAY.md](docs/TESTE_REFERENCIA_ORSAY.md).
 
 
 ## KTV 0.4.3 — compatibilidade de inicializacao Orsay
 
 O `config.xml` do aplicativo principal foi refeito com namespace `http://www.samsung.com/` e atributos `itemtype`, a exemplo do projeto Emby/Jellyfin Orsay. Removido XHR no `<head>` antes da chamada `sendReadyEvent()`; o primeiro evento de rede ocorre **depois** do sinal de prontidao. O ZIP e verificado antes de ser publicado (estrutura, icones, CRC e metadados). **Isso nao confirma que o Smart Hub da J5200 conseguira iniciar o aplicativo**. Para testar sem reinstalar os outros diagnosticos, rode `python installer-local/server.py --sync-only KTV`, sincronize no menu develop e confira a abertura do KTV Local 0.4.3. Se continuar falhando, use o ZIP Orsay externo e independente indicado em `docs/TESTE_REFERENCIA_ORSAY.md` antes de qualquer outra alteracao no codigo.
+
+
+## Limpeza dos widgets de teste descontinuados
+
+Os testes A/B de empacotamento foram encerrados. As pastas de origem correspondentes foram retiradas do repositório; o build remove seus ZIPs antigos de `release/Widget/` e `release/usb/userwidget/` quando reiniciado. A sincronização padrão oferece apenas **KTV Local** e **KTVDiag**. Ícones já instalados na TV devem ser removidos **manualmente no Smart Hub**, pois apagar o ZIP no computador não desinstala aplicativos Samsung.

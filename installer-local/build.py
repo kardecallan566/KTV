@@ -14,10 +14,8 @@ RELEASE = ROOT / 'release'
 FILENAME = 'KTV_0.4.3_BR_20261018.zip'
 DIAGNOSTIC_FILENAME = 'KTVDiag_0.1.0_BR_20261018.zip'
 DIAGNOSTIC_SOURCE = ROOT / 'tv-diagnostic'
-BARE_FILENAME = 'KTVBare_0.1.0_BR_20261018.zip'
-FLAT_FILENAME = 'KTVFlat_0.1.0_BR_20261018.zip'
-BARE_SOURCE = ROOT / 'tv-bare'
-FLAT_SOURCE = ROOT / 'tv-flat'
+STALE_DIAGNOSTIC_ZIPS = ('KTVBare_0.1.0_BR_20261018.zip',
+                         'KTVFlat_0.1.0_BR_20261018.zip')
 
 
 def guess_ip():
@@ -73,7 +71,7 @@ def verify_main_widget_archive(path):
     return True
 
 
-SYNC_OPTIONS = ('all', 'KTV', 'KTVDiag', 'KTVBare', 'KTVFlat', 'reference')
+SYNC_OPTIONS = ('all', 'KTV', 'KTVDiag', 'reference')
 
 
 def validate_reference_zip(path):
@@ -147,23 +145,13 @@ def build(ip, port=80, sync_only='all', reference_zip=None):
             else:
                 z.write(path, name)
     shutil.copy2(diagnostic_archive, usb_dir / DIAGNOSTIC_FILENAME)
-    # A/B minimo: mesmo HTML, duas variantes de config.xml.
-    # Bare usa namespace e itemtype do aplicativo Orsay Emby conhecido.
-    # Flat usa o formato XML legado simplificado usado no KTV.
-    for source, filename in ((BARE_SOURCE, BARE_FILENAME), (FLAT_SOURCE, FLAT_FILENAME)):
-        archive_path = widget_dir / filename
-        with zipfile.ZipFile(archive_path, 'w', compression=zipfile.ZIP_DEFLATED) as z:
-            for path in sorted(source.rglob('*')):
-                if path.is_file():
-                    z.write(path, path.relative_to(source).as_posix())
-        shutil.copy2(archive_path, usb_dir / filename)
-    bare_archive = widget_dir / BARE_FILENAME
-    flat_archive = widget_dir / FLAT_FILENAME
+    # Remover apenas os artefatos gerados pelos antigos testes KTVBare/KTVFlat.
+    for old_name in STALE_DIAGNOSTIC_ZIPS:
+        for old_folder in (widget_dir, usb_dir):
+            (old_folder / old_name).unlink(missing_ok=True)
     choices = [
         ('KTV', 'KTV Local', archive),
         ('KTVDiag', 'KTVDiag', diagnostic_archive),
-        ('KTVBare', 'KTVBare', bare_archive),
-        ('KTVFlat', 'KTVFlat', flat_archive),
     ]
     if sync_only == 'reference':
         candidate, title, identity = validate_reference_zip(reference_zip)
@@ -190,7 +178,6 @@ def build(ip, port=80, sync_only='all', reference_zip=None):
     return {'archive': archive, 'usb': usb_dir / FILENAME, 'xml': xml_path,
             'base': base, 'diagnostic_archive': diagnostic_archive,
             'diagnostic_usb': usb_dir / DIAGNOSTIC_FILENAME,
-            'bare_archive': bare_archive, 'flat_archive': flat_archive,
             'published_files': [zip_path.name for _, _, zip_path in choices],
             'published_titles': [title for _, title, _ in choices],
             'sync_only': sync_only}
