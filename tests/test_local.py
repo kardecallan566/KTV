@@ -51,7 +51,7 @@ class KTVTests(unittest.TestCase):
         with zipfile.ZipFile(self.server.output['archive']) as z:
             self.assertIn('config.xml', z.namelist())
             self.assertIn('index.html', z.namelist())
-            self.assertIn(b'<ver>0.401</ver>', z.read('config.xml'))
+            self.assertIn(b'<ver>0.402</ver>', z.read('config.xml'))
             self.assertNotIn(b'clsid:SAMSUNG-INFOLINK-PLAYER', z.read('index.html'))
             self.assertIn(self.url, z.read('js/runtime-config.js').decode('utf-8'))
 
