@@ -1,0 +1,23 @@
+name: KTV Legacy tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  local-server-and-zip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Testar servidor, API e pacotes Orsay
+        run: python -m unittest discover -s tests -v
+      - name: Gerar os dois widgets de instalacao
+        run: python installer-local/build.py --ip 192.168.1.10
+      - name: Verificar JavaScript Legacy
+        run: node --check tv-orsay/js/app.js
