@@ -107,3 +107,8 @@ Se o KTV nao abrir no Smart Hub, execute a sincronizacao LAN: agora ha dois **wi
 ## Teste controlado de instalacao de widgets (J5200)
 
 Para separar falha do nosso pacote de falha do Smart Hub, o servidor aceita `--sync-only KTVBare` (sincronizar **um unico widget**) e `--sync-only reference --reference-zip "CAMINHO_PARA_UM_ZIP_ORSAY_CONFIAVEL"` (publicar arquivo Orsay original **sem recompactar**). A lista padrao ainda publica os quatro apps existentes. Veja [TESTE_REFERENCIA_ORSAY.md](docs/TESTE_REFERENCIA_ORSAY.md).
+
+
+## KTV 0.4.3 — compatibilidade de inicializacao Orsay
+
+O `config.xml` do aplicativo principal foi refeito com namespace `http://www.samsung.com/` e atributos `itemtype`, a exemplo do projeto Emby/Jellyfin Orsay. Removido XHR no `<head>` antes da chamada `sendReadyEvent()`; o primeiro evento de rede ocorre **depois** do sinal de prontidao. O ZIP e verificado antes de ser publicado (estrutura, icones, CRC e metadados). **Isso nao confirma que o Smart Hub da J5200 conseguira iniciar o aplicativo**. Para testar sem reinstalar os outros diagnosticos, rode `python installer-local/server.py --sync-only KTV`, sincronize no menu develop e confira a abertura do KTV Local 0.4.3. Se continuar falhando, use o ZIP Orsay externo e independente indicado em `docs/TESTE_REFERENCIA_ORSAY.md` antes de qualquer outra alteracao no codigo.

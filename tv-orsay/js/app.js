@@ -220,12 +220,13 @@ var KTV = (function () {
         window.widgetAPI.sendReadyEvent();
       }
     } catch (readyError) {}
-    text('server-url', cfg.server + '  |  APP 0.4.2');
+    text('server-url', cfg.server + '  |  APP 0.4.3');
     window.onerror = function () {
       try {report('js-error'); setStatus('ERRO DE SCRIPT'); showError('Falha no player KTV. Veja o painel de diagnostico.');} catch (ignore) {}
       return true;
     };
     document.onkeydown = key;
+    report('html-start');
     report('app-start');
     refresh();
     pollTimer = setInterval(refresh, cfg.pollMs || 4000);
