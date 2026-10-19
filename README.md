@@ -102,3 +102,8 @@ O pacote 0.4.2 importa a biblioteca `$MANAGER_WIDGET/Common/API/Widget.js` e env
 ## Diagnosticos minimos — KTVBare/KTVFlat e navegador da TV
 
 Se o KTV nao abrir no Smart Hub, execute a sincronizacao LAN: agora ha dois **widgets offline**, `KTVBare` (XML Samsung com namespace e itemtype) e `KTVFlat` (XML simplificado), que so chamam `sendReadyEvent()` e exibem texto. Eles nao fazem requisicoes ao servidor na abertura; resultado visual e essencial. Para obter informacoes do sistema, no WebBrowser da Samsung abra `http://IP_DO_PC/tv-info/`, que exibe User-Agent e capacidades sem exigir instalacao. Consulte `docs/DIAGNOSTICO_INICIALIZACAO.md`.
+
+
+## Teste controlado de instalacao de widgets (J5200)
+
+Para separar falha do nosso pacote de falha do Smart Hub, o servidor aceita `--sync-only KTVBare` (sincronizar **um unico widget**) e `--sync-only reference --reference-zip "CAMINHO_PARA_UM_ZIP_ORSAY_CONFIAVEL"` (publicar arquivo Orsay original **sem recompactar**). A lista padrao ainda publica os quatro apps existentes. Veja [TESTE_REFERENCIA_ORSAY.md](docs/TESTE_REFERENCIA_ORSAY.md).

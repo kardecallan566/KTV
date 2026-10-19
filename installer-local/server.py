@@ -67,7 +67,7 @@ class KTVServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address, public_ip, workspace=None):
+    def __init__(self, address, public_ip, workspace=None, sync_only='all', reference_zip=None):
         self.public_ip = public_ip
         self.workspace = Path(workspace) if workspace else ROOT / '.ktv'
         self.workspace.mkdir(parents=True, exist_ok=True)
@@ -109,7 +109,8 @@ class KTVServer(ThreadingHTTPServer):
         super().__init__(address, KTVRequest)
         assigned_port = self.server_address[1]
         self.base_url = 'http://{}{}'.format(public_ip, '' if assigned_port == 80 else ':' + str(assigned_port))
-        self.output = build(public_ip, assigned_port)
+        self.output = build(public_ip, assigned_port, sync_only=sync_only, reference_zip=reference_zip)
+        self.widget_files = set(self.output['published_files'])
 
     def save_state(self):
         temp = self.state_file.with_suffix('.json.tmp')
@@ -287,10 +288,10 @@ class KTVRequest(BaseHTTPRequestHandler):
                                     'base_url': self.server.base_url,
                                     'tv_probes': list(self.server.tv_probes)})
         if path == '/widgetlist.xml':
-            return self.file_response(RELEASE / 'widgetlist.xml', 'application/xml; charset=utf-8')
+            return self.file_response(RELEASE / 'widgetlist.xml', 'text/xml; charset=utf-8')
         if path.startswith('/Widget/'):
             name = path[len('/Widget/'):]
-            if name not in (FILENAME, DIAGNOSTIC_FILENAME, BARE_FILENAME, FLAT_FILENAME):
+            if name not in self.server.widget_files:
                 return self.json(404, {'error': 'Widget desconhecido'})
             return self.file_response(RELEASE / 'Widget' / name, 'application/zip')
         if path.startswith('/media/'):
@@ -416,15 +417,18 @@ def main():
     parser.add_argument('--ip', default=guess_ip(), help='IPv4 do computador visto pela TV')
     parser.add_argument('--port', type=int, default=80, help='Porta HTTP. A sincronizacao Samsung usa normalmente 80.')
     parser.add_argument('--listen', default='0.0.0.0', help='Endereco de escuta (padrao: LAN)')
+    parser.add_argument('--sync-only', choices=('all','KTV','KTVDiag','KTVBare','KTVFlat','reference'), default='all', help='Somente um app no widgetlist.xml')
+    parser.add_argument('--reference-zip', help='Caminho para ZIP Orsay de referencia confiavel')
     args = parser.parse_args()
     try:
-        server = KTVServer((args.listen, args.port), args.ip)
-    except OSError as exc:
-        print('Falha ao abrir servidor. Porta 80 ocupada/bloqueada? {}'.format(exc))
+        server = KTVServer((args.listen, args.port), args.ip, sync_only=args.sync_only, reference_zip=args.reference_zip)
+    except (OSError, ValueError) as exc:
+        print('Falha ao preparar servidor/instalador: {}'.format(exc))
         sys.exit(1)
     print('\n=== KTV LOCAL v0.4.2 ===')
     print('IP LAN:     ', args.ip)
     print('Instalador: ', server.base_url + '/widgetlist.xml')
+    print('Sincroniza: ', ', '.join(server.output['published_titles']))
     print('Painel:     ', server.base_url + '/admin/')
     print('Preview:    ', server.base_url + '/preview/')
     print('TOKEN ADMIN:', server.token)

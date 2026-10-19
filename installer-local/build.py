@@ -5,6 +5,8 @@ from pathlib import Path
 import shutil
 import socket
 import zipfile
+import re
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'tv-orsay'
@@ -33,7 +35,45 @@ def guess_ip():
         sock.close()
 
 
-def build(ip, port=80):
+SYNC_OPTIONS = ('all', 'KTV', 'KTVDiag', 'KTVBare', 'KTVFlat', 'reference')
+
+
+def validate_reference_zip(path):
+    """Validar formato basico de um ZIP fornecido pelo usuario sem executa-lo."""
+    candidate = Path(path)
+    if not candidate.is_file() or candidate.suffix.lower() != '.zip':
+        raise ValueError('Forneca um arquivo ZIP Orsay existente e confiavel')
+    if candidate.stat().st_size > 100 * 1024 * 1024:
+        raise ValueError('ZIP de referencia ultrapassa 100 MB')
+    try:
+        with zipfile.ZipFile(candidate) as z:
+            names = z.namelist()
+            if len(names) > 2000 or 'config.xml' not in names or 'index.html' not in names:
+                raise ValueError('ZIP Orsay exige index.html e config.xml na raiz')
+            if sum(item.file_size for item in z.infolist()) > 250 * 1024 * 1024:
+                raise ValueError('ZIP expande para mais de 250 MB')
+            for name in names:
+                if name.startswith('/') or '\\' in name or '..' in name.split('/'):
+                    raise ValueError('ZIP contem caminho inseguro')
+            if z.testzip() is not None:
+                raise ValueError('ZIP de referencia contem arquivo corrompido')
+            root = ET.fromstring(z.read('config.xml'))
+            titles = [el.text.strip() for el in root.iter()
+                      if el.tag.split('}')[-1] == 'widgetname' and el.text and el.text.strip()]
+            title = titles[0] if titles else candidate.stem
+            widget_id = re.sub('[^A-Za-z0-9_-]', '', title)[:32]
+            if not widget_id:
+                raise ValueError('widgetname nao valido para instalar')
+            return candidate, title[:80], widget_id
+    except (zipfile.BadZipFile, ET.ParseError, OSError) as exc:
+        raise ValueError('ZIP/config.xml de referencia invalido: {}'.format(exc))
+
+
+def build(ip, port=80, sync_only='all', reference_zip=None):
+    if sync_only not in SYNC_OPTIONS:
+        raise ValueError('Modo de sincronizacao invalido')
+    if sync_only == 'reference' and not reference_zip:
+        raise ValueError('Informe --reference-zip para o modo reference')
     if not ip or any(x in ip for x in ('/', '\\', ' ', '<', '>', '"', "'")):
         raise ValueError('IP invalido')
     if not (1 <= int(port) <= 65535):
@@ -80,43 +120,53 @@ def build(ip, port=80):
         shutil.copy2(archive_path, usb_dir / filename)
     bare_archive = widget_dir / BARE_FILENAME
     flat_archive = widget_dir / FLAT_FILENAME
-    size = archive.stat().st_size
-    diagnostic_size = diagnostic_archive.stat().st_size
-    bare_size = bare_archive.stat().st_size
-    flat_size = flat_archive.stat().st_size
-    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
-           '<rsp stat="ok"><list>'
-           '<widget id="KTV"><title>KTV Local</title>'
-           '<compression type="zip" size="{}"/>'
-           '<description>Player KTV para Samsung Legacy</description>'
-           '<download>{}/Widget/{}</download></widget>'
-           '<widget id="KTVDiag"><title>KTVDiag</title>'
-           '<compression type="zip" size="{}"/>'
-           '<description>Teste minimo Samsung Legacy</description>'
-           '<download>{}/Widget/{}</download></widget>'
-           '<widget id="KTVBare"><title>KTVBare</title>'
-           '<compression type="zip" size="{}"/>'
-           '<description>Teste minimo com configuracao Samsung</description>'
-           '<download>{}/Widget/{}</download></widget>'
-           '<widget id="KTVFlat"><title>KTVFlat</title>'
-           '<compression type="zip" size="{}"/>'
-           '<description>Teste minimo com configuracao simplificada</description>'
-           '<download>{}/Widget/{}</download></widget>'
-           '</list></rsp>\n').format(size, base, FILENAME, diagnostic_size, base, DIAGNOSTIC_FILENAME,
-                                    bare_size, base, BARE_FILENAME, flat_size, base, FLAT_FILENAME)
-    (RELEASE / 'widgetlist.xml').write_text(xml, encoding='utf-8')
-    return {'archive': archive, 'usb': usb_dir / FILENAME, 'xml': RELEASE / 'widgetlist.xml',
+    choices = [
+        ('KTV', 'KTV Local', archive),
+        ('KTVDiag', 'KTVDiag', diagnostic_archive),
+        ('KTVBare', 'KTVBare', bare_archive),
+        ('KTVFlat', 'KTVFlat', flat_archive),
+    ]
+    if sync_only == 'reference':
+        candidate, title, identity = validate_reference_zip(reference_zip)
+        copied = widget_dir / candidate.name
+        if candidate.resolve() != copied.resolve():
+            shutil.copy2(candidate, copied)
+        # Nao alterar nem recomprimir a referencia original.
+        choices = [(identity, title, copied)]
+    elif sync_only != 'all':
+        choices = [item for item in choices if item[0] == sync_only]
+
+    # Publicar apenas o(s) aplicativo(s) escolhido(s); manter os outros ZIPs no disco.
+    root = ET.Element('rsp', {'stat': 'ok'})
+    listing = ET.SubElement(root, 'list')
+    for identity, title, zip_path in choices:
+        widget = ET.SubElement(listing, 'widget', {'id': identity})
+        ET.SubElement(widget, 'title').text = title
+        ET.SubElement(widget, 'compression', {'type': 'zip', 'size': str(zip_path.stat().st_size)})
+        ET.SubElement(widget, 'description').text = 'Teste local Samsung Orsay'
+        ET.SubElement(widget, 'download').text = base + '/Widget/' + zip_path.name
+    xml_path = RELEASE / 'widgetlist.xml'
+    ET.ElementTree(root).write(xml_path, encoding='utf-8', xml_declaration=True)
+
+    return {'archive': archive, 'usb': usb_dir / FILENAME, 'xml': xml_path,
             'base': base, 'diagnostic_archive': diagnostic_archive,
             'diagnostic_usb': usb_dir / DIAGNOSTIC_FILENAME,
-            'bare_archive': bare_archive, 'flat_archive': flat_archive}
+            'bare_archive': bare_archive, 'flat_archive': flat_archive,
+            'published_files': [zip_path.name for _, _, zip_path in choices],
+            'published_titles': [title for _, title, _ in choices],
+            'sync_only': sync_only}
+
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Gerar app Orsay para servidor KTV')
     parser.add_argument('--ip', default=guess_ip(), help='IPv4 local do seu computador')
     parser.add_argument('--port', type=int, default=80, help='Porta da API (padrão: 80)')
+    parser.add_argument('--sync-only', choices=SYNC_OPTIONS, default='all', help='Sincronizar somente o aplicativo selecionado')
+    parser.add_argument('--reference-zip', help='ZIP Orsay de referencia confiavel (modo reference)')
     args = parser.parse_args()
-    result = build(args.ip, args.port)
+    result = build(args.ip, args.port, sync_only=args.sync_only, reference_zip=args.reference_zip)
     print('Widget:', result['archive'])
     print('USB:', result['usb'])
     print('Sincronizacao:', result['base'] + '/widgetlist.xml')
+    print('Publicando:', ', '.join(result['published_titles']))
