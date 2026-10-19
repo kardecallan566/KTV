@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>KTV - Informacoes da TV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style type="text/css">
+body{background:#081528;color:#fff;font-family:Arial,Helvetica,sans-serif;margin:0;padding:24px;}
+h1{color:#72baff;font-size:42px;}
+h2{font-size:28px;}
+.info{padding:12px 18px;background:#142743;border:1px solid #385376;margin:12px 0;font-size:24px;word-wrap:break-word;}
+.label{color:#b0c7e8;font-size:20px;}
+.ok{color:#86e7bd;}
+p{font-size:22px;line-height:1.5}
+</style>
+</head>
+<body>
+<h1>KTV - INFO DA SAMSUNG</h1>
+<p>Esta pagina funciona pelo WebBrowser e nao depende da instalacao do widget.</p>
+<h2>Navegador / sistema</h2>
+<div class="info"><div class="label">User-Agent (pode conter modelo/versao)</div><div id="ua">Lendo...</div></div>
+<div class="info"><div class="label">Plataforma / idioma</div><div id="platform">Lendo...</div></div>
+<div class="info"><div class="label">Resolucao detectada</div><div id="display">Lendo...</div></div>
+<div class="info"><div class="label">APIs disponiveis</div><div id="apis">Lendo...</div></div>
+<div class="info"><div class="label">Conexao com servidor KTV</div><div id="network">Conectando...</div></div>
+<p>Mostre uma foto desta tela, mas nao envie numero de serie nem endereco MAC.</p>
+<script type="text/javascript">
+function out(id, value) {
+  var elem = document.getElementById(id);
+  if (elem.textContent !== undefined) {elem.textContent = value;}
+  else {elem.innerText = value;}
+}
+try {
+  out('ua', String(navigator.userAgent || 'Indisponivel'));
+  out('platform', String(navigator.platform || 'n/d') + ' | ' + String(navigator.language || 'n/d'));
+  out('display', String(screen.width || '?') + ' x ' + String(screen.height || '?'));
+  out('apis', 'Common=' + (typeof Common !== 'undefined') + '; deviceapis=' +
+    (typeof deviceapis !== 'undefined') + '; webapis=' + (typeof webapis !== 'undefined') +
+    '; XHR=' + (typeof XMLHttpRequest !== 'undefined'));
+} catch(ex) {out('ua', 'Erro ao ler informacoes do navegador');}
+try {
+  var req = new XMLHttpRequest();
+  req.onreadystatechange = function() {
+    if (req.readyState === 4) {
+      out('network', req.status === 200 ? 'HTTP 200 - conexao confirmada' : 'Falha HTTP ' + req.status);
+    }
+  };
+  req.open('GET', '/api/tv-probe', true);
+  req.send(null);
+} catch(ex2) {out('network', 'Erro ao consultar o servidor');}
+</script>
+</body>
+</html>

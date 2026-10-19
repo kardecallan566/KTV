@@ -97,3 +97,8 @@ Corrigida a divergência entre o nome do pacote e a versão interna do widget Or
 ## Recuperacao / teste do Smart Hub (0.4.2)
 
 O pacote 0.4.2 importa a biblioteca `$MANAGER_WIDGET/Common/API/Widget.js` e envia `sendReadyEvent()` antes da primeira requisicao de rede. A sincronizacao LAN agora oferece o **KTV Local** e um aplicativo de diagnostico independente chamado **KTVDiag**. O diagnostico nao usa player de video: se abrir, ajuda a distinguir problemas no KTV principal de falhas gerais do Smart Hub. Consulte [instrucoes de diagnostico](docs/DIAGNOSTICO_INICIALIZACAO.md).
+
+
+## Diagnosticos minimos — KTVBare/KTVFlat e navegador da TV
+
+Se o KTV nao abrir no Smart Hub, execute a sincronizacao LAN: agora ha dois **widgets offline**, `KTVBare` (XML Samsung com namespace e itemtype) e `KTVFlat` (XML simplificado), que so chamam `sendReadyEvent()` e exibem texto. Eles nao fazem requisicoes ao servidor na abertura; resultado visual e essencial. Para obter informacoes do sistema, no WebBrowser da Samsung abra `http://IP_DO_PC/tv-info/`, que exibe User-Agent e capacidades sem exigir instalacao. Consulte `docs/DIAGNOSTICO_INICIALIZACAO.md`.
