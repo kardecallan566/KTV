@@ -190,6 +190,40 @@ class KTVTests(unittest.TestCase):
             self.get('/hls/../state.json')
         self.assertEqual(err.exception.code, 404)
 
+    def test_single_widget_sync(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=2)
+        self.server = KTVServer(('127.0.0.1', 0), '127.0.0.1', Path(self.tmp.name), sync_only='KTVBare')
+        self.port = self.server.server_address[1]
+        self.url = 'http://127.0.0.1:{}'.format(self.port)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        _, raw, hdr = self.get('/widgetlist.xml')
+        root = ET.fromstring(raw)
+        self.assertEqual(hdr['Content-Type'], 'text/xml; charset=utf-8')
+        self.assertEqual([e.attrib['id'] for e in root.findall('./list/widget')], ['KTVBare'])
+        with self.assertRaises(HTTPError) as err:
+            self.get('/Widget/' + DIAGNOSTIC_FILENAME)
+        self.assertEqual(err.exception.code, 404)
+
+    def test_reference_zip_is_not_modified(self):
+        import hashlib
+        from build import validate_reference_zip
+        # Pacote local existente representa uma referencia confiavel nos testes.
+        zpath = self.server.output['bare_archive']
+        before = hashlib.sha256(zpath.read_bytes()).digest()
+        candidate, title, identity = validate_reference_zip(zpath)
+        self.assertEqual(identity, 'KTVBare')
+        self.assertEqual(candidate, zpath)
+        self.assertEqual(hashlib.sha256(zpath.read_bytes()).digest(), before)
+        from build import build
+        data = build('127.0.0.1', self.port, sync_only='reference', reference_zip=str(zpath))
+        tree = ET.parse(data['xml'])
+        self.assertEqual(tree.find('./list/widget').attrib['id'], 'KTVBare')
+        self.assertEqual(data['published_files'], [zpath.name])
+        self.assertEqual(hashlib.sha256(zpath.read_bytes()).digest(), before)
+
     def test_untrusted_filename(self):
         self.assertEqual(safe_name('../some\\path\\hi.png'), 'hi.png')
         self.assertIsNone(safe_name('evil.sh'))
