@@ -19,18 +19,21 @@ jobs:
     timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
-      - name: Preparar construtor Debian Live
+      - name: Compilar no Debian 13 (mesma distribuicao-alvo)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y live-build debootstrap xorriso squashfs-tools \
-            grub-pc-bin grub-efi-amd64-bin syslinux-utils isolinux mtools dosfstools
-      - name: Validar scripts
-        run: |
-          bash -n ktv-os/linux-live/build-iso.sh
-          bash -n ktv-os/linux-live/overlay/usr/local/bin/ktv-os-session
-          bash ktv-os/linux-live/build-iso.sh --check
-      - name: Gerar ISO Debian Live para PC/HDMI
-        run: sudo bash ktv-os/linux-live/build-iso.sh
+          docker run --rm --privileged \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -v "$GITHUB_WORKSPACE:/work" -w /work \
+            debian:trixie bash -euc '
+              apt-get update
+              apt-get install -y --no-install-recommends live-build debootstrap \
+                xorriso squashfs-tools grub-pc-bin grub-efi-amd64-bin \
+                syslinux-utils isolinux mtools dosfstools ca-certificates
+              bash -n ktv-os/linux-live/build-iso.sh
+              bash -n ktv-os/linux-live/overlay/usr/local/bin/ktv-os-session
+              bash ktv-os/linux-live/build-iso.sh --check
+              bash ktv-os/linux-live/build-iso.sh
+            '
       - name: Conferir integridade da ISO gerada
         run: |
           cd ktv-os/linux-live/dist

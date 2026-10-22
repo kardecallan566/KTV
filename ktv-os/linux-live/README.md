@@ -57,3 +57,6 @@ Também existe um fluxo GitHub Actions [**Build KTV OS ISO**](../../.github/work
 - `overlay/usr/local/bin/ktv-os-session`: servidor KTV OS + navegador kiosk.
 
 O sistema nunca tenta substituir bootloader ou firmware da Samsung.
+
+
+**Construção automatizada:** o GitHub Actions usa o contêiner oficial `debian:trixie` com permissões de build para evitar incompatibilidades de `live-build` do Ubuntu 24 (a versão anterior tentou acessar um caminho de segurança obsoleto `trixie/updates`). O perfil seleciona explicitamente o espelho `debian-security`. O builder nativo recomendado continua Debian 13.

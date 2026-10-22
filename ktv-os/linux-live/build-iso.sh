@@ -49,6 +49,8 @@ lb config \
   --binary-images iso-hybrid \
   --debian-installer none \
   --archive-areas "main non-free-firmware" \
+  --mirror-chroot-security "http://security.debian.org/debian-security" \
+  --mirror-binary-security "http://security.debian.org/debian-security" \
   --bootappend-live "boot=live components locales=pt_BR.UTF-8 keyboard-layouts=br"
 
 mkdir -p config/package-lists
