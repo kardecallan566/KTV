@@ -167,8 +167,21 @@ class PersistenceManager:
             return self.status(mounts)
 
     def disable(self, mounts):
-        """Stop automatic writing. Keep USB files untouched for future recovery."""
+        """Disable this USB persistently by removing only KTV's marker.
+
+        Snapshot channels.json remains on the removable volume. A removed
+        USB cannot be disabled until it is reconnected; we never claim success
+        if the on-disk marker could not be changed.
+        """
         with self.lock:
+            if self.active_id:
+                mounted = mounts.get(self.active_id)
+                if mounted is None:
+                    raise PersistenceError('Reconecte o pendrive para desativar de forma permanente')
+                folder = _folder(mounted[0])
+                if _check_marker(folder) != self.active_identity:
+                    raise PersistenceError('Marcador USB diferente do configurado')
+                (folder / MARKER).unlink()
             self.active_id = None
             self.active_identity = None
             self.pending = False
