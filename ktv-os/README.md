@@ -94,3 +94,10 @@ No computador Windows, é possível testar instalando `mpv` no PATH; se não est
 A seção USB mostra pendrives montados **no computador**, permitindo abrir os arquivos da raiz, reproduzir vídeos/áudios e visualizar fotos. No Linux Live, `udiskie` cuida da montagem automática via UDisks2. Em Windows, as unidades removíveis aparecem por letra. Não são acessadas unidades ligadas à porta USB da Samsung. Acesso é apenas leitura pela interface.
 
 Ainda não há varredura recursiva de subpastas, playlists M3U completas, controle HDMI-CEC nem sintonizador ISDB-Tb. As alterações em canais feitas no Live sem persistência serão perdidas ao reiniciar.
+
+
+## Alpha 0.4 — gerenciar canais pela TV
+
+Abra **Canais → Adicionar canal** e preencha nome, URL autorizada `.m3u8`/`.mp4` e categoria. A lista permite assistir, favoritar, editar, mover para cima/baixo e excluir (com confirmação). Use teclado para inserir URLs; a navegação por controle/teclas continua nos botões. As alterações são salvas automaticamente em `~/.config/ktv-os/channels.json`, usando gravação atômica.
+
+Para preservar dados ao reiniciar o Linux Live, conecte um **segundo pendrive de dados** ao computador e abra **Configurações → Backup de canais em pendrive**. Selecione-o, clique em **Salvar backup** e, em outra sessão, **Restaurar backup**. A restauração exige confirmação e substitui a lista atual. O arquivo fica na raiz do pendrive como `KTVOS-channels-backup.json`. Nenhuma unidade é formatada. **Ainda não é persistência automática** no USB do próprio boot; essa função será um checkpoint separado.

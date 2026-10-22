@@ -46,6 +46,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
         self.assertIn('--debian-installer none', builder)
         self.assertIn('config/includes.chroot', builder)
         self.assertIn('ktv-os/player.py', builder)
+        self.assertIn('ktv-os/channel_store.py', builder)
         self.assertIn('lb build', builder)
 
 if __name__ == '__main__':

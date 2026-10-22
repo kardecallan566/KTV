@@ -37,6 +37,7 @@
     var first = document.querySelector('.nav-link.active'); if (first) first.focus();
     if (name === 'usb') loadUSB();
     if (name === 'canais') loadChannels();
+    if (name === 'config') loadBackupDevices();
   }
   function activate(button) {
     var r = button.getAttribute('data-route'), a = button.getAttribute('data-action');
@@ -64,6 +65,8 @@
     });
   }
   document.addEventListener('keydown', function (e) {
+    var typing = e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+    if (typing && e.key !== 'Escape') return;
     if (e.key === 'Escape' || e.key === 'Backspace') {
       if (!overlay.hidden) { e.preventDefault(); closeDialog(); }
       else if (currentRoute !== 'inicio') { e.preventDefault(); route('inicio'); }
@@ -172,25 +175,132 @@
     });
     loadMedia('local',null,'Minha biblioteca');
   }
-  function loadChannels() {
-    get('/api/channels',function(err,data){
-      var box=el('channels');box.textContent='';
-      if(err){message(box,'Não foi possível abrir os canais: '+err.message);return;}
-      if(!data.channels.length){message(box,'Nenhum canal cadastrado. Adicione URLs diretas autorizadas em ~/.config/ktv-os/channels.json.');return;}
-      data.channels.forEach(function(c,index){
-        box.appendChild(makeCard(c.name,c.category||'Canal personalizado',function(){
-          nativePlay({kind:'channel',index:index},c.name,function(){
-            if (/\.mp4(?:\?|$)/i.test(c.url)) {
-              dialog(c.name,'Reprodução MP4 pelo navegador; compatibilidade depende dos codecs.');
-              video.src=c.url;video.hidden=false;video.play().catch(function(){});
-            } else {
-              dialog(c.name,'HLS (.m3u8) exige o mpv nativo, já incluído na imagem Linux KTV OS. Esta transmissão não foi iniciada.');
-            }
-          });
-        }));
-      });
+  var channelCache = [];
+  var selectedChannelId = null;
+  var channelForm = el('channel-form');
+  function statusMsg(id, msg) {
+    el(id).textContent = msg;
+  }
+  function channelEditor(channel) {
+    selectedChannelId = channel ? channel.id : null;
+    el('channel-editor').hidden = false;
+    el('channel-editor-title').textContent = channel ? 'Editar canal' : 'Novo canal';
+    el('channel-id').value = channel ? channel.id : '';
+    el('channel-name').value = channel ? channel.name : '';
+    el('channel-url').value = channel ? channel.url : '';
+    el('channel-category').value = channel ? channel.category : '';
+    statusMsg('channel-result','');
+    el('channel-name').focus();
+  }
+  function closeEditor() {
+    selectedChannelId = null;
+    el('channel-editor').hidden = true;
+    el('channel-create').focus();
+  }
+  el('channel-create').addEventListener('click',function(){channelEditor(null);});
+  el('channel-cancel').addEventListener('click',closeEditor);
+  channelForm.addEventListener('submit',function(event){
+    event.preventDefault();
+    var payload = {
+      action:selectedChannelId?'edit':'add',
+      id:selectedChannelId,
+      name:el('channel-name').value.trim(),
+      url:el('channel-url').value.trim(),
+      category:el('channel-category').value.trim()
+    };
+    post('/api/channels/change',payload,function(err,data){
+      if(err){statusMsg('channel-result','Falha: '+err.message);return;}
+      closeEditor();
+      channelCache=data.channels;
+      renderChannels();
+      statusMsg('channel-result','Canal salvo com sucesso.');
+    });
+  });
+  function channelAction(action,item){
+    if(action==='edit'){channelEditor(item);return;}
+    if(action==='delete'&&!window.confirm('Excluir o canal "'+item.name+'"?'))return;
+    post('/api/channels/change',{action:action,id:item.id},function(err,data){
+      if(err){statusMsg('channel-result','Falha: '+err.message);return;}
+      channelCache=data.channels;
+      renderChannels();
+      statusMsg('channel-result','Lista atualizada.');
     });
   }
+  function miniButton(label,handler,isPlay){
+    var button=document.createElement('button');
+    button.type='button';button.className='focusable'+(isPlay?' play':'');
+    button.textContent=label;button.addEventListener('click',handler);return button;
+  }
+  function playChannel(c,index){
+    nativePlay({kind:'channel',index:index},c.name,function(){
+      if (/\.mp4(?:\?|$)/i.test(c.url)) {
+        dialog(c.name,'MP4 pelo navegador; compatibilidade depende dos codecs.');
+        video.src=c.url;video.hidden=false;video.play().catch(function(){});
+      } else {
+        dialog(c.name,'HLS exige o player mpv, incluído na ISO Linux KTV OS. Não foi iniciado.');
+      }
+    });
+  }
+  function renderChannels(){
+    var box=el('channels');box.textContent='';
+    var favoriteCount=channelCache.filter(function(x){return x.favorite;}).length;
+    el('channel-count').textContent=channelCache.length+' canais · '+favoriteCount+' favoritos';
+    if(!channelCache.length){message(box,'Nenhum canal cadastrado. Escolha “Adicionar canal” para começar.');return;}
+    // Preserve original indexes for player API while displaying favorites first.
+    var sorted=channelCache.map(function(c,index){return {item:c,index:index};});
+    sorted.sort(function(a,b){return Number(b.item.favorite)-Number(a.item.favorite)||a.index-b.index;});
+    sorted.forEach(function(entry){
+      var item=entry.item;
+      var card=document.createElement('div');card.className='info-card channel-card';
+      var icon=document.createElement('span');icon.className='card-icon';icon.textContent='▷';
+      var title=document.createElement('strong');title.className='channel-title';title.textContent=item.name;
+      var category=document.createElement('small');category.className='channel-subtitle';category.textContent=item.category||'Canal personalizado';
+      var buttons=document.createElement('div');buttons.className='channel-buttons';
+      buttons.appendChild(miniButton('▶ Assistir',function(){playChannel(item,entry.index);},true));
+      buttons.appendChild(miniButton(item.favorite?'★ Favorito':'☆ Favoritar',function(){channelAction('favorite',item);}));
+      buttons.appendChild(miniButton('Editar',function(){channelAction('edit',item);}));
+      buttons.appendChild(miniButton('↑',function(){channelAction('up',item);}));
+      buttons.appendChild(miniButton('↓',function(){channelAction('down',item);}));
+      buttons.appendChild(miniButton('Excluir',function(){channelAction('delete',item);}));
+      card.appendChild(icon);card.appendChild(title);card.appendChild(category);card.appendChild(buttons);box.appendChild(card);
+    });
+  }
+  function loadChannels(){
+    get('/api/channels',function(err,data){
+      if(err){message(el('channels'),'Não foi possível carregar os canais: '+err.message);return;}
+      channelCache=data.channels;renderChannels();
+    });
+  }
+  function loadBackupDevices(){
+    get('/api/devices',function(err,data){
+      var select=el('backup-device');
+      var previous=select.value;
+      select.textContent='';
+      var placeholder=document.createElement('option');
+      placeholder.value='';placeholder.textContent='Selecione uma unidade USB';select.appendChild(placeholder);
+      if(err){statusMsg('backup-result','Falha ao consultar USB: '+err.message);return;}
+      data.devices.forEach(function(device){
+        var option=document.createElement('option');
+        option.value=device.id;option.textContent=device.label;
+        select.appendChild(option);
+      });
+      if(data.devices.some(function(d){return d.id===previous;}))select.value=previous;
+      else if(data.devices.length)select.value=data.devices[0].id;
+    });
+  }
+  function backupRequest(path){
+    var device=el('backup-device').value;
+    if(!device){statusMsg('backup-result','Conecte e escolha um pendrive no computador.');return;}
+    if(path.indexOf('restore')!==-1&&!window.confirm('Restaurar backup USB? A lista atual de canais será substituída.'))return;
+    post('/api/channels/usb-'+path,{device:device},function(err,data){
+      if(err){statusMsg('backup-result','Falha: '+err.message);return;}
+      statusMsg('backup-result',path==='backup'?'Backup salvo em '+device+'.':('Backup restaurado: '+data.channels.length+' canais.'));
+      if(path==='restore'){channelCache=data.channels;renderChannels();}
+    });
+  }
+  el('backup-refresh').addEventListener('click',loadBackupDevices);
+  el('backup-save').addEventListener('click',function(){backupRequest('backup');});
+  el('backup-restore').addEventListener('click',function(){backupRequest('restore');});
   get('/api/status',function(err,data){
     el('connection').textContent=err?'Servidor indisponível':'Sistema local conectado';
     if(!err){

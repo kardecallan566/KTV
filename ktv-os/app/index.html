@@ -11,7 +11,7 @@
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.3</span></div></div>
+      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.4</span></div></div>
       <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><button class="icon-button focusable" data-action="fullscreen" title="Tela cheia" aria-label="Tela cheia">⛶</button></div>
     </header>
     <div class="layout">
@@ -37,10 +37,27 @@
             <button class="tile amber focusable" data-route="entradas"><div class="tile-art">⇄</div><span class="tile-kicker">CONECTIVIDADE</span><strong>Entradas HDMI</strong><small>Alternar fontes na televisão</small><span class="tile-arrow">↗</span></button>
           </div>
         </section>
-        <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de streams HLS/MP4 pelo mpv nativo quando disponível. Cadastre apenas fontes próprias ou autorizadas.</p><div id="channels" class="content-grid"></div></section>
+        <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de streams HLS/MP4 pelo mpv nativo quando disponível. Cadastre apenas fontes próprias ou autorizadas.</p><div class="channel-actions"><button class="primary focusable" id="channel-create">+ Adicionar canal</button><span class="chip" id="channel-count">0 canais</span></div>
+          <div id="channels" class="content-grid"></div>
+          <div class="panel channel-editor" id="channel-editor" hidden>
+            <h2 id="channel-editor-title">Novo canal</h2>
+            <p>Adicione somente transmissões próprias ou autorizadas. URLs diretas .m3u8 ou .mp4.</p>
+            <form id="channel-form" autocomplete="off">
+              <input id="channel-id" type="hidden">
+              <label for="channel-name">Nome do canal</label>
+              <input id="channel-name" maxlength="80" placeholder="Ex.: Canal local" required>
+              <label for="channel-url">Endereço da transmissão</label>
+              <input id="channel-url" type="url" maxlength="1800" placeholder="https://servidor.exemplo/live.m3u8" required>
+              <label for="channel-category">Categoria</label>
+              <input id="channel-category" maxlength="50" placeholder="Ex.: Notícias, Educação">
+              <div class="hero-actions"><button class="primary focusable" type="submit">Salvar canal</button><button class="ghost focusable" type="button" id="channel-cancel">Cancelar</button></div>
+            </form>
+          </div>
+          <p class="form-result" id="channel-result" role="status"></p>
+          </section>
         <section class="screen" data-screen="usb"><div class="eyebrow">BIBLIOTECA LOCAL</div><h1>USB e <span class="gradient-text">mídias.</span></h1><p class="lead">Acessa arquivos do computador que executa o KTV OS. Pendrives ligados diretamente à Samsung não são visíveis neste sistema externo.</p><div class="panel"><h2>Dispositivos detectados no computador</h2><div id="devices"></div><button class="ghost focusable" data-action="refresh-usb">Atualizar USB</button></div><h2 class="section-title" id="media-heading">Minha biblioteca</h2><div id="media" class="content-grid"></div></section>
         <section class="screen" data-screen="entradas"><div class="eyebrow">FONTES DE VÍDEO</div><h1>Escolha sua <span class="gradient-text">entrada.</span></h1><p class="lead">As entradas HDMI e a antena pertencem ao hardware original da Samsung. O KTV OS não consegue trocar essas fontes sozinho nesta fase.</p><div class="content-grid"><button class="info-card focusable" data-action="tv-aberta"><span class="card-icon">◉</span><strong>Antena / TV aberta</strong><small>Pressione SOURCE no controle Samsung e selecione TV.</small></button><button class="info-card focusable" data-action="sources"><span class="card-icon">▣</span><strong>HDMI 1</strong><small>Entrada do KTV OS (computador) ou outro aparelho.</small></button><button class="info-card focusable" data-action="sources"><span class="card-icon">▣</span><strong>HDMI 2</strong><small>Console, notebook ou outro dispositivo conectado.</small></button></div></section>
-        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Modo tela cheia</strong><p>Ideal para testes na Samsung por HDMI.</p></div><button class="ghost focusable" data-action="fullscreen">Ativar (F)</button></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Edite ~/.config/ktv-os/channels.json no computador. Sem fontes comerciais predefinidas.</p></div></div><div class="panel settings"><div><strong>Controle</strong><p>Setas: navegar · Enter: escolher · Esc: voltar · F: tela cheia.</p></div></div></section>
+        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Modo tela cheia</strong><p>Ideal para testes na Samsung por HDMI.</p></div><button class="ghost focusable" data-action="fullscreen">Ativar (F)</button></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Cadastre e organize os canais pela própria interface. Use USB para salvar/restaurar seu backup. Sem fontes comerciais predefinidas.</p></div></div><div class="panel"><h2>Backup de canais em pendrive</h2><p>Escolha uma unidade removível conectada ao computador. Salvar backup criará um arquivo KTVOS-channels-backup.json na raiz dessa unidade. Restaurar substituirá sua lista de canais após confirmação.</p><div class="backup-controls"><label for="backup-device">Pendrive</label><select id="backup-device"><option value="">Selecione uma unidade</option></select><button id="backup-refresh" class="ghost focusable">Atualizar dispositivos</button><button id="backup-save" class="ghost focusable">Salvar backup</button><button id="backup-restore" class="ghost focusable">Restaurar backup</button></div><p id="backup-result" role="status" class="form-result"></p></div><div class="panel settings"><div><strong>Controle</strong><p>Setas: navegar · Enter: escolher · Esc: voltar · F: tela cheia. Para cadastrar canais, conecte também um teclado.</p></div></div></section>
       </main>
     </div>
     <footer> KTV OS • Protótipo de interface • PC → HDMI → TV <span id="footer-help">← ↑ ↓ → navegar · Enter selecionar · Esc voltar</span></footer>

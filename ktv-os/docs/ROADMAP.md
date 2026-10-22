@@ -31,3 +31,8 @@
 ## Alpha 0.2 — inicialização USB real
 
 Adicionado construtor de imagem Debian Live amd64 em `ktv-os/linux-live/`, sessão gráfica LightDM/Openbox e kiosk KTV OS iniciado automaticamente sem Windows. O código-fonte passa por testes automáticos de estrutura; uma ISO só pode ser considerada pronta quando o `live-build` finalizar e o arquivo for validado. Persistência, drivers NVIDIA proprietários, rádio ISDB-Tb, HDMI-CEC e entrada HDMI capturada continuam fora do escopo e serão testados separadamente.
+
+
+## Alpha 0.4 — canais via interface e backup explícito
+
+O usuário pode cadastrar, editar, favoritar, ordenar e remover canais diretamente na interface KTV OS. Um arquivo separado `channel_store.py` valida URL/ID, limita a 100 canais e grava de forma atômica em espaço de usuário. Backup/restauração manual em mídia USB removível montada no computador, com confirmação para substituir a lista existente. A ISO 0.4 inclui o módulo e corrige o workflow para não tentar validar nomes de ISO de versões anteriores. Persistência automatizada e guia EPG permanecem fora do escopo.
