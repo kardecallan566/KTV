@@ -37,7 +37,7 @@
     var first = document.querySelector('.nav-link.active'); if (first) first.focus();
     if (name === 'usb') loadUSB();
     if (name === 'canais') loadChannels();
-    if (name === 'config') loadBackupDevices();
+    if (name === 'config') {loadBackupDevices();loadPersistenceStatus();}
   }
   function activate(button) {
     var r = button.getAttribute('data-route'), a = button.getAttribute('data-action');
@@ -298,6 +298,37 @@
       if(path==='restore'){channelCache=data.channels;renderChannels();}
     });
   }
+  function renderPersistence(p) {
+    var label = !p || !p.enabled ? 'Desativada' :
+      (p.connected ? (p.pending ? 'USB conectado • alterações pendentes' : 'Ativa • alterações salvas') :
+                     'USB removido • estado temporário');
+    el('persistence-status').textContent = label;
+    if(p && p.error)statusMsg('persistence-result',p.error);
+  }
+  function loadPersistenceStatus(){
+    get('/api/persistence/status',function(err,data){
+      if(err){statusMsg('persistence-result','Falha ao consultar persistência: '+err.message);return;}
+      renderPersistence(data.persistence);
+    });
+  }
+  el('persistence-enable').addEventListener('click',function(){
+    var device=el('backup-device').value;
+    if(!device){statusMsg('persistence-result','Selecione um pendrive de dados nas opções de backup.');return;}
+    if(!window.confirm('Ativar gravação automática de canais neste pendrive? A cópia persistente anterior do KTV OS nesta unidade poderá ser substituída. Nenhum dispositivo será formatado.'))return;
+    post('/api/persistence/enable',{device:device},function(err,data){
+      if(err){statusMsg('persistence-result','Falha: '+err.message);return;}
+      renderPersistence(data.persistence);
+      statusMsg('persistence-result','Persistência ativada. Mantenha este pendrive de dados conectado nas próximas inicializações.');
+    });
+  });
+  el('persistence-disable').addEventListener('click',function(){
+    post('/api/persistence/disable',{},function(err,data){
+      if(err){statusMsg('persistence-result','Falha: '+err.message);return;}
+      renderPersistence(data.persistence);
+      statusMsg('persistence-result','Gravação automática desligada. Os arquivos já salvos no USB foram preservados.');
+    });
+  });
+  setInterval(function(){if(currentRoute==='config')loadPersistenceStatus();},7000);
   el('backup-refresh').addEventListener('click',loadBackupDevices);
   el('backup-save').addEventListener('click',function(){backupRequest('backup');});
   el('backup-restore').addEventListener('click',function(){backupRequest('restore');});
@@ -308,6 +339,56 @@
       el('server-detail').textContent='KTV OS '+data.version+' · '+data.host+' · Player: '+(nativeAvailable?'mpv nativo pronto':'navegador (mpv não encontrado)')+' · Acesso local.';
     }
   });
+
+  // Gamepad API works with controllers connected to the computer, not the
+  // Samsung infrared remote unless a compatible HDMI-CEC adapter is provided.
+  var lastPadAction = '';
+  var lastPadTime = 0;
+  var lastPadConnected = false;
+  function padAction(action) {
+    if(action==='accept'){
+      var focused=document.activeElement;
+      if(focused && typeof focused.click==='function')focused.click();
+      return;
+    }
+    if(action==='back'){
+      if(!overlay.hidden)closeDialog();
+      else if(currentRoute!=='inicio')route('inicio');
+      return;
+    }
+    if(action==='home'){route('inicio');return;}
+    document.dispatchEvent(new KeyboardEvent('keydown',{key:action,bubbles:true,cancelable:true}));
+  }
+  function gamepadPoll(timestamp) {
+    if(typeof navigator.getGamepads==='function'){
+      var pads=navigator.getGamepads();
+      var pad=null;
+      for(var i=0;i<pads.length;i++){if(pads[i]&&pads[i].connected){pad=pads[i];break;}}
+      if(!!pad!==lastPadConnected){
+        lastPadConnected=!!pad;
+        el('gamepad-status').textContent=pad?'🎮 Conectado':'';
+      }
+      if(pad){
+        var b=pad.buttons||[], axes=pad.axes||[];
+        function pressed(n){return b[n]&&b[n].pressed;}
+        var action='';
+        if(pressed(0))action='accept';
+        else if(pressed(1))action='back';
+        else if(pressed(9))action='home';
+        else if(pressed(12)||(axes[1]!==undefined&&axes[1]<-0.65))action='ArrowUp';
+        else if(pressed(13)||(axes[1]!==undefined&&axes[1]>0.65))action='ArrowDown';
+        else if(pressed(14)||(axes[0]!==undefined&&axes[0]<-0.65))action='ArrowLeft';
+        else if(pressed(15)||(axes[0]!==undefined&&axes[0]>0.65))action='ArrowRight';
+        if(action && (action!==lastPadAction||timestamp-lastPadTime>240)){
+          padAction(action);
+          lastPadTime=timestamp;
+        }
+        lastPadAction=action;
+      }else lastPadAction='';
+    }
+    window.requestAnimationFrame(gamepadPoll);
+  }
+  if(window.requestAnimationFrame)window.requestAnimationFrame(gamepadPoll);
   loadChannels(); loadUSB();
   document.querySelector('.nav-link.active').focus();
 })();
