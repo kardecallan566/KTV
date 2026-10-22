@@ -5,3 +5,6 @@ __pycache__/
 .DS_Store
 .env
 *.log
+
+# KTV OS: preferencias/canais locais nao versionados
+ktv-os/.ktv-os/

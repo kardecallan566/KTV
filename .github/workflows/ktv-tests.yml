@@ -1,4 +1,4 @@
-name: KTV Legacy tests
+name: KTV Legacy and OS tests
 
 on:
   push:
@@ -7,17 +7,21 @@ on:
     branches: [main]
 
 jobs:
-  local-server-and-zip:
+  ktv-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Testar servidor, API e pacotes Orsay
+      - name: Testar servidor e widgets Orsay
         run: python -m unittest discover -s tests -v
-      - name: Gerar os dois widgets de instalacao
+      - name: Gerar widgets
         run: python installer-local/build.py --ip 192.168.1.10
-      - name: Verificar JavaScript Legacy
+      - name: Verificar JS Orsay
         run: node --check tv-orsay/js/app.js
+      - name: Testar KTV OS local
+        run: python -m unittest discover -s ktv-os/tests -v
+      - name: Verificar JavaScript KTV OS
+        run: node --check ktv-os/app/app.js

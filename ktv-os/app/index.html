@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#081524">
+  <title>KTV OS — Experiência para TV</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.1</span></div></div>
+      <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><button class="icon-button focusable" data-action="fullscreen" title="Tela cheia" aria-label="Tela cheia">⛶</button></div>
+    </header>
+    <div class="layout">
+      <nav class="sidebar" aria-label="Menu principal">
+        <button class="nav-link active focusable" data-route="inicio"><span class="nav-icon">⌂</span><span>Início</span></button>
+        <button class="nav-link focusable" data-route="canais"><span class="nav-icon">▣</span><span>Canais</span></button>
+        <button class="nav-link focusable" data-route="usb"><span class="nav-icon">◫</span><span>USB e mídias</span></button>
+        <button class="nav-link focusable" data-route="entradas"><span class="nav-icon">⇄</span><span>Entradas</span></button>
+        <button class="nav-link focusable" data-route="config"><span class="nav-icon">⚙</span><span>Configurações</span></button>
+        <div class="sidebar-bottom"><div class="status-dot"></div> Ambiente de teste PC + HDMI</div>
+      </nav>
+      <main id="main">
+        <section class="screen active" data-screen="inicio">
+          <div class="eyebrow">SUA TV, SUAS REGRAS</div>
+          <h1>Tudo o que importa.<br><span class="gradient-text">Sem complicação.</span></h1>
+          <p class="lead">Sua central para assistir, conectar e organizar. Controle pelo teclado, mouse ou um controle compatível com o computador.</p>
+          <div class="hero-actions"><button class="primary focusable" data-route="canais">▶ Explorar canais <span>→</span></button><button class="ghost focusable" data-action="sources">⇄ Alterar entrada</button></div>
+          <h2 class="section-title">Acesso rápido</h2>
+          <div class="tile-grid">
+            <button class="tile cyan focusable" data-action="tv-aberta"><div class="tile-art">◉</div><span class="tile-kicker">SINAL DIGITAL</span><strong>TV aberta</strong><small>Use o sintonizador original da Samsung</small><span class="tile-arrow">↗</span></button>
+            <button class="tile blue focusable" data-route="canais"><div class="tile-art">▷</div><span class="tile-kicker">SUA PROGRAMAÇÃO</span><strong>Meus canais</strong><small>Playlists e transmissões autorizadas</small><span class="tile-arrow">↗</span></button>
+            <button class="tile purple focusable" data-route="usb"><div class="tile-art">▤</div><span class="tile-kicker">ARQUIVOS LOCAIS</span><strong>USB e mídias</strong><small>Vídeos, fotos e dispositivos no PC</small><span class="tile-arrow">↗</span></button>
+            <button class="tile amber focusable" data-route="entradas"><div class="tile-art">⇄</div><span class="tile-kicker">CONECTIVIDADE</span><strong>Entradas HDMI</strong><small>Alternar fontes na televisão</small><span class="tile-arrow">↗</span></button>
+          </div>
+        </section>
+        <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Nesta primeira versão, o navegador reproduz somente formatos compatíveis com ele.</p><div id="channels" class="content-grid"></div></section>
+        <section class="screen" data-screen="usb"><div class="eyebrow">BIBLIOTECA LOCAL</div><h1>USB e <span class="gradient-text">mídias.</span></h1><p class="lead">Acessa arquivos do computador que executa o KTV OS. Pendrives ligados diretamente à Samsung não são visíveis neste sistema externo.</p><div class="panel"><h2>Dispositivos detectados no computador</h2><div id="devices"></div></div><h2 class="section-title">Minha biblioteca</h2><div id="media" class="content-grid"></div></section>
+        <section class="screen" data-screen="entradas"><div class="eyebrow">FONTES DE VÍDEO</div><h1>Escolha sua <span class="gradient-text">entrada.</span></h1><p class="lead">As entradas HDMI e a antena pertencem ao hardware original da Samsung. O KTV OS não consegue trocar essas fontes sozinho nesta fase.</p><div class="content-grid"><button class="info-card focusable" data-action="tv-aberta"><span class="card-icon">◉</span><strong>Antena / TV aberta</strong><small>Pressione SOURCE no controle Samsung e selecione TV.</small></button><button class="info-card focusable" data-action="sources"><span class="card-icon">▣</span><strong>HDMI 1</strong><small>Entrada do KTV OS (computador) ou outro aparelho.</small></button><button class="info-card focusable" data-action="sources"><span class="card-icon">▣</span><strong>HDMI 2</strong><small>Console, notebook ou outro dispositivo conectado.</small></button></div></section>
+        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Modo tela cheia</strong><p>Ideal para testes na Samsung por HDMI.</p></div><button class="ghost focusable" data-action="fullscreen">Ativar (F)</button></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Edite o arquivo .ktv-os/channels.json no computador. Sem fontes comerciais predefinidas.</p></div></div><div class="panel settings"><div><strong>Controle</strong><p>Setas: navegar · Enter: escolher · Esc: voltar · F: tela cheia.</p></div></div></section>
+      </main>
+    </div>
+    <footer> KTV OS • Protótipo de interface • PC → HDMI → TV <span id="footer-help">← ↑ ↓ → navegar · Enter selecionar · Esc voltar</span></footer>
+  </div>
+  <div class="overlay" id="dialog-overlay" hidden role="presentation">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+      <div class="eyebrow">KTV OS</div><h2 id="dialog-title"></h2><p id="dialog-message"></p>
+      <video id="video-player" controls playsinline hidden></video>
+      <img id="image-player" alt="Visualização local" hidden>
+      <button class="primary focusable" id="dialog-close">Voltar (Esc)</button>
+    </div>
+  </div>
+</body>
+</html>
