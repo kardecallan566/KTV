@@ -41,9 +41,25 @@ A TV baixou o pacote 0.4.1 (`GET /Widget/KTV_0.4.1...zip 200`), mas nao fez nenh
 O ZIP de diagnostico esta em `release/Widget/KTVDiag_0.1.0_BR_20261018.zip`. A TV **nao precisa do pendrive** para o teste, pois a sincronizacao e via LAN.
 
 
-## Testes mínimos anteriores
+## Diagnostico A/B: KTVBare e KTVFlat (sem reprodução nem rede)
 
-O teste de comparação entre widgets mínimos foi descontinuado. Permanecem o **KTV Local** e o **KTVDiag**. Os registros históricos de sincronização foram preservados nas PRs anteriores, mas os ZIPs daqueles testes não são mais publicados nem gerados.
+Os logs da v0.4.2 mostram que a TV transferiu KTV e KTVDiag via HTTP 200 mas nao gerou nenhum acesso da aplicacao a API. O KTVDiag exibiu apenas carregamento do Smart Hub e fechou. Isso **nao comprova** falha de instalacao; indica que ainda nao houve execucao de codigo registrada. A referencia Orsay Emby/Jellyfin (https://github.com/Apps2Samsung/Jellyfin-Orsay-App/blob/master/config.xml) usa namespace Samsung e atributos `itemtype`, diferente do XML inicial do KTV.
+
+Criamos dois widgets minimos separados, de identificadores novos, com **o mesmo HTML**, sem CSS externo, sem XHR, sem bibliotecas de video e sem referencia ao servidor. Eles exibem texto imediatamente quando o HTML e aberto e chamam somente `sendReadyEvent()` pelo script Legacy Widget.js.
+
+- **KTVBare:** config.xml com namespace `http://www.samsung.com/` e atributos `itemtype`, alinhado ao app Jellyfin/Emby de referencia.
+- **KTVFlat:** mesmo HTML, mas config.xml simplificado semelhante ao KTV original. Comparando os dois, podemos distinguir uma possivel rejeicao do formato XML.
+
+### Testar
+
+1. Pare o servidor, rode `git pull origin main`, inicie `python installer-local/server.py`.
+2. Na Samsung, acione uma vez **Start User App Sync**. Os novos ZIPs sao `KTVBare_0.1.0_BR_20261018.zip` e `KTVFlat_0.1.0_BR_20261018.zip`. O KTV principal foi mantido **inalterado** neste checkpoint.
+3. Abra **KTVBare**. Observe se aparece a tela de diagnostico e a mensagem de prontidao. Depois abra **KTVFlat**.
+4. Ao abrir os dois, **nao havera requisições ao Python**: sao aplicativos offline. A ausencia de logs de execucao nao e prova de falha nesses dois testes; o resultado e **visual**.
+5. No **WebBrowser da TV**, acesse `http://192.168.1.10/tv-info/`. Essa pagina mostra User-Agent, tamanho da tela e presenca de APIs. Registra no servidor somente IP e User-Agent informado pelo navegador. Confira `/api/status` no painel administrador, campo `tv_probes`; o log Python exibira `/api/tv-probe` vindo da TV.
+6. Para informacoes oficiais: Menu > Suporte > Contato Samsung (nomes variam). Registre modelo completo, versao de software e codigo de modelo; **nao compartilhe numero de serie, MAC ou identificadores pessoais**.
+
+Se ambos os widgets offline falharem, focar Smart Hub, pacote e firmware. Se so KTVBare abrir, priorizar correcoes no XML do app KTV. Se ambos abrirem, isolar o JavaScript e chamadas de rede do KTV em pequenos checkpoints. Nao mexer em firmware ou menu de servico.
 
 
 ## KTV 0.4.3 — alinhamento do manifesto

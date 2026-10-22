@@ -1,0 +1,9 @@
+{
+  "channels": [
+    {
+      "name": "Meu canal de teste",
+      "category": "Pessoal",
+      "url": "https://meu-servidor-exemplo.invalid/live.m3u8"
+    }
+  ]
+}

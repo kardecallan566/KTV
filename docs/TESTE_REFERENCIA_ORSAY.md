@@ -10,16 +10,16 @@ https://github.com/oherau/jellyfin-samsung-orsay-os
 
 O servidor KTV apenas **copia e entrega** os bytes desse ZIP; nao o executa, nao o reempacota e nao o altera. Use-o somente se confiar na fonte. Nao e necessario ter um servidor Jellyfin para observar se o aplicativo chega a abrir a tela inicial.
 
-## Teste A: publicar somente o KTV Local
+## Teste A: publicar um unico widget KTV
 
 Pare o servidor e execute, no diretorio KTV:
 
 ```powershell
 git pull origin main
-python installer-local/server.py --sync-only KTV
+python installer-local/server.py --sync-only KTVBare
 ```
 
-Abra `http://192.168.1.10/widgetlist.xml` no PC. Deve haver apenas um elemento `widget` (`KTV Local`). No Smart Hub da TV, execute **Start User App Sync** no IP 192.168.1.10 e tente abrir **KTV Local**. A URL e o pacote sao os mesmos de antes: esse teste apenas exclui os outros aplicativos da lista de instalacao. O resultado e visual; KTV Local nao faz XHR.
+Abra `http://192.168.1.10/widgetlist.xml` no PC. Deve haver apenas um elemento `widget` (`KTVBare`). No Smart Hub da TV, execute **Start User App Sync** no IP 192.168.1.10 e tente abrir **KTVBare**. A URL e o pacote sao os mesmos de antes: esse teste apenas exclui os outros aplicativos da lista de instalacao. O resultado e visual; KTVBare nao faz XHR.
 
 ## Teste B: pacote Orsay de referencia, SEM alterar ZIP original
 

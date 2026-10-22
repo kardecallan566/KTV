@@ -117,3 +117,17 @@ O `config.xml` do aplicativo principal foi refeito com namespace `http://www.sam
 ## Limpeza dos widgets de teste descontinuados
 
 Os testes A/B de empacotamento foram encerrados. As pastas de origem correspondentes foram retiradas do repositório; o build remove seus ZIPs antigos de `release/Widget/` e `release/usb/userwidget/` quando reiniciado. A sincronização padrão oferece apenas **KTV Local** e **KTVDiag**. Ícones já instalados na TV devem ser removidos **manualmente no Smart Hub**, pois apagar o ZIP no computador não desinstala aplicativos Samsung.
+
+
+## Novo projeto — KTV OS (PC conectado à TV por HDMI)
+
+O KTV OS foi iniciado em [ktv-os/](ktv-os/README.md) como projeto separado do antigo widget Samsung. A alpha roda **no computador** (Windows ou Linux), exibe uma interface de televisão por HDMI e já possui navegação por teclado, seções Canais / USB / Entradas / Configurações, servidor localhost e leitura opcional de mídias. **Não é um firmware ou sistema Linux bootável próprio ainda.** A porta USB da Samsung não executa Linux; para um teste via pendrive é necessário inicializar o **PC** por uma imagem Linux Live e conectar o HDMI. Veja [plano KTV OS](ktv-os/docs/ROADMAP.md).
+
+Comandos:
+
+\`\`\`powershell
+cd ktv-os
+python launcher.py --open
+\`\`\`
+
+O servidor Legacy em \`installer-local/\` permanece inalterado.
