@@ -19,3 +19,9 @@
 .backup-controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 .backup-controls select{width:min(300px,100%)}
 .form-result{color:#8ce6d9;min-height:18px;line-height:1.6}
+
+/* KTV OS 0.5 */
+.gamepad-status{font-size:11px;color:#76dcda;min-width:75px;text-align:right}
+.channel-editor input:focus-visible{border-color:#7ae5d4}
+#persistence-status{white-space:normal;max-width:430px;line-height:1.45}
+@media(max-width:720px){.gamepad-status{display:none}}
