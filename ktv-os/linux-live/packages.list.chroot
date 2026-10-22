@@ -9,6 +9,8 @@ xorg
 xserver-xorg-input-libinput
 openbox
 chromium
+mpv
+udiskie
 python3
 curl
 ca-certificates

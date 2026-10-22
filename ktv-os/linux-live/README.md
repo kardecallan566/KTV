@@ -60,3 +60,8 @@ O sistema nunca tenta substituir bootloader ou firmware da Samsung.
 
 
 **Construção automatizada:** o GitHub Actions usa o contêiner oficial `debian:trixie` com permissões de build para evitar incompatibilidades de `live-build` do Ubuntu 24 (a versão anterior tentou acessar um caminho de segurança obsoleto `trixie/updates`). O perfil seleciona explicitamente o espelho `debian-security`. O builder nativo recomendado continua Debian 13.
+
+
+## Alpha 0.3 — player e montagem USB
+
+Foi adicionado o pacote Debian `mpv` ao sistema Linux e `udiskie` para montar automaticamente volumes removíveis conectados ao computador. A API local restringe a reprodução mpv a canais validados e arquivos do diretório autorizado ou de uma unidade removível montada. A ISO gerada agora usa o nome **KTV-OS-Alpha-0.3-amd64.iso**; ainda é necessário validar fisicamente GPU/HDMI e os codecs da transmissão.

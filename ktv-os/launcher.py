@@ -4,6 +4,7 @@ No firmware modification. This is an application running on an existing OS,
 not a bootable Linux distribution yet. Standard library only.
 """
 import argparse
+import hashlib
 import ctypes
 import json
 import mimetypes
@@ -12,13 +13,15 @@ from pathlib import Path
 import re
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 import webbrowser
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+from player import NativePlayer, safe_media_path
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.1.0'
+VERSION = '0.3.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -32,31 +35,50 @@ STATIC = {
     '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
 }
 
-def detect_removable():
-    """List *names* of likely removable drives. No automatic arbitrary file access."""
-    result = []
+def usb_mounts():
+    """Return only removable volumes currently mounted on the host PC.
+
+    No arbitrary directory / disk can be selected through an HTTP parameter.
+    The paths are not exposed as network-accessible mount operations.
+    """
+    volumes = {}
     if sys.platform == 'win32':
         try:
             for letter in 'DEFGHIJKLMNOPQRSTUVWXYZ':
-                volume = letter + ':\\'
-                if ctypes.windll.kernel32.GetDriveTypeW(volume) == 2:
-                    result.append({'label': 'Unidade USB ' + letter + ':', 'type': 'removable'})
+                volume = Path(letter + ':\\')
+                if ctypes.windll.kernel32.GetDriveTypeW(str(volume)) == 2:
+                    volumes['usb-' + letter.lower()] = (volume, 'USB ' + letter + ':')
         except (AttributeError, OSError):
             pass
     else:
-        bases = (Path('/media') / (os.environ.get('USER') or ''), Path('/run/media') / (os.environ.get('USER') or ''), Path('/media'))
-        seen = set()
+        user = os.environ.get('USER') or 'user'
+        bases = (Path('/media') / user, Path('/run/media') / user)
         for base in bases:
             if not base.is_dir():
                 continue
             try:
                 for item in base.iterdir():
-                    if item.is_dir() and not item.is_symlink() and str(item) not in seen:
-                        seen.add(str(item))
-                        result.append({'label': 'Unidade montada: ' + item.name, 'type': 'mounted'})
-            except PermissionError:
+                    if item.is_dir() and not item.is_symlink() and item.is_mount():
+                        digest = hashlib.sha256(str(item).encode('utf-8')).hexdigest()[:12]
+                        volumes['usb-' + digest] = (item, 'USB ' + item.name)
+            except (PermissionError, OSError):
                 pass
-    return result
+    return volumes
+
+
+def detect_removable():
+    return [{'id': key, 'label': label, 'type': 'removable'}
+            for key, (_, label) in usb_mounts().items()]
+
+
+def selected_media_root(media_dir, source='local', device=None):
+    if source == 'local':
+        return media_dir
+    if source != 'usb' or not isinstance(device, str):
+        return None
+    match = usb_mounts().get(device)
+    return match[0] if match else None
+
 
 def read_channels(state):
     file = state / 'channels.json'
@@ -112,16 +134,17 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None):
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.media_dir = Path(media_dir).resolve(strict=True) if media_dir else None
         if self.media_dir and not self.media_dir.is_dir():
             raise ValueError('--media-dir deve ser uma pasta existente')
+        self.player = player if player is not None else NativePlayer()
         super().__init__((host, port), KTVOSHandler)
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.1'
+    server_version = 'KTV-OS/0.3'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -141,32 +164,100 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         self.send_data(status, json.dumps(payload, ensure_ascii=False).encode('utf-8'), 'application/json; charset=utf-8')
 
     def do_GET(self):
-        path = unquote(urlsplit(self.path).path)
+        url = urlsplit(self.path)
+        path = unquote(url.path)
         if path in STATIC:
             filename, mime = STATIC[path]
             return self.send_data(200, (APP / filename).read_bytes(), mime)
         if path == '/api/status':
-            return self.send_json({'version': VERSION, 'host': self.server.server_address[0], 'usb_direct_tv': False})
+            return self.send_json({'version': VERSION, 'host': self.server.server_address[0],
+                                   'usb_direct_tv': False, 'player': self.server.player.status()})
         if path == '/api/devices':
             return self.send_json({'devices': detect_removable()})
         if path == '/api/channels':
             return self.send_json({'channels': read_channels(self.server.state_dir)})
+        if path == '/api/player/status':
+            return self.send_json({'player': self.server.player.status()})
         if path == '/api/media':
-            return self.send_json({'items': read_media(self.server.media_dir)})
+            params = parse_qs(url.query)
+            source = params.get('source', ['local'])[0]
+            device = params.get('device', [''])[0]
+            root = selected_media_root(self.server.media_dir, source, device)
+            if root is None and source != 'local':
+                return self.send_json({'error': 'Dispositivo nao autorizado ou desmontado'}, 404)
+            return self.send_json({'items': read_media(root)})
+        if path.startswith('/media/usb/'):
+            parts = path[len('/media/usb/'):].split('/')
+            if len(parts) != 2:
+                return self.send_json({'error': 'Caminho USB invalido'}, 404)
+            root = selected_media_root(self.server.media_dir, 'usb', parts[0])
+            return self.serve_media(parts[1], root=root)
         if path.startswith('/media/'):
             return self.serve_media(path[len('/media/'):])
         return self.send_json({'error': 'Rota nao encontrada'}, 404)
 
-    def serve_media(self, name):
-        if (not self.server.media_dir or not name or '/' in name or '\\' in name or name.startswith('.') or
-                Path(name).suffix.lower() not in MEDIA_EXTENSIONS):
-            return self.send_json({'error': 'Midia nao autorizada'}, 404)
-        file = self.server.media_dir / name
+    def do_POST(self):
+        path = urlsplit(self.path).path
+        if path not in ('/api/player/play', '/api/player/stop'):
+            return self.send_json({'error': 'Rota nao encontrada'}, 404)
+
+        # Only this machine may write to the playback controller.
+        # JSON content type rejects HTML form posts from unrelated origins.
+        origin = self.headers.get('Origin')
+        expected = 'http://127.0.0.1:{}'.format(self.server.server_address[1])
+        if origin is not None and origin != expected:
+            return self.send_json({'error': 'Origem nao autorizada'}, 403)
+        if self.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json':
+            return self.send_json({'error': 'JSON obrigatorio'}, 415)
         try:
-            if not file.is_file() or file.is_symlink() or file.resolve().parent != self.server.media_dir:
-                return self.send_json({'error': 'Nao encontrado'}, 404)
+            size = int(self.headers.get('Content-Length', '-1'))
+            if size < 0 or size > 4096:
+                return self.send_json({'error': 'Tamanho invalido'}, 413)
+            payload = json.loads(self.rfile.read(size))
+            if not isinstance(payload, dict):
+                raise ValueError('Payload deve ser objeto')
+        except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
+            return self.send_json({'error': 'JSON invalido'}, 400)
+
+        if path == '/api/player/stop':
+            self.server.player.stop()
+            return self.send_json({'ok': True, 'player': self.server.player.status()})
+        kind = payload.get('kind')
+        try:
+            if kind == 'channel':
+                idx = payload.get('index')
+                channels = read_channels(self.server.state_dir)
+                if type(idx) is not int or idx < 0 or idx >= len(channels):
+                    raise ValueError('Canal desconhecido')
+                entry = channels[idx]
+                source, title = entry['url'], entry['name']
+            elif kind in ('media', 'usb'):
+                name = payload.get('name')
+                root = selected_media_root(
+                    self.server.media_dir, 'usb' if kind == 'usb' else 'local',
+                    payload.get('device')
+                )
+                if root is None:
+                    raise ValueError('Unidade indisponivel')
+                file = safe_media_path(root, name, MEDIA_EXTENSIONS)
+                source, title = str(file), file.name
+            else:
+                raise ValueError('Tipo de conteudo invalido')
+            info = self.server.player.play(source, title)
+        except (ValueError, OSError) as exc:
+            return self.send_json({'error': str(exc)}, 400)
+        except RuntimeError as exc:
+            return self.send_json({'error': str(exc)}, 503)
+        return self.send_json({'ok': True, 'player': info})
+
+    def serve_media(self, name, root=None):
+        root = root if root is not None else self.server.media_dir
+        if root is None:
+            return self.send_json({'error': 'Midia nao autorizada'}, 404)
+        try:
+            file = safe_media_path(root, name, MEDIA_EXTENSIONS)
             size = file.stat().st_size
-        except OSError:
+        except (OSError, ValueError):
             return self.send_json({'error': 'Nao encontrado'}, 404)
         start, end, code = 0, size - 1, 200
         req_range = self.headers.get('Range', '')
@@ -223,7 +314,7 @@ def main():
     args = parser.parse_args()
     server = KTVOSServer(port=args.port, media_dir=args.media_dir)
     url = 'http://127.0.0.1:{}'.format(server.server_address[1])
-    print('=== KTV OS ALPHA 0.1 ===')
+    print('=== KTV OS ALPHA 0.3 ===')
     print('Tela:', url)
     print('Pasta de midias:', server.media_dir or '(nenhuma: use --media-dir)')
     print('Canais:', server.state_dir / 'channels.json')
@@ -236,6 +327,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        server.player.close()
         server.server_close()
 
 if __name__ == '__main__':

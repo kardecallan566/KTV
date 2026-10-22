@@ -7,6 +7,7 @@ on:
     paths:
       - "ktv-os/linux-live/**"
       - "ktv-os/launcher.py"
+      - "ktv-os/player.py"
       - "ktv-os/app/**"
       - ".github/workflows/build-ktv-os-iso.yml"
 

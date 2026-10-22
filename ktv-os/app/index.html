@@ -11,7 +11,7 @@
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.1</span></div></div>
+      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.3</span></div></div>
       <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><button class="icon-button focusable" data-action="fullscreen" title="Tela cheia" aria-label="Tela cheia">⛶</button></div>
     </header>
     <div class="layout">
@@ -37,10 +37,10 @@
             <button class="tile amber focusable" data-route="entradas"><div class="tile-art">⇄</div><span class="tile-kicker">CONECTIVIDADE</span><strong>Entradas HDMI</strong><small>Alternar fontes na televisão</small><span class="tile-arrow">↗</span></button>
           </div>
         </section>
-        <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Nesta primeira versão, o navegador reproduz somente formatos compatíveis com ele.</p><div id="channels" class="content-grid"></div></section>
-        <section class="screen" data-screen="usb"><div class="eyebrow">BIBLIOTECA LOCAL</div><h1>USB e <span class="gradient-text">mídias.</span></h1><p class="lead">Acessa arquivos do computador que executa o KTV OS. Pendrives ligados diretamente à Samsung não são visíveis neste sistema externo.</p><div class="panel"><h2>Dispositivos detectados no computador</h2><div id="devices"></div></div><h2 class="section-title">Minha biblioteca</h2><div id="media" class="content-grid"></div></section>
+        <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de streams HLS/MP4 pelo mpv nativo quando disponível. Cadastre apenas fontes próprias ou autorizadas.</p><div id="channels" class="content-grid"></div></section>
+        <section class="screen" data-screen="usb"><div class="eyebrow">BIBLIOTECA LOCAL</div><h1>USB e <span class="gradient-text">mídias.</span></h1><p class="lead">Acessa arquivos do computador que executa o KTV OS. Pendrives ligados diretamente à Samsung não são visíveis neste sistema externo.</p><div class="panel"><h2>Dispositivos detectados no computador</h2><div id="devices"></div><button class="ghost focusable" data-action="refresh-usb">Atualizar USB</button></div><h2 class="section-title" id="media-heading">Minha biblioteca</h2><div id="media" class="content-grid"></div></section>
         <section class="screen" data-screen="entradas"><div class="eyebrow">FONTES DE VÍDEO</div><h1>Escolha sua <span class="gradient-text">entrada.</span></h1><p class="lead">As entradas HDMI e a antena pertencem ao hardware original da Samsung. O KTV OS não consegue trocar essas fontes sozinho nesta fase.</p><div class="content-grid"><button class="info-card focusable" data-action="tv-aberta"><span class="card-icon">◉</span><strong>Antena / TV aberta</strong><small>Pressione SOURCE no controle Samsung e selecione TV.</small></button><button class="info-card focusable" data-action="sources"><span class="card-icon">▣</span><strong>HDMI 1</strong><small>Entrada do KTV OS (computador) ou outro aparelho.</small></button><button class="info-card focusable" data-action="sources"><span class="card-icon">▣</span><strong>HDMI 2</strong><small>Console, notebook ou outro dispositivo conectado.</small></button></div></section>
-        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Modo tela cheia</strong><p>Ideal para testes na Samsung por HDMI.</p></div><button class="ghost focusable" data-action="fullscreen">Ativar (F)</button></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Edite o arquivo .ktv-os/channels.json no computador. Sem fontes comerciais predefinidas.</p></div></div><div class="panel settings"><div><strong>Controle</strong><p>Setas: navegar · Enter: escolher · Esc: voltar · F: tela cheia.</p></div></div></section>
+        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Modo tela cheia</strong><p>Ideal para testes na Samsung por HDMI.</p></div><button class="ghost focusable" data-action="fullscreen">Ativar (F)</button></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Edite ~/.config/ktv-os/channels.json no computador. Sem fontes comerciais predefinidas.</p></div></div><div class="panel settings"><div><strong>Controle</strong><p>Setas: navegar · Enter: escolher · Esc: voltar · F: tela cheia.</p></div></div></section>
       </main>
     </div>
     <footer> KTV OS • Protótipo de interface • PC → HDMI → TV <span id="footer-help">← ↑ ↓ → navegar · Enter selecionar · Esc voltar</span></footer>
@@ -50,7 +50,7 @@
       <div class="eyebrow">KTV OS</div><h2 id="dialog-title"></h2><p id="dialog-message"></p>
       <video id="video-player" controls playsinline hidden></video>
       <img id="image-player" alt="Visualização local" hidden>
-      <button class="primary focusable" id="dialog-close">Voltar (Esc)</button>
+      <div class="hero-actions"><button class="ghost focusable" id="player-stop" hidden>Parar reprodução nativa</button><button class="primary focusable" id="dialog-close">Voltar (Esc)</button></div>
     </div>
   </div>
 </body>

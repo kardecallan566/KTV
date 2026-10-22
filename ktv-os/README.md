@@ -83,3 +83,14 @@ Próximos passos: player Kodi/mpv para HLS e canais, seleção de diretório USB
 O código e os passos de build estão em [linux-live/README.md](linux-live/README.md). A imagem é criada com `live-build` sobre Debian 13, gerando uma ISO híbrida para pendrive ligado ao **computador**. Os arquivos de configuração ficam em `~/.config/ktv-os/channels.json` (no Live, temporário, sem persistência neste checkpoint).
 
 **Atenção:** não coloque a ISO na porta USB da Samsung, não use o menu Atualização de Software da TV e não substitua o firmware original. O HD/SSD do computador não será formatado ao executar o Linux Live, mas a gravação da imagem no **pendrive selecionado** apagará os dados dele. Hardware NVIDIA e compatibilidade UEFI precisam ser testados fisicamente.
+
+
+## KTV OS Alpha 0.3 — reprodução nativa e USB
+
+O SO agora inclui o **mpv** no Linux Live e abre HLS `.m3u8` e MP4 autorizados em janela nativa de tela cheia. Na lista de Canais, selecione o cartão e pressione Enter. O mpv aparece à frente da interface; pressione **Q** na janela do mpv para sair e voltar ao KTV OS. Na interface também existe um botão para interromper reprodução. O backend não aceita URLs arbitrárias enviadas ao player: só índices de canais previamente cadastrados e arquivos autorizados.
+
+No computador Windows, é possível testar instalando `mpv` no PATH; se não estiver instalado, o sistema mostra uma mensagem e mantém o fallback HTML5 para arquivos locais.
+
+A seção USB mostra pendrives montados **no computador**, permitindo abrir os arquivos da raiz, reproduzir vídeos/áudios e visualizar fotos. No Linux Live, `udiskie` cuida da montagem automática via UDisks2. Em Windows, as unidades removíveis aparecem por letra. Não são acessadas unidades ligadas à porta USB da Samsung. Acesso é apenas leitura pela interface.
+
+Ainda não há varredura recursiva de subpastas, playlists M3U completas, controle HDMI-CEC nem sintonizador ISDB-Tb. As alterações em canais feitas no Live sem persistência serão perdidas ao reiniciar.
