@@ -110,7 +110,22 @@ class ChannelStore:
                 value = json.loads(raw)
                 if not isinstance(value, dict):
                     raise ChannelError('Formato de canais invalido')
-                return validate_collection(value.get('channels'))
+                # Compatibilidade com a Alpha 0.3: entradas antigas invalidas sao
+                # ignoradas individualmente, nao inutilizam a lista inteira.
+                entries = value.get('channels')
+                if not isinstance(entries, list):
+                    raise ChannelError('Lista de canais invalida')
+                result, seen = [], set()
+                for raw_item in entries[:LIMIT]:
+                    try:
+                        item = validate_channel(raw_item)
+                    except ChannelError:
+                        continue
+                    if item['id'] in seen:
+                        continue
+                    seen.add(item['id'])
+                    result.append(item)
+                return result
             except (UnicodeDecodeError, json.JSONDecodeError) as exc:
                 raise ChannelError('Arquivo de canais corrompido: {}'.format(exc))
 
