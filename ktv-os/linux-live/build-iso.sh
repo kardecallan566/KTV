@@ -6,12 +6,12 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 BUILD_DIR="${KTV_OS_BUILD_DIR:-$SCRIPT_DIR/.build}"
 OUTPUT_DIR="${KTV_OS_OUTPUT_DIR:-$SCRIPT_DIR/dist}"
-ISO_NAME="KTV-OS-Alpha-0.3-amd64.iso"
+ISO_NAME="KTV-OS-Alpha-0.4-amd64.iso"
 
 die() { printf 'KTV OS: %s\n' "$*" >&2; exit 1; }
 
 check_sources() {
-  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/app/index.html" \
+  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/app/index.html" \
     "$PROJECT_DIR/ktv-os/app/app.js" "$SCRIPT_DIR/packages.list.chroot" \
     "$SCRIPT_DIR/overlay/etc/lightdm/lightdm.conf.d/50-ktv-os.conf" \
     "$SCRIPT_DIR/overlay/etc/xdg/openbox/autostart" \
@@ -63,6 +63,7 @@ cp -a "$SCRIPT_DIR/overlay/." config/includes.chroot/
 mkdir -p config/includes.chroot/opt/ktv-os
 cp "$PROJECT_DIR/ktv-os/launcher.py" config/includes.chroot/opt/ktv-os/launcher.py
 cp "$PROJECT_DIR/ktv-os/player.py" config/includes.chroot/opt/ktv-os/player.py
+cp "$PROJECT_DIR/ktv-os/channel_store.py" config/includes.chroot/opt/ktv-os/channel_store.py
 cp -a "$PROJECT_DIR/ktv-os/app" config/includes.chroot/opt/ktv-os/app
 
 # The process runs under the unprivileged default Live user via LightDM/Openbox.

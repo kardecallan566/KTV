@@ -65,3 +65,10 @@ O sistema nunca tenta substituir bootloader ou firmware da Samsung.
 ## Alpha 0.3 — player e montagem USB
 
 Foi adicionado o pacote Debian `mpv` ao sistema Linux e `udiskie` para montar automaticamente volumes removíveis conectados ao computador. A API local restringe a reprodução mpv a canais validados e arquivos do diretório autorizado ou de uma unidade removível montada. A ISO gerada agora usa o nome **KTV-OS-Alpha-0.3-amd64.iso**; ainda é necessário validar fisicamente GPU/HDMI e os codecs da transmissão.
+
+
+## Alpha 0.4 — canais e backup USB
+
+O arquivo da próxima compilação é **KTV-OS-Alpha-0.4-amd64.iso**. O gerenciador de canais permite cadastrar/editar/reordenar/favoritar pelo teclado e controle. O backup requer **um pendrive de dados separado**, ligado ao PC, montado automaticamente pelo Linux; pelo menu Configurações, selecione a unidade e escolha Salvar backup ou Restaurar backup. Nenhum pendrive é formatado pelo KTV OS. O arquivo na raiz do volume se chama `KTVOS-channels-backup.json`. O Linux Live sem persistência perde alterações não copiadas para USB ao reiniciar. Futuro: persistência automática após testes de hardware.
+
+O workflow de ISO verifica dinamicamente o nome do arquivo e o hash antes de disponibilizar artefatos, evitando que um nome antigo de versão cause falha de publicação.
