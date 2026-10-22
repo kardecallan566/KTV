@@ -72,3 +72,10 @@ Foi adicionado o pacote Debian `mpv` ao sistema Linux e `udiskie` para montar au
 O arquivo da próxima compilação é **KTV-OS-Alpha-0.4-amd64.iso**. O gerenciador de canais permite cadastrar/editar/reordenar/favoritar pelo teclado e controle. O backup requer **um pendrive de dados separado**, ligado ao PC, montado automaticamente pelo Linux; pelo menu Configurações, selecione a unidade e escolha Salvar backup ou Restaurar backup. Nenhum pendrive é formatado pelo KTV OS. O arquivo na raiz do volume se chama `KTVOS-channels-backup.json`. O Linux Live sem persistência perde alterações não copiadas para USB ao reiniciar. Futuro: persistência automática após testes de hardware.
 
 O workflow de ISO verifica dinamicamente o nome do arquivo e o hash antes de disponibilizar artefatos, evitando que um nome antigo de versão cause falha de publicação.
+
+
+## 0.5 — Persistência opt-in e recuperação
+
+A ISO contém `persistence.py` e suporte `zenity`/terminal para diagnóstico do boot. Um segundo pendrive montado em `/media/user` ou `/run/media/user` pode guardar `.ktv-os-persistence/device.json` e `channels.json`; o recurso só é habilitado mediante ação explícita no menu Configurações. O KTV OS procura o marcador nas inicializações seguintes e restaura os canais se não houver lista local. Não há modificação de partições, criptografia, nem instalação no SSD do computador. Para desligar a persistência, o pendrive precisa estar conectado, pois o sistema remove somente seu marcador de ativação.
+
+Se o navegador fechar repetidamente, o supervisor fornece um diálogo **Tentar novamente / Sair para diagnóstico**, com logs em `~/.config/ktv-os` e console de recuperação pelo atalho Ctrl+Alt+F2. Isso não garante compatibilidade com todos os drivers Nvidia/HDMI; testes no PC conectado à Samsung continuam indispensáveis.

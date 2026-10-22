@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Read-only local diagnostics, no serial numbers or raw MAC addresses.
+set -u
+OUT="${HOME:-/home/user}/ktv-os-diagnostics.txt"
+{
+  echo "KTV OS - Diagnostico local $(date -Is)"
+  echo "Kernel: $(uname -srmo)"
+  echo "Display: ${DISPLAY:-n/d}"
+  echo "Saidas de video:"
+  xrandr --query 2>&1 | grep -E ' connected| disconnected' | head -20 || true
+  echo "GPU (apenas tipo):"
+  lspci 2>/dev/null | grep -Ei 'VGA|Display|3D controller' | head -8 || true
+  echo "USB montados (apenas caminhos):"
+  findmnt -rn -o TARGET,FSTYPE | grep -E '^/media/|^/run/media/' | head -15 || true
+  echo "Servicos:"
+  systemctl is-active lightdm NetworkManager 2>&1 || true
+  echo "Ultimos eventos KTV OS:"
+  tail -n 45 "$HOME/.config/ktv-os/session.log" 2>/dev/null || true
+  tail -n 35 "$HOME/.config/ktv-os/server.log" 2>/dev/null || true
+} > "$OUT"
+printf 'Relatorio salvo em %s\n' "$OUT"

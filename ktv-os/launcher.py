@@ -20,9 +20,11 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 from player import NativePlayer, safe_media_path
 from channel_store import ChannelStore, ChannelError
+from persistence import PersistenceManager, PersistenceError
+from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.4.0'
+VERSION = '0.5.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -116,10 +118,24 @@ class KTVOSServer(ThreadingHTTPServer):
             raise ValueError('--media-dir deve ser uma pasta existente')
         self.player = player if player is not None else NativePlayer()
         self.channels = ChannelStore(self.state_dir)
+        self.persistence = PersistenceManager(self.channels)
+        self._persistence_stop = Event()
         super().__init__((host, port), KTVOSHandler)
+        # Automount can finish after the graphical session starts.
+        self.persistence.poll(usb_mounts())
+        self._persistence_thread = Thread(target=self._persistence_loop, daemon=True)
+        self._persistence_thread.start()
+
+    def _persistence_loop(self):
+        while not self._persistence_stop.wait(3):
+            self.persistence.poll(usb_mounts())
+
+    def server_close(self):
+        self._persistence_stop.set()
+        super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.4'
+    server_version = 'KTV-OS/0.5'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -146,7 +162,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_data(200, (APP / filename).read_bytes(), mime)
         if path == '/api/status':
             return self.send_json({'version': VERSION, 'host': self.server.server_address[0],
-                                   'usb_direct_tv': False, 'player': self.server.player.status()})
+                                   'usb_direct_tv': False, 'player': self.server.player.status(),
+                                   'persistence': self.server.persistence.status(usb_mounts())})
         if path == '/api/devices':
             return self.send_json({'devices': detect_removable()})
         if path == '/api/channels':
@@ -154,6 +171,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'channels': self.server.channels.load()})
             except (ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 500)
+        if path == '/api/persistence/status':
+            return self.send_json({'persistence': self.server.persistence.status(usb_mounts())})
         if path == '/api/player/status':
             return self.send_json({'player': self.server.player.status()})
         if path == '/api/media':
@@ -176,7 +195,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ('/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore'):
+        if path not in ('/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable'):
             return self.send_json({'error': 'Rota nao encontrada'}, 404)
 
         # Only this machine may write to the playback controller.
@@ -197,13 +216,24 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
             return self.send_json({'error': 'JSON invalido'}, 400)
 
+        if path in ('/api/persistence/enable', '/api/persistence/disable'):
+            try:
+                if path.endswith('enable'):
+                    info = self.server.persistence.enroll(usb_mounts(), payload.get('device'))
+                else:
+                    info = self.server.persistence.disable(usb_mounts())
+                return self.send_json({'ok': True, 'persistence': info})
+            except (PersistenceError, ChannelError, OSError) as exc:
+                return self.send_json({'error': str(exc)}, 400)
+
         if path == '/api/channels/change':
             action = payload.get('action')
             if action not in ('add','edit','delete','favorite','up','down'):
                 return self.send_json({'error': 'Acao desconhecida'}, 400)
             try:
                 result = self.server.channels.change(action, payload)
-                return self.send_json({'ok': True, 'channels': result})
+                persisted = self.server.persistence.sync(usb_mounts())
+                return self.send_json({'ok': True, 'channels': result, 'persistence': persisted})
             except (ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 400)
 
@@ -220,7 +250,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                     name = self.server.channels.export_to_usb(matched[0])
                     return self.send_json({'ok': True, 'message': 'Backup salvo: ' + name})
                 restored = self.server.channels.import_from_usb(matched[0])
-                return self.send_json({'ok': True, 'channels': restored})
+                persisted = self.server.persistence.sync(usb_mounts())
+                return self.send_json({'ok': True, 'channels': restored, 'persistence': persisted})
             except (ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 400)
 
@@ -319,7 +350,7 @@ def main():
     args = parser.parse_args()
     server = KTVOSServer(port=args.port, media_dir=args.media_dir)
     url = 'http://127.0.0.1:{}'.format(server.server_address[1])
-    print('=== KTV OS ALPHA 0.4 ===')
+    print('=== KTV OS ALPHA 0.5 ===')
     print('Tela:', url)
     print('Pasta de midias:', server.media_dir or '(nenhuma: use --media-dir)')
     print('Canais:', server.state_dir / 'channels.json')
