@@ -36,3 +36,8 @@ Adicionado construtor de imagem Debian Live amd64 em `ktv-os/linux-live/`, sess�
 ## Alpha 0.4 — canais via interface e backup explícito
 
 O usuário pode cadastrar, editar, favoritar, ordenar e remover canais diretamente na interface KTV OS. Um arquivo separado `channel_store.py` valida URL/ID, limita a 100 canais e grava de forma atômica em espaço de usuário. Backup/restauração manual em mídia USB removível montada no computador, com confirmação para substituir a lista existente. A ISO 0.4 inclui o módulo e corrige o workflow para não tentar validar nomes de ISO de versões anteriores. Persistência automatizada e guia EPG permanecem fora do escopo.
+
+
+## Alpha 0.5 — segurança e UX
+
+Implementada persistência de canais opt-in em pendrive USB removível, com marcador de habilitação, restore automático apenas quando o perfil local ainda não contém dados, sincronização de alterações e desativação persistente sem apagar o snapshot. Controle por gamepad via navegador (USB/Bluetooth no computador), mantendo teclado. Supervisor com recuperação de falhas, logs compactados por sessão e utilitário de diagnóstico read-only. Não altera bootloader, firmware, TV, partições nem arquivos fora da pasta KTV OS em USB escolhido.

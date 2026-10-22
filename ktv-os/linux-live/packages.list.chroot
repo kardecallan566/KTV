@@ -11,6 +11,8 @@ openbox
 chromium
 mpv
 udiskie
+zenity
+xterm
 python3
 curl
 ca-certificates
