@@ -26,3 +26,8 @@
 - HDMI-CEC geralmente exige suporte na porta/adaptador e expõe somente comandos limitados, não transforma HDMI OUT em HDMI IN.
 - Drivers de GPU NVIDIA e aceleração por hardware exigem seleção cuidadosa da base Linux.
 - USB ISDB-Tb deve ter driver Linux e ser testado com recepção local legal de canais abertos.
+
+
+## Alpha 0.2 — inicialização USB real
+
+Adicionado construtor de imagem Debian Live amd64 em `ktv-os/linux-live/`, sessão gráfica LightDM/Openbox e kiosk KTV OS iniciado automaticamente sem Windows. O código-fonte passa por testes automáticos de estrutura; uma ISO só pode ser considerada pronta quando o `live-build` finalizar e o arquivo for validado. Persistência, drivers NVIDIA proprietários, rádio ISDB-Tb, HDMI-CEC e entrada HDMI capturada continuam fora do escopo e serão testados separadamente.

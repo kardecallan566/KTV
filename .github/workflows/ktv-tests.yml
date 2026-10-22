@@ -25,3 +25,8 @@ jobs:
         run: python -m unittest discover -s ktv-os/tests -v
       - name: Verificar JavaScript KTV OS
         run: node --check ktv-os/app/app.js
+      - name: Verificar construtor Linux Live (sem gerar ISO)
+        run: |
+          bash -n ktv-os/linux-live/build-iso.sh
+          bash -n ktv-os/linux-live/overlay/usr/local/bin/ktv-os-session
+          bash ktv-os/linux-live/build-iso.sh --check

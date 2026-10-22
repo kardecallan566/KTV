@@ -1,0 +1,48 @@
+name: Build KTV OS Bootable ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "ktv-os/linux-live/**"
+      - "ktv-os/launcher.py"
+      - "ktv-os/app/**"
+      - ".github/workflows/build-ktv-os-iso.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar construtor Debian Live
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y live-build debootstrap xorriso squashfs-tools \
+            grub-pc-bin grub-efi-amd64-bin syslinux-utils isolinux mtools dosfstools
+      - name: Validar scripts
+        run: |
+          bash -n ktv-os/linux-live/build-iso.sh
+          bash -n ktv-os/linux-live/overlay/usr/local/bin/ktv-os-session
+          bash ktv-os/linux-live/build-iso.sh --check
+      - name: Gerar ISO Debian Live para PC/HDMI
+        run: sudo bash ktv-os/linux-live/build-iso.sh
+      - name: Conferir integridade da ISO gerada
+        run: |
+          cd ktv-os/linux-live/dist
+          test -s KTV-OS-Alpha-0.2-amd64.iso
+          sha256sum -c KTV-OS-Alpha-0.2-amd64.iso.sha256
+      - name: Disponibilizar ISO inicializavel
+        uses: actions/upload-artifact@v4
+        with:
+          name: KTV-OS-Alpha-0.2-amd64
+          path: |
+            ktv-os/linux-live/dist/KTV-OS-Alpha-0.2-amd64.iso
+            ktv-os/linux-live/dist/KTV-OS-Alpha-0.2-amd64.iso.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

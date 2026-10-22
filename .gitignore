@@ -8,3 +8,8 @@ __pycache__/
 
 # KTV OS: preferencias/canais locais nao versionados
 ktv-os/.ktv-os/
+
+# Saidas locais do gerador KTV OS Linux Live
+ktv-os/linux-live/.build/
+ktv-os/linux-live/dist/
+ktv-os/linux-live/config/
