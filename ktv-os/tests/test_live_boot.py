@@ -26,7 +26,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
 
     def test_real_linux_components_and_local_kiosk(self):
         packages = set((LINUX / 'packages.list.chroot').read_text().split())
-        self.assertTrue({'linux-image-amd64', 'live-boot', 'live-config',
+        self.assertTrue({'linux-image-amd64', 'live-boot', 'live-config', 'mpv', 'udiskie',
                          'lightdm', 'openbox', 'chromium', 'python3'} <= packages)
         lightdm = (LINUX / 'overlay/etc/lightdm/lightdm.conf.d/50-ktv-os.conf').read_text()
         self.assertIn('autologin-user=user', lightdm)
@@ -45,6 +45,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
         self.assertIn('--binary-images iso-hybrid', builder)
         self.assertIn('--debian-installer none', builder)
         self.assertIn('config/includes.chroot', builder)
+        self.assertIn('ktv-os/player.py', builder)
         self.assertIn('lb build', builder)
 
 if __name__ == '__main__':
