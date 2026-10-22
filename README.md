@@ -131,3 +131,8 @@ python launcher.py --open
 \`\`\`
 
 O servidor Legacy em \`installer-local/\` permanece inalterado.
+
+
+## KTV OS Linux Live inicializável (Alpha 0.2)
+
+O KTV OS agora conta com [perfil de distribuição Debian Linux Live](ktv-os/linux-live/README.md) para computadores amd64 ligados à TV por HDMI. O construtor gera uma ISO híbrida bootável a partir de Debian 13, com kernel/serviços reais, login gráfico automático e interface KTV em kiosk. Esse sistema executa **no PC ao iniciar pelo pendrive**, sem iniciar Windows. A porta USB da TV Samsung **não instala Linux ou substitui firmware**. A ISO só estará disponível quando a compilação terminar; a saída HDMI/NVIDIA precisa de teste físico.

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Started by Openbox as the unprivileged Debian Live user.
+set -u
+export HOME="${HOME:-/home/user}"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+mkdir -p "$HOME/.config/ktv-os"
+cd /opt/ktv-os || exit 1
+python3 launcher.py --port 8787 > "$HOME/.config/ktv-os/server.log" 2>&1 &
+SERVER_PID=$!
+cleanup() {
+  kill "$SERVER_PID" 2>/dev/null || true
+  wait "$SERVER_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+READY=0
+for _ in $(seq 1 40); do
+  if curl -fsS --max-time 1 http://127.0.0.1:8787/api/status >/dev/null; then
+    READY=1
+    break
+  fi
+  sleep 0.25
+done
+if [[ "$READY" -ne 1 ]]; then
+  printf 'Falha ao iniciar servidor KTV OS\n' >&2
+  exit 1
+fi
+
+# Chromium is UI only; Linux, X11 and system services run beneath it.
+while kill -0 "$SERVER_PID" 2>/dev/null; do
+  chromium --no-first-run --disable-session-crashed-bubble \
+    --noerrdialogs --password-store=basic \
+    --kiosk --app=http://127.0.0.1:8787/ || true
+  sleep 2
+done

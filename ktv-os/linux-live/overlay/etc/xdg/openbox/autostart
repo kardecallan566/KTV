@@ -1,0 +1,5 @@
+#!/bin/sh
+xset s off
+xset s noblank
+xset -dpms
+/usr/local/bin/ktv-os-session &

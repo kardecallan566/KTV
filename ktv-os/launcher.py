@@ -17,7 +17,7 @@ import webbrowser
 
 ROOT = Path(__file__).resolve().parent
 APP = ROOT / 'app'
-STATE = ROOT / '.ktv-os'
+STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
 VERSION = '0.1.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),

@@ -32,7 +32,7 @@ O recurso **USB da Samsung** não é acessível por um sistema externo conectado
 
 ## Canais personalizados
 
-Na primeira execução, será criado \`ktv-os/.ktv-os/channels.json\`:
+Na primeira execução, será criado \`~/.config/ktv-os/channels.json\`:
 
 \`\`\`json
 {
@@ -74,3 +74,12 @@ O notebook com RTX 3050 pode exigir drivers NVIDIA para desempenho e saída HDMI
 **Segurança:** servidor apenas em loopback; evite abrir porta 8787 para a rede. O diretório \`.ktv-os/\` não entra no Git.
 
 Próximos passos: player Kodi/mpv para HLS e canais, seleção de diretório USB na interface, controle remoto/CEC, hardware para ISDB-Tb, instalação em USB Linux com persistência, depois distribuição Linux KTV dedicada.
+
+
+## KTV OS Alpha 0.2 — Linux inicializável pelo computador
+
+**Agora existe um perfil de construção de um sistema Linux Live real**, diferente da Alpha 0.1 que roda no navegador do Windows. O Linux Live contém kernel, módulos de hardware, NetworkManager, áudio, LightDM e Openbox, faz login automaticamente na sessão Live e abre a interface KTV OS em tela cheia no Chromium. O Windows não é executado neste processo.
+
+O código e os passos de build estão em [linux-live/README.md](linux-live/README.md). A imagem é criada com `live-build` sobre Debian 13, gerando uma ISO híbrida para pendrive ligado ao **computador**. Os arquivos de configuração ficam em `~/.config/ktv-os/channels.json` (no Live, temporário, sem persistência neste checkpoint).
+
+**Atenção:** não coloque a ISO na porta USB da Samsung, não use o menu Atualização de Software da TV e não substitua o firmware original. O HD/SSD do computador não será formatado ao executar o Linux Live, mas a gravação da imagem no **pendrive selecionado** apagará os dados dele. Hardware NVIDIA e compatibilidade UEFI precisam ser testados fisicamente.

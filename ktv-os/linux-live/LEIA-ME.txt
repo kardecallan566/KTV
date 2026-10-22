@@ -1,0 +1,29 @@
+KTV OS Alpha 0.2 — Debian Linux Live (amd64)
+
+REQUISITOS
+- PC x86-64 conectado à TV por HDMI
+- Pendrive >= 8 GB (será apagado ao gravar ISO)
+- Debian 13 / ambiente Linux para gerar ISO, ou GitHub Actions
+- Internet durante o build para baixar pacotes oficiais Debian
+
+NO DEBIAN 13:
+  sudo apt update
+  sudo apt install live-build debootstrap xorriso squashfs-tools \
+      grub-pc-bin grub-efi-amd64-bin syslinux-utils isolinux mtools dosfstools
+  sudo bash ktv-os/linux-live/build-iso.sh
+
+SAIDA ESPERADA:
+  ktv-os/linux-live/dist/KTV-OS-Alpha-0.2-amd64.iso
+  ktv-os/linux-live/dist/KTV-OS-Alpha-0.2-amd64.iso.sha256
+
+O BOOT REAL USA:
+  Kernel Debian Linux, drivers, LightDM + Openbox, Chromium em kiosk,
+  NetworkManager, áudio PulseAudio, descoberta informativa de USB.
+  O computador inicia esse Linux pelo pendrive; não entra no Windows.
+
+RESTRICOES:
+- Não funciona na porta USB da TV Samsung: apenas no PC.
+- A ISO não altera o firmware da TV nem instala no disco interno do PC.
+- Não há persistência das mudanças entre sessões nesta versão.
+- HDMI/NVIDIA RTX 3050 e boot UEFI precisam de teste físico.
+- Não confundir a fonte ISO com uma ISO compilada/testada.
