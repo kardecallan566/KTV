@@ -2,4 +2,5 @@
 xset s off
 xset s noblank
 xset -dpms
+udiskie --no-tray --no-notify --no-password-prompt --no-file-manager &
 /usr/local/bin/ktv-os-session &
