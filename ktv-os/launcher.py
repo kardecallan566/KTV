@@ -21,10 +21,11 @@ sys.path.insert(0, str(ROOT))
 from player import NativePlayer, safe_media_path
 from channel_store import ChannelStore, ChannelError
 from persistence import PersistenceManager, PersistenceError
+from hardware import HardwareManager, HardwareError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.5.0'
+VERSION = '0.6.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -110,13 +111,14 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None):
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.media_dir = Path(media_dir).resolve(strict=True) if media_dir else None
         if self.media_dir and not self.media_dir.is_dir():
             raise ValueError('--media-dir deve ser uma pasta existente')
         self.player = player if player is not None else NativePlayer()
+        self.hardware = hardware if hardware is not None else HardwareManager()
         self.channels = ChannelStore(self.state_dir)
         self.persistence = PersistenceManager(self.channels)
         self._persistence_stop = Event()
@@ -132,10 +134,11 @@ class KTVOSServer(ThreadingHTTPServer):
 
     def server_close(self):
         self._persistence_stop.set()
+        self.hardware.close()
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.5'
+    server_version = 'KTV-OS/0.6'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -171,6 +174,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'channels': self.server.channels.load()})
             except (ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 500)
+        if path == '/api/hardware':
+            return self.send_json({'hardware': self.server.hardware.status()})
         if path == '/api/persistence/status':
             return self.send_json({'persistence': self.server.persistence.status(usb_mounts())})
         if path == '/api/player/status':
@@ -195,7 +200,10 @@ class KTVOSHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ('/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable'):
+        if path not in ('/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
+                        '/api/hardware/video/preview', '/api/hardware/video/confirm',
+                        '/api/hardware/video/cancel', '/api/hardware/audio/output',
+                        '/api/hardware/audio/volume', '/api/hardware/audio/mute'):
             return self.send_json({'error': 'Rota nao encontrada'}, 404)
 
         # Only this machine may write to the playback controller.
@@ -216,6 +224,26 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
             return self.send_json({'error': 'JSON invalido'}, 400)
 
+        if path.startswith('/api/hardware/'):
+            try:
+                hw = self.server.hardware
+                if path.endswith('/video/preview'):
+                    result = hw.preview(payload.get('output'), payload.get('mode'))
+                elif path.endswith('/video/confirm'):
+                    result = hw.confirm(payload.get('token'))
+                elif path.endswith('/video/cancel'):
+                    result = hw.cancel()
+                elif path.endswith('/audio/output'):
+                    result = hw.choose_audio(payload.get('sink'))
+                elif path.endswith('/audio/volume'):
+                    result = hw.set_volume(payload.get('volume'))
+                elif path.endswith('/audio/mute'):
+                    result = hw.toggle_mute()
+                else:
+                    return self.send_json({'error': 'Comando de hardware desconhecido'}, 404)
+                return self.send_json({'ok': True, 'result': result})
+            except HardwareError as exc:
+                return self.send_json({'error': str(exc)}, 400)
         if path in ('/api/persistence/enable', '/api/persistence/disable'):
             try:
                 if path.endswith('enable'):
@@ -350,7 +378,7 @@ def main():
     args = parser.parse_args()
     server = KTVOSServer(port=args.port, media_dir=args.media_dir)
     url = 'http://127.0.0.1:{}'.format(server.server_address[1])
-    print('=== KTV OS ALPHA 0.5 ===')
+    print('=== KTV OS ALPHA 0.6 ===')
     print('Tela:', url)
     print('Pasta de midias:', server.media_dir or '(nenhuma: use --media-dir)')
     print('Canais:', server.state_dir / 'channels.json')
