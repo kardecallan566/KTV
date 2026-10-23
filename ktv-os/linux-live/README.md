@@ -79,3 +79,8 @@ O workflow de ISO verifica dinamicamente o nome do arquivo e o hash antes de dis
 A ISO contém `persistence.py` e suporte `zenity`/terminal para diagnóstico do boot. Um segundo pendrive montado em `/media/user` ou `/run/media/user` pode guardar `.ktv-os-persistence/device.json` e `channels.json`; o recurso só é habilitado mediante ação explícita no menu Configurações. O KTV OS procura o marcador nas inicializações seguintes e restaura os canais se não houver lista local. Não há modificação de partições, criptografia, nem instalação no SSD do computador. Para desligar a persistência, o pendrive precisa estar conectado, pois o sistema remove somente seu marcador de ativação.
 
 Se o navegador fechar repetidamente, o supervisor fornece um diálogo **Tentar novamente / Sair para diagnóstico**, com logs em `~/.config/ktv-os` e console de recuperação pelo atalho Ctrl+Alt+F2. Isso não garante compatibilidade com todos os drivers Nvidia/HDMI; testes no PC conectado à Samsung continuam indispensáveis.
+
+
+## KTV OS Alpha 0.6 — saídas HDMI e áudio
+
+Incluídos `hardware.py` e o pacote Debian `pulseaudio-utils` (com `pactl`). O KTV OS exibe saídas conectadas/modes de `xrandr` e sinks PulseAudio na seção Imagem e som. Alterações de resolução são **temporárias até confirmação**; após 20 segundos sem confirmação, o backend tenta restaurar a resolução anterior. Mudanças não são salvas no firmware nem forçam resolução arbitrária, e a proteção depende de o processo Python/Xorg permanecer ativo. O volume e a escolha de saída de áudio são aplicados ao servidor de som da sessão Linux. Driver HDMI/NVIDIA ainda requer teste físico.

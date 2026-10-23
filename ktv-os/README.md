@@ -110,3 +110,12 @@ Para preservar dados ao reiniciar o Linux Live, conecte um **segundo pendrive de
 **Controle:** além das setas/Enter/Esc, agora há navegação por gamepad USB/Bluetooth reconhecido pelo navegador do computador: D-pad/analógico para mover, A para escolher, B para voltar e Start para Início. O controle original Samsung por infravermelho **não é um gamepad**; requer adaptador HDMI-CEC ou emissor IR, ainda fora do escopo.
 
 **Recuperação:** a sessão Linux reinicia o Chromium após encerramentos inesperados e, depois de falhas consecutivas, abre uma janela para tentar novamente ou sair ao modo de recuperação. Logs em `~/.config/ktv-os/session.log` e `server.log`; execute `/usr/local/bin/ktv-os-diagnostics` pelo console Linux (Ctrl+Alt+F2) para gerar `~/ktv-os-diagnostics.txt`. Nenhum reset, atualização de firmware ou formatação é executado.
+
+
+## Alpha 0.6 — ajuste seguro de vídeo HDMI e áudio
+
+A tela **Imagem e som** mostra as saídas HDMI/DisplayPort e as resoluções anunciadas por `xrandr` no computador Linux Live. Para mudar a resolução, selecione um modo e escolha **Testar resolução**: o Linux inicia um contador de 20 segundos, e o sistema restaura o modo anterior automaticamente se não houver confirmação. Essa proteção funciona enquanto o processo do servidor Linux continuar ativo; travamentos de kernel/driver podem impedir a reversão automática. Resoluções não anunciadas pelo monitor são rejeitadas. A alteração vale apenas para a sessão Linux em execução, sem modificar firmware da TV.
+
+Na mesma tela, o KTV OS usa `pactl` para listar saídas PulseAudio (incluindo HDMI quando o driver fornecer), selecionar dispositivo de som, ajustar volume de 0 a 100% e alternar mudo. Tudo é executado no próprio computador, sem shell e sem acesso remoto. Se o hardware não oferecer HDMI/áudio, a interface mostra a indisponibilidade e não simula sucesso. O volume da Samsung pode precisar de ajuste separado com seu controle.
+
+**Importante:** notebook ASUS com gráficos híbridos NVIDIA pode não anunciar a saída HDMI pelo driver aberto do Linux Live. O diagnóstico serve para identificar essa situação; resolução e áudio dependem de testes físicos. Não é controle HDMI-CEC das entradas da Samsung nem acesso ao sintonizador interno da TV.

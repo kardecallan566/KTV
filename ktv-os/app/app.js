@@ -8,6 +8,9 @@
   var playerStop = document.getElementById('player-stop');
   var nativeAvailable = false;
   var nativeActive = false;
+  var pendingVideoToken = null;
+  var pendingVideoTimer = null;
+  var discoveredDisplays = [];
   function el(id) { return document.getElementById(id); }
   function clock() {
     el('clock').textContent = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
@@ -20,6 +23,7 @@
   }
   function closeDialog() {
     if (overlay.hidden) return;
+    if (pendingVideoToken) cancelVideoPreview();
     video.pause(); video.removeAttribute('src'); video.load(); video.hidden = true;
     image.removeAttribute('src'); image.hidden = true; overlay.hidden = true;
     if (nativeActive) stopNative();
@@ -38,6 +42,7 @@
     if (name === 'usb') loadUSB();
     if (name === 'canais') loadChannels();
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();}
+    if (name === 'hardware') refreshHardware();
   }
   function activate(button) {
     var r = button.getAttribute('data-route'), a = button.getAttribute('data-action');
@@ -338,6 +343,125 @@
       nativeAvailable=!!(data.player&&data.player.available);
       el('server-detail').textContent='KTV OS '+data.version+' · '+data.host+' · Player: '+(nativeAvailable?'mpv nativo pronto':'navegador (mpv não encontrado)')+' · Acesso local.';
     }
+  });
+
+
+  // A resolution change lasts at most 20 seconds unless explicitly confirmed.
+  // Even if the browser becomes unresponsive the Linux backend timer rolls it back.
+  function videoFeedback(message){el('video-feedback').textContent=message;}
+  function audioFeedback(message){el('audio-feedback').textContent=message;}
+  function options(id, entries, key, label){
+    var element=el(id),selected=element.value;
+    element.textContent='';
+    entries.forEach(function(entry){
+      var option=document.createElement('option');
+      option.value=entry[key];option.textContent=entry[label];
+      element.appendChild(option);
+    });
+    if(entries.some(function(entry){return entry[key]===selected;}))element.value=selected;
+  }
+  function refreshModes(){
+    var output=discoveredDisplays.filter(function(o){return o.name===el('display-output').value;})[0];
+    var modes=(output?output.modes:[]).map(function(m){return {value:m,label:m+(m===output.current?' (atual)':'')};});
+    options('display-mode',modes,'value','label');
+    if(output && !modes.some(function(x){return x.value===el('display-mode').value;}))el('display-mode').value=output.current||'';
+  }
+  function refreshHardware(){
+    get('/api/hardware',function(err,data){
+      if(err){videoFeedback('Falha ao consultar hardware: '+err.message);return;}
+      var display=data.hardware.display,audio=data.hardware.audio;
+      discoveredDisplays=display.outputs.filter(function(o){return o.hdmi;});
+      options('display-output',discoveredDisplays,'name','name');
+      refreshModes();
+      el('display-apply').disabled=!display.available||!discoveredDisplays.length||display.pending;
+      el('display-status').textContent=display.available?
+        (discoveredDisplays.length?'Saídas HDMI/DisplayPort detectadas no computador.':'Nenhuma saída HDMI ou DisplayPort ativa. Confira o cabo e o driver Linux.'):
+        ('Configuração de vídeo indisponível: '+display.error);
+      options('audio-sink',audio.sinks,'name','name');
+      if(audio.default && audio.sinks.some(function(x){return x.name===audio.default;}))el('audio-sink').value=audio.default;
+      el('audio-status').textContent=audio.available?
+        ('Saída ativa: '+(audio.default||'não identificada')+(audio.muted?' • mudo':'') ):
+        ('Áudio do Linux indisponível: '+audio.error);
+      if(typeof audio.volume==='number'){
+        el('audio-volume').value=Math.max(0,Math.min(100,audio.volume));
+        el('audio-volume-label').textContent=el('audio-volume').value+'%';
+      }
+      el('audio-apply').disabled=!audio.available||!audio.sinks.length;
+      el('audio-set-volume').disabled=!audio.available;
+      el('audio-mute').disabled=!audio.available;
+    });
+  }
+  el('display-output').addEventListener('change',refreshModes);
+  function clearVideoTimer(){
+    if(pendingVideoTimer){window.clearInterval(pendingVideoTimer);pendingVideoTimer=null;}
+    el('video-confirm').hidden=true;
+  }
+  function cancelVideoPreview(){
+    if(!pendingVideoToken)return;
+    pendingVideoToken=null;
+    clearVideoTimer();
+    post('/api/hardware/video/cancel',{},function(err){
+      if(err)videoFeedback('Falha ao reverter imagem: '+err.message);
+      else videoFeedback('Resolução anterior restaurada.');
+      refreshHardware();
+    });
+  }
+  el('display-apply').addEventListener('click',function(){
+    var output=el('display-output').value,mode=el('display-mode').value;
+    if(!output||!mode){videoFeedback('Selecione uma saída HDMI e uma resolução disponível.');return;}
+    post('/api/hardware/video/preview',{output:output,mode:mode},function(err,data){
+      if(err){videoFeedback('Não foi possível alterar resolução: '+err.message);return;}
+      if(!data.result.pending){videoFeedback(data.result.message);return;}
+      pendingVideoToken=data.result.token;
+      var left=data.result.seconds;
+      dialog('Confirmar nova resolução','Se a imagem está correta, selecione “Manter esta resolução”.\n\nA resolução anterior volta automaticamente após 20 segundos.');
+      el('video-confirm').hidden=false;
+      el('video-confirm').focus();
+      function redraw(){
+        el('dialog-message').textContent='Confirme somente se a imagem está correta.\n\nRetorno automático em '+left+' segundo(s).';
+      }
+      redraw();
+      pendingVideoTimer=window.setInterval(function(){
+        left--;
+        if(left<=0){
+          pendingVideoToken=null;
+          clearVideoTimer();
+          closeDialog();
+          videoFeedback('Tempo encerrado. O Linux restaurou a resolução anterior.');
+          refreshHardware();
+        }else redraw();
+      },1000);
+    });
+  });
+  el('video-confirm').addEventListener('click',function(){
+    var token=pendingVideoToken;
+    if(!token)return;
+    pendingVideoToken=null;
+    clearVideoTimer();
+    post('/api/hardware/video/confirm',{token:token},function(err,data){
+      closeDialog();
+      videoFeedback(err?'Confirmação não aplicada: '+err.message:data.result.message);
+      refreshHardware();
+    });
+  });
+  el('hardware-refresh').addEventListener('click',refreshHardware);
+  el('audio-volume').addEventListener('input',function(){
+    el('audio-volume-label').textContent=el('audio-volume').value+'%';
+  });
+  function updateAudio(path,payload){
+    post(path,payload,function(err,data){
+      audioFeedback(err?'Falha de áudio: '+err.message:data.result.message);
+      refreshHardware();
+    });
+  }
+  el('audio-apply').addEventListener('click',function(){
+    updateAudio('/api/hardware/audio/output',{sink:el('audio-sink').value});
+  });
+  el('audio-set-volume').addEventListener('click',function(){
+    updateAudio('/api/hardware/audio/volume',{volume:Number(el('audio-volume').value)});
+  });
+  el('audio-mute').addEventListener('click',function(){
+    updateAudio('/api/hardware/audio/mute',{});
   });
 
   // Gamepad API works with controllers connected to the computer, not the

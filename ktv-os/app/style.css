@@ -25,3 +25,13 @@
 .channel-editor input:focus-visible{border-color:#7ae5d4}
 #persistence-status{white-space:normal;max-width:430px;line-height:1.45}
 @media(max-width:720px){.gamepad-status{display:none}}
+
+/* KTV OS 0.6 — ajustes de video e audio */
+.hardware-form{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:16px 0}
+.hardware-form label{font-size:14px;color:#cce4f7;font-weight:700;min-width:165px}
+.hardware-form select{min-width:210px;min-height:50px;max-width:100%;background:#081a2c;color:#f0faff;border:1px solid #4d718c;border-radius:10px;padding:10px;font-size:15px}
+.hardware-form input[type=range]{width:min(240px,100%);accent-color:#70e5df}
+.hardware-feedback{min-height:19px;color:#83e5d7;line-height:1.5}
+.hardware-message,.small-note{color:#b5c9dc;font-size:14px;line-height:1.7}
+.hardware-form select:focus-visible{outline:3px solid #7af1d9}
+#video-confirm[hidden]{display:none}

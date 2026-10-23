@@ -41,3 +41,8 @@ O usuário pode cadastrar, editar, favoritar, ordenar e remover canais diretamen
 ## Alpha 0.5 — segurança e UX
 
 Implementada persistência de canais opt-in em pendrive USB removível, com marcador de habilitação, restore automático apenas quando o perfil local ainda não contém dados, sincronização de alterações e desativação persistente sem apagar o snapshot. Controle por gamepad via navegador (USB/Bluetooth no computador), mantendo teclado. Supervisor com recuperação de falhas, logs compactados por sessão e utilitário de diagnóstico read-only. Não altera bootloader, firmware, TV, partições nem arquivos fora da pasta KTV OS em USB escolhido.
+
+
+## Alpha 0.6 — integração de imagem e som
+
+Diagnóstico de saídas HDMI/DP (xrandr), identificação de modos permitidos pelo monitor, mudança com confirmação/reversão automática após 20 segundos, seleção de saída PulseAudio, ajuste de volume/mudo e mensagens de indisponibilidade para hardware sem driver. Testes simulam execução de xrandr/pactl e a reversão; CI também recompila a imagem Linux Live com o novo módulo.
