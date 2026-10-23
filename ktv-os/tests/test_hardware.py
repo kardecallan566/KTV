@@ -145,7 +145,7 @@ class HardwareAPITests(unittest.TestCase):
                 def preview(self,output,mode):
                     self.mode=(output,mode);return {'pending':False,'message':'ok'}
                 def set_volume(self,volume):
-                    if type(volume) is not int:raise hw.HardwareError('volume invalid')
+                    if type(volume) is not int:raise api.HardwareError('volume invalid')
                     return {'message':'ok'}
                 def close(self):pass
             stub=Stub()
