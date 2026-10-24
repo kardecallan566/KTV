@@ -22,10 +22,11 @@ from player import NativePlayer, safe_media_path
 from channel_store import ChannelStore, ChannelError
 from persistence import PersistenceManager, PersistenceError
 from hardware import HardwareManager, HardwareError
+from cec_bridge import CECBridge, CECError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.6.0'
+VERSION = '0.7.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -111,7 +112,7 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None):
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.media_dir = Path(media_dir).resolve(strict=True) if media_dir else None
@@ -119,6 +120,7 @@ class KTVOSServer(ThreadingHTTPServer):
             raise ValueError('--media-dir deve ser uma pasta existente')
         self.player = player if player is not None else NativePlayer()
         self.hardware = hardware if hardware is not None else HardwareManager()
+        self.cec = cec if cec is not None else CECBridge()
         self.channels = ChannelStore(self.state_dir)
         self.persistence = PersistenceManager(self.channels)
         self._persistence_stop = Event()
@@ -135,10 +137,11 @@ class KTVOSServer(ThreadingHTTPServer):
     def server_close(self):
         self._persistence_stop.set()
         self.hardware.close()
+        self.cec.close()
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.6'
+    server_version = 'KTV-OS/0.7'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -174,6 +177,16 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'channels': self.server.channels.load()})
             except (ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 500)
+        if path == '/api/cec/status':
+            return self.send_json({'cec': self.server.cec.status()})
+        if path == '/api/cec/events':
+            try:
+                after = parse_qs(url.query).get('after', ['0'])[0]
+                if not re.fullmatch(r'\d{1,12}', after):
+                    raise ValueError('Sequencia invalida')
+                return self.send_json(self.server.cec.events_since(int(after)))
+            except (ValueError, CECError) as exc:
+                return self.send_json({'error': str(exc)}, 400)
         if path == '/api/hardware':
             return self.send_json({'hardware': self.server.hardware.status()})
         if path == '/api/persistence/status':
@@ -203,7 +216,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         if path not in ('/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/audio/output',
-                        '/api/hardware/audio/volume', '/api/hardware/audio/mute'):
+                        '/api/hardware/audio/volume', '/api/hardware/audio/mute',
+                        '/api/cec/enable', '/api/cec/disable'):
             return self.send_json({'error': 'Rota nao encontrada'}, 404)
 
         # Only this machine may write to the playback controller.
@@ -223,6 +237,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 raise ValueError('Payload deve ser objeto')
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
             return self.send_json({'error': 'JSON invalido'}, 400)
+
+        if path in ('/api/cec/enable', '/api/cec/disable'):
+            try:
+                state = self.server.cec.enable() if path.endswith('enable') else self.server.cec.disable()
+                return self.send_json({'ok': True, 'cec': state})
+            except CECError as exc:
+                return self.send_json({'error': str(exc)}, 503)
 
         if path.startswith('/api/hardware/'):
             try:
@@ -378,7 +399,7 @@ def main():
     args = parser.parse_args()
     server = KTVOSServer(port=args.port, media_dir=args.media_dir)
     url = 'http://127.0.0.1:{}'.format(server.server_address[1])
-    print('=== KTV OS ALPHA 0.6 ===')
+    print('=== KTV OS ALPHA 0.7 ===')
     print('Tela:', url)
     print('Pasta de midias:', server.media_dir or '(nenhuma: use --media-dir)')
     print('Canais:', server.state_dir / 'channels.json')

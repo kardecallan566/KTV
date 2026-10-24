@@ -35,3 +35,6 @@
 .hardware-message,.small-note{color:#b5c9dc;font-size:14px;line-height:1.7}
 .hardware-form select:focus-visible{outline:3px solid #7af1d9}
 #video-confirm[hidden]{display:none}
+
+/* KTV OS 0.7 — optional HDMI-CEC receiver */
+#cec-status{white-space:normal;line-height:1.45}
