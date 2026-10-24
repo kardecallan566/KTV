@@ -41,7 +41,7 @@
     var first = document.querySelector('.nav-link.active'); if (first) first.focus();
     if (name === 'usb') loadUSB();
     if (name === 'canais') loadChannels();
-    if (name === 'config') {loadBackupDevices();loadPersistenceStatus();}
+    if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
   }
   function activate(button) {
@@ -50,7 +50,7 @@
     if (a === 'tv-aberta') {
       dialog('TV aberta', 'A antena continua conectada à Samsung. Pressione SOURCE no controle da TV e selecione TV / Antena.\n\nPara usar canais abertos dentro do KTV OS precisaremos, futuramente, de um sintonizador ISDB-Tb compatível conectado ao computador.');
     } else if (a === 'sources') {
-      dialog('Entradas HDMI', 'As portas HDMI pertencem à Samsung. Para alternar, use SOURCE no controle da televisão.\n\nA integração HDMI-CEC poderá ser adicionada quando identificarmos um adaptador e um controle compatíveis.');
+      dialog('Entradas HDMI', 'As portas HDMI pertencem à Samsung. Para alternar, use SOURCE no controle da televisão.\n\nO HDMI-CEC experimental recebe botões quando existe um adaptador CEC compatível, mas ainda não alterna as entradas da Samsung.');
     } else if (a === 'refresh-usb') {
       loadUSB();
     } else if (a === 'fullscreen') {
@@ -463,6 +463,57 @@
   el('audio-mute').addEventListener('click',function(){
     updateAudio('/api/hardware/audio/mute',{});
   });
+
+
+  // Optional HDMI-CEC via libCEC. Never assume notebook HDMI handles CEC.
+  var cecEnabled=false, cecSeq=0, cecBusy=false;
+  function renderCEC(status) {
+    cecEnabled=!!(status && status.running);
+    el('cec-status').textContent=!status.supported?'libCEC indisponível':
+      (status.running?'Recebendo botões CEC':status.enabled?'Inicializando adaptador':'Desativado / sem adaptador');
+    if(status.error)el('cec-result').textContent=status.error;
+    el('cec-enable').disabled=!status.supported||status.running;
+    el('cec-disable').disabled=!status.enabled;
+  }
+  function refreshCEC() {
+    get('/api/cec/status',function(err,data) {
+      if(err){el('cec-result').textContent='Falha de diagnóstico CEC: '+err.message;return;}
+      renderCEC(data.cec);
+    });
+  }
+  el('cec-refresh').addEventListener('click',refreshCEC);
+  el('cec-enable').addEventListener('click',function(){
+    if(!window.confirm('Tentar receber botões da TV via HDMI-CEC? É necessário hardware CEC compatível no computador, possivelmente um adaptador USB. O libCEC pode registrar um novo dispositivo de reprodução na rede HDMI.'))return;
+    post('/api/cec/enable',{},function(err,data){
+      if(err){el('cec-result').textContent='Não foi possível iniciar CEC: '+err.message;refreshCEC();return;}
+      cecSeq=0;
+      renderCEC(data.cec);
+      el('cec-result').textContent='Receptor iniciado. Pressione as setas e OK no controle. Se não houver adaptador compatível, o serviço poderá encerrar.';
+    });
+  });
+  el('cec-disable').addEventListener('click',function(){
+    post('/api/cec/disable',{},function(err,data){
+      if(err){el('cec-result').textContent='Erro ao parar CEC: '+err.message;return;}
+      renderCEC(data.cec);el('cec-result').textContent='CEC desativado; teclado e joystick continuam disponíveis.';
+    });
+  });
+  function pollCEC(){
+    if(!cecEnabled||cecBusy)return;
+    cecBusy=true;
+    get('/api/cec/events?after='+cecSeq,function(err,data){
+      cecBusy=false;
+      if(err)return;
+      if(typeof data.last==='number')cecSeq=Math.max(cecSeq,data.last);
+      (data.events||[]).forEach(function(event){
+        if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(event.key)!==-1)padAction(event.key);
+        else if(event.key==='Enter')padAction('accept');
+        else if(event.key==='Escape')padAction('back');
+        else if(event.key==='Home')padAction('home');
+      });
+    });
+  }
+  setInterval(pollCEC,350);
+  setInterval(function(){if(cecEnabled||currentRoute==='config')refreshCEC();},5000);
 
   // Gamepad API works with controllers connected to the computer, not the
   // Samsung infrared remote unless a compatible HDMI-CEC adapter is provided.
