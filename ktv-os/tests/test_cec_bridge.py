@@ -48,7 +48,7 @@ class CECTests(unittest.TestCase):
         for message in ['key released: select (0)','power on (0)',
                         'standby (36)','key pressed: power (40)',
                         'key pressed: source (34)',
-                        'authentication token', 'key pressed: up (bad)']:
+                        'authentication token', 'key pressed: up (xyz)']:
             self.assertIsNone(cec.decode_key(message))
         self.assertIsNone(cec.decode_key('A'*3000))
 
@@ -82,7 +82,7 @@ class CECTests(unittest.TestCase):
 
     def test_deduplicates_keypress_and_limits_event_buffer(self):
         times=iter([1.0,1.05,1.3])
-        b=cec.CECBridge(which=lambda _:None,clock=lambda:next(times))
+        b=cec.CECBridge(which=lambda _:None,clock=lambda:next(times,2.0))
         b._deliver('ArrowRight')
         b._deliver('ArrowRight')
         b._deliver('ArrowRight')
