@@ -119,3 +119,12 @@ A tela **Imagem e som** mostra as saídas HDMI/DisplayPort e as resoluções anu
 Na mesma tela, o KTV OS usa `pactl` para listar saídas PulseAudio (incluindo HDMI quando o driver fornecer), selecionar dispositivo de som, ajustar volume de 0 a 100% e alternar mudo. Tudo é executado no próprio computador, sem shell e sem acesso remoto. Se o hardware não oferecer HDMI/áudio, a interface mostra a indisponibilidade e não simula sucesso. O volume da Samsung pode precisar de ajuste separado com seu controle.
 
 **Importante:** notebook ASUS com gráficos híbridos NVIDIA pode não anunciar a saída HDMI pelo driver aberto do Linux Live. O diagnóstico serve para identificar essa situação; resolução e áudio dependem de testes físicos. Não é controle HDMI-CEC das entradas da Samsung nem acesso ao sintonizador interno da TV.
+
+
+## KTV OS Alpha 0.7 — controle HDMI-CEC opcional
+
+O Linux Live agora inclui `cec-utils` e o módulo `cec_bridge.py`. Em **Configurações → Controle remoto HDMI-CEC**, selecione *Verificar suporte* e *Ativar recepção CEC*. Isso inicia libCEC sob demanda e permite receber apenas as teclas **setas, OK, voltar, início**, encaminhadas para a interface local. Não há envio de comandos para desligar, ligar, alterar volume ou trocar fontes da Samsung; o libCEC pode anunciar um dispositivo de reprodução quando se conecta.
+
+**Atenção:** a maioria dos computadores HDMI x86, incluindo notebooks com NVIDIA, não oferece canal CEC diretamente. Nesse caso, usar um **adaptador USB-CEC compatível**, conectado ao PC e inserido no caminho HDMI, pode ser necessário. Instalar o pacote libCEC não adiciona CEC ao HDMI fisicamente. O botão de diagnóstico informa ausência ou falha de inicialização. Teclado/gamepad continuam funcionando. O controle Samsung por infravermelho não vira automaticamente um joystick USB.
+
+Esta Alpha inclui código e testes simulados para análise de mensagens CEC; não foi testada em adaptador físico. A imagem 0.7 só é válida após GitHub Actions compilar ISO, verificar SHA256 e publicar o arquivo.

@@ -26,7 +26,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
 
     def test_real_linux_components_and_local_kiosk(self):
         packages = set((LINUX / 'packages.list.chroot').read_text().split())
-        self.assertTrue({'linux-image-amd64', 'live-boot', 'live-config', 'mpv', 'udiskie', 'zenity', 'pulseaudio-utils',
+        self.assertTrue({'linux-image-amd64', 'live-boot', 'live-config', 'mpv', 'udiskie', 'zenity', 'pulseaudio-utils', 'cec-utils',
                          'lightdm', 'openbox', 'chromium', 'python3'} <= packages)
         lightdm = (LINUX / 'overlay/etc/lightdm/lightdm.conf.d/50-ktv-os.conf').read_text()
         self.assertIn('autologin-user=user', lightdm)
@@ -49,6 +49,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
         self.assertIn('ktv-os/channel_store.py', builder)
         self.assertIn('ktv-os/persistence.py', builder)
         self.assertIn('ktv-os/hardware.py', builder)
+        self.assertIn('ktv-os/cec_bridge.py', builder)
         self.assertIn('ktv-os-diagnostics', builder)
         self.assertIn('lb build', builder)
 

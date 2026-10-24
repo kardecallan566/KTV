@@ -136,3 +136,8 @@ O servidor Legacy em \`installer-local/\` permanece inalterado.
 ## KTV OS Linux Live inicializável (Alpha 0.2)
 
 O KTV OS agora conta com [perfil de distribuição Debian Linux Live](ktv-os/linux-live/README.md) para computadores amd64 ligados à TV por HDMI. O construtor gera uma ISO híbrida bootável a partir de Debian 13, com kernel/serviços reais, login gráfico automático e interface KTV em kiosk. Esse sistema executa **no PC ao iniciar pelo pendrive**, sem iniciar Windows. A porta USB da TV Samsung **não instala Linux ou substitui firmware**. A ISO só estará disponível quando a compilação terminar; a saída HDMI/NVIDIA precisa de teste físico.
+
+
+## KTV OS 0.7 — controle HDMI-CEC experimental
+
+O sistema Linux Live agora pode tentar receber botões de controle remoto da TV via **libCEC**, mediante ativação explícita em Configurações. A saída HDMI do computador não oferece necessariamente CEC; pode ser necessário adaptador USB-CEC. O modo é opcional, não interfere no KTV Orsay e não altera o firmware Samsung. Veja [guia de testes do KTV OS](ktv-os/README.md).

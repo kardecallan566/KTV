@@ -26,6 +26,7 @@ fonts-noto-color-emoji
 alsa-utils
 pulseaudio
 pulseaudio-utils
+cec-utils
 pavucontrol
 udisks2
 usbutils

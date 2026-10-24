@@ -46,3 +46,8 @@ Implementada persistência de canais opt-in em pendrive USB removível, com marc
 ## Alpha 0.6 — integração de imagem e som
 
 Diagnóstico de saídas HDMI/DP (xrandr), identificação de modos permitidos pelo monitor, mudança com confirmação/reversão automática após 20 segundos, seleção de saída PulseAudio, ajuste de volume/mudo e mensagens de indisponibilidade para hardware sem driver. Testes simulam execução de xrandr/pactl e a reversão; CI também recompila a imagem Linux Live com o novo módulo.
+
+
+## Alpha 0.7 — controle remoto CEC
+
+Integração **experimental e opcional** com libCEC para receber eventos de botões (setas/selecionar/voltar/início) via `cec-client`. Requer hardware compatível; PC HDMI normal pode não suportar CEC sem adaptador USB. Habilitação e desabilitação explícitas na tela Configurações, sem autoativação e sem comandos CEC de power/sources. Testes simulados para entrada e validação de eventos; CI gera ISO Debian Live com `cec-utils` incluído. Validação física Samsung ainda necessária.
