@@ -84,3 +84,10 @@ Se o navegador fechar repetidamente, o supervisor fornece um diálogo **Tentar n
 ## KTV OS Alpha 0.6 — saídas HDMI e áudio
 
 Incluídos `hardware.py` e o pacote Debian `pulseaudio-utils` (com `pactl`). O KTV OS exibe saídas conectadas/modes de `xrandr` e sinks PulseAudio na seção Imagem e som. Alterações de resolução são **temporárias até confirmação**; após 20 segundos sem confirmação, o backend tenta restaurar a resolução anterior. Mudanças não são salvas no firmware nem forçam resolução arbitrária, e a proteção depende de o processo Python/Xorg permanecer ativo. O volume e a escolha de saída de áudio são aplicados ao servidor de som da sessão Linux. Driver HDMI/NVIDIA ainda requer teste físico.
+
+
+## Alpha 0.7 — receptor HDMI-CEC via libCEC
+
+O pacote Debian `cec-utils` fornece `cec-client`. A recepção dos botões é **desativada por padrão** e precisa ser ativada pela interface (Configurações). Apenas eventos de controle `up/down/left/right/select/back/root menu` são enviados à interface Chromium por uma API loopback; nenhum comando de energia ou seleção de fontes é emitido pelo KTV OS. A inicialização de libCEC pode anunciar o novo aparelho no barramento HDMI. **Em notebook PC HDMI pode não haver interface CEC** sem um adaptador USB-CEC compatível. O código NÃO simula suporte físico: a ausência de cec-client é mostrada e um dispositivo não reconhecido faz a sessão de recepção encerrar.
+
+A construção da imagem passa a incluir `cec_bridge.py` e usar o nome `KTV-OS-Alpha-0.7-amd64.iso`. É preciso validar a compilação e testar navegação real com um adaptador apropriado.
