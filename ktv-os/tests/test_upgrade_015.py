@@ -141,10 +141,15 @@ class Tests015(unittest.TestCase):
                 return urlopen(req,timeout=4)
             try:
                 with urlopen(base+'/api/tv-aberta',timeout=4) as r:
-                    self.assertIn('SBT',[c['name'] for c in json.load(r)['channels']])
-                with post({'id':'globo'}) as r:self.assertTrue(json.load(r)['ok'])
-                with self.assertRaises(HTTPError) as caught:post({'id':'https://evil.example'})
-                self.assertEqual(caught.exception.code,400)
+                    available=json.load(r)['channels']
+                    self.assertIn('TV Brasil',[c['name'] for c in available])
+                    self.assertNotIn('SBT',[c['name'] for c in available])
+                with self.assertRaises(HTTPError) as caught:
+                    post({'id':'globo'})
+                self.assertEqual(caught.exception.code,404)
+                with self.assertRaises(HTTPError) as caught:
+                    post({'id':'https://evil.example'})
+                self.assertEqual(caught.exception.code,404)
                 with urlopen(base+'/api/epg/list?kind=pluto',timeout=4) as r:
                     self.assertIn(PLUTO_ID,json.load(r)['programmes'])
                 with urlopen(base+'/api/channels/check?kind=pluto&id='+PLUTO_ID,timeout=4) as r:
