@@ -7,7 +7,19 @@
   var image = document.getElementById('image-player');
   var playerStop = document.getElementById('player-stop');
   var compatibleButton = document.getElementById('player-compatible');
-  var officialButton = document.getElementById('player-official');
+  var officialButton = document.getElementById('player-embed');
+  var embedFrame = document.getElementById('tv-embed');
+  var integratedPlayer = document.getElementById('integrated-player');
+  var embedProvider = document.getElementById('embed-provider');
+  // Defense in depth: never embed a URL from a M3U playlist or arbitrary site.
+  var EMBED_URLS = [
+    'https://aovivo.ebc.com.br/embed-tvbrasil.html',
+    'https://culturaplay.tvcultura.com.br/channels/14/embed'
+  ];
+  function clearEmbed(){
+    embedFrame.removeAttribute('src');integratedPlayer.hidden=true;
+    embedProvider.textContent='';
+  }
   var smartNotice = document.getElementById('smart-player-status');
   var noVideoPolls=0;
   var lastNativeRequest = null;
@@ -32,6 +44,7 @@
   }
   clock(); setInterval(clock, 20000);
   function dialog(title, body) {
+    clearEmbed();
     el('dialog-title').textContent = title;
     el('dialog-message').textContent = body;
     overlay.hidden = false;
@@ -45,7 +58,7 @@
     if (overlay.hidden) return;
     if (pendingVideoToken) cancelVideoPreview();
     video.pause(); video.removeAttribute('src'); video.load(); video.hidden = true;
-    image.removeAttribute('src'); image.hidden = true; overlay.hidden = true;
+    image.removeAttribute('src'); image.hidden = true; clearEmbed(); overlay.hidden = true;
     if (nativeActive) stopNative();
     playerStop.hidden = true;
     compatibleButton.hidden = true;
@@ -146,35 +159,45 @@
   function updateSmartOptions(){
     officialButton.hidden=true;
     var chosen=lastNativeRequest;
-    if(!chosen || !chosen.payload ||
-       ['pluto','public'].indexOf(chosen.payload.kind)===-1)return;
+    if(!chosen || !chosen.payload || chosen.payload.kind!=='public')return;
     var url='/api/smart-player/options?kind='+encodeURIComponent(chosen.payload.kind)+
             '&id='+encodeURIComponent(chosen.payload.id);
     get(url,function(err,data){
       if(overlay.hidden||lastNativeRequest!==chosen)return;
-      if(err || !data || !data.official_available){
-        smartNotice.textContent='Não há navegador oficial disponível para este canal. A compatibilidade DRM não foi verificada.';
+      if(err||!data||!data.embed_available||EMBED_URLS.indexOf(data.embed_url)<0){
+        smartNotice.textContent='Sem player oficial incorporável confirmado para este canal. Tente o mpv normal ou modo compatível.';
         return;
       }
       officialButton.hidden=false;
-      officialButton.textContent='🌐 Abrir '+data.official_name+' (site oficial)';
-      smartNotice.textContent='Alternativa oficial: '+data.official_reason;
+      officialButton.textContent='▶ Assistir no player integrado';
+      smartNotice.textContent='Player fornecido por '+data.embed_provider+'; anúncios e controles do provedor permanecem.';
     });
   }
-  function openSmartOfficial(kind,id,title){
-    post('/api/smart-player/open',{kind:kind,id:id},function(err,data){
-      if(err){dialog(title,'Não foi possível abrir o site oficial: '+err.message);return;}
-      if(nativeActive)stopNative();
-      lastNativeRequest=null;
-      dialog(title,(data.browser.name||title)+' aberto no '+(data.browser.browser||'navegador')+
-        '. O serviço oficial controla login, DRM e região; não há garantia de reprodução. Alt+Tab volta ao KTV OS.');
-      officialButton.hidden=true;
-    });
+  function openSmartEmbed(kind,id,title){
+    if(kind!=='public')return;
+    // Resolve from server by fixed channel ID, never by a passed URL.
+    get('/api/smart-player/options?kind='+encodeURIComponent(kind)+'&id='+encodeURIComponent(id),
+      function(err,data){
+        if(err||!data||!data.embed_available||EMBED_URLS.indexOf(data.embed_url)<0){
+          dialog(title,'Não existe player incorporável autorizado para este canal. Use a transmissão direta pelo mpv.');
+          return;
+        }
+        if(nativeActive)stopNative();
+        lastNativeRequest=null;
+        dialog(title,'Assistindo dentro do KTV OS, com o player publicado pela emissora.');
+        integratedPlayer.hidden=false;
+        embedProvider.textContent='Fonte: '+data.embed_provider;
+        embedFrame.src=data.embed_url;
+        officialButton.hidden=true;
+        compatibleButton.hidden=true;
+        playerStop.hidden=true;
+        smartNotice.textContent='A incorporação é permitida pela fonte. Ela pode exigir consentimento e mostrar anúncios da própria emissora.';
+      });
   }
   officialButton.addEventListener('click',function(){
     if(!lastNativeRequest)return;
     var chosen=lastNativeRequest;
-    openSmartOfficial(chosen.payload.kind,chosen.payload.id,chosen.title);
+    openSmartEmbed(chosen.payload.kind,chosen.payload.id,chosen.title);
   });
   playerStop.addEventListener('click', function(){stopNative();el('dialog-message').textContent='Reprodução encerrada. Pressione Voltar.';});
   var qualityTimer = null;
@@ -184,7 +207,7 @@
         if(!err && nativeActive && data.player && !data.player.playing){
           nativeActive=false;
           playerStop.hidden=true;
-          if(!overlay.hidden)el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code?' (código '+data.player.exit_code+')':'')+'. O stream pode ter terminado, travado ou exigido um codec/DRM indisponível. Experimente Tentar modo compatível ou outro canal.';
+          if(!overlay.hidden)el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code?' (código '+data.player.exit_code+')':'')+'. O stream pode ter terminado, travado ou exigido um codec/DRM indisponível. Experimente Tentar modo compatível ou um player integrado disponível.';
           if(lastNativeRequest && lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
           if(!overlay.hidden && lastNativeRequest)updateSmartOptions();
         }
@@ -206,7 +229,7 @@
         noVideoPolls++;
         if(noVideoPolls>=3 && !overlay.hidden && lastNativeRequest){
           if(lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
-          smartNotice.textContent='Áudio identificado sem saída de vídeo confirmada. Tente modo compatível ou site oficial. Isto não prova presença de DRM.';
+          smartNotice.textContent='Áudio identificado sem saída de vídeo confirmada. Tente modo compatível ou o player integrado, se disponível. Isto não prova presença de DRM.';
         }
       }else noVideoPolls=0;
       el('quality-telemetry').textContent=parts.length?parts.join(' · '):'Reproduzindo; o mpv ainda não informou métricas.';
@@ -460,15 +483,23 @@
   }
   function loadOpenTV(){
     get('/api/tv-aberta',function(err,data){
-      var container=el('tv-aberta-sites');container.textContent='';
-      if(err){message(container,'Sites oficiais indisponíveis.');return;}
+      var container=el('tv-aberta-player-channels');container.textContent='';
+      if(err){message(container,'Canais diretos temporariamente indisponíveis.');return;}
       (data.channels||[]).forEach(function(c){
-        var card=makeCard(c.name,'Abrir transmissão no site oficial',function(){
-          post('/api/tv-aberta/open',{id:c.id},function(error){
-            el('tv-aberta-message').textContent=error?'Falha: '+error.message:
-              'Site oficial aberto no Chromium. Login, região e DRM são controlados pela emissora.';
-          });
-        });
+        var card=document.createElement('div');card.className='info-card channel-card';
+        var title=document.createElement('strong');title.textContent=c.name;
+        var subtitle=document.createElement('small');subtitle.textContent='Reprodução dentro do KTV OS · transmissão pública';
+        var controls=document.createElement('div');controls.className='channel-buttons';
+        controls.appendChild(miniButton('▶ Assistir no KTV',function(){
+          nativePlay({kind:'public',id:c.id},c.name,null);
+        },true));
+        if(c.embed_available){
+          controls.appendChild(miniButton('▣ Player da emissora',function(){
+            openSmartEmbed('public',c.id,c.name);
+          }));
+        }
+        card.appendChild(title);card.appendChild(subtitle);card.appendChild(controls);
+        attachGuide(card,'br',c.id,c.name);
         container.appendChild(card);
       });
     });
@@ -502,9 +533,11 @@
           dialog(c.name,'Este canal usa HLS. Instale e utilize o KTV OS Linux Live com mpv para reproduzir. O link pode estar indisponível.');
         });
       },true));
-      controls.appendChild(miniButton('🌐 Site oficial',function(){
-        openSmartOfficial('public',c.id,c.name);
-      }));
+      if(c.id==='tv-brasil'||c.id==='tv-cultura'){
+        controls.appendChild(miniButton('▣ Player integrado',function(){
+          openSmartEmbed('public',c.id,c.name);
+        }));
+      }
       controls.appendChild(miniButton('Adicionar aos meus canais',function(){
         post('/api/channels/change',{action:'add',name:c.name,url:c.url,category:c.category},function(fault,response){
           statusMsg('channel-result',fault?'Falha ao adicionar: '+fault.message:'Canal adicionado à sua lista pessoal.');
@@ -631,9 +664,7 @@
           dialog(c.name,'Estes canais HLS exigem o mpv nativo. O endereço temporário também pode expirar.');
         });
       },true));
-      controls.appendChild(miniButton('🌐 Pluto oficial',function(){
-        openSmartOfficial('pluto',c.id,c.name);
-      }));
+
       var favored=plutoFavorites.indexOf(c.id)!==-1;
       controls.appendChild(miniButton(favored?'★ Favorito':'☆ Favoritar',function(){
         post('/api/pluto/favorites/toggle',{id:c.id},function(err,data){
