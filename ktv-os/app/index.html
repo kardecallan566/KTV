@@ -40,7 +40,21 @@
           </div>
         </section>
         <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de streams HLS/MP4 pelo mpv nativo quando disponível. Cadastre apenas fontes próprias ou autorizadas.</p><div class="channel-actions"><button class="primary focusable" id="channel-create">+ Adicionar canal</button><span class="chip" id="channel-count">0 canais</span></div>
-          <h2 class="section-title">Canais públicos</h2><p class="small-note">Transmissões públicas em servidores institucionais. A disponibilidade dos streams é experimental; a reprodução pode falhar ou sofrer restrições de acesso.</p><div id="public-channels" class="content-grid"></div>
+          <h2 class="section-title">Canais públicos</h2><p class="small-note">Transmissões públicas em servidores institucionais. A disponibilidade dos streams é experimental; a reprodução pode falhar ou sofrer restrições de acesso.</p><div class="channel-actions"><label for="public-channel-filter">Explorar por assunto</label>
+            <select id="public-channel-filter" class="focusable" aria-label="Filtrar canais por assunto">
+              <option value="all">Todos os canais públicos</option>
+              <option value="Filmes">Filmes</option>
+              <option value="Documentários">Documentários</option>
+              <option value="Futebol">Futebol</option>
+              <option value="Desenhos">Desenhos</option>
+              <option value="Animes">Animes (aguardando fonte oficial)</option>
+              <option value="Educação">Educação</option>
+              <option value="Cultura">Cultura</option>
+              <option value="Notícias">Notícias</option>
+              <option value="Outros">Outros</option>
+            </select></div>
+          <p class="small-note" id="public-filter-hint">As categorias indicam tipos de programas da emissora, não um canal dedicado ao assunto 24 horas por dia.</p>
+          <div id="public-channels" class="content-grid"></div>
           <h2 class="section-title">Meus canais</h2><div id="channels" class="content-grid"></div>
           <div class="panel channel-editor" id="channel-editor" hidden>
             <h2 id="channel-editor-title">Novo canal</h2>
