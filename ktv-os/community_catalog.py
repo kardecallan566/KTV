@@ -17,6 +17,7 @@ SOURCES = (
     ('Free-TV', 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8'),
 )
 ALLOWED_HOSTS = frozenset((
+    "vs-cmaf-pushb-ww-live.akamaized.net",
     "dwamdstream102.akamaized.net",
     "dwamdstream103.akamaized.net",
     "dwamdstream104.akamaized.net",
@@ -66,6 +67,8 @@ ALLOWED_HOSTS = frozenset((
     "shd-gcp-live.edgenextcdn.net",
     "tvbrasil-stream.ebc.com.br",
 ))
+# DASH manifests from a reviewed broadcaster CDN; other hosts stay HLS-only.
+DASH_HOSTS = frozenset(('vs-cmaf-pushb-ww-live.akamaized.net',))
 MAX_BYTES = 1250 * 1024
 MAX_CHANNELS = 500
 CACHE_SECONDS = 1800
@@ -87,7 +90,7 @@ def download(url):
     if url not in (source for _, source in SOURCES):
         raise CommunityCatalogError('Fonte nao permitida')
     opener = build_opener(_NoRedirect())
-    request = Request(url, headers={'User-Agent': 'KTV-OS/0.13 (Free-TV catalog)',
+    request = Request(url, headers={'User-Agent': 'KTV-OS/0.14 (Free-TV catalog)',
                                      'Accept': 'text/plain'})
     try:
         with opener.open(request, timeout=8) as response:
@@ -118,8 +121,11 @@ def allowed_stream(url):
         parts = urlsplit(url)
         if (parts.scheme != 'https' or parts.hostname not in ALLOWED_HOSTS or
                 parts.username is not None or parts.password is not None or
-                parts.port not in (None, 443) or parts.fragment or
-                not parts.path.lower().endswith('.m3u8')):
+                parts.port not in (None, 443) or parts.fragment):
+            return False
+        suffix = parts.path.lower()
+        if not (suffix.endswith('.m3u8') or
+                (suffix.endswith('.mpd') and parts.hostname in DASH_HOSTS)):
             return False
         # Signed sessions and personal credentials are intentionally excluded.
         query = parts.query.lower()
