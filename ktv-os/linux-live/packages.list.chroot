@@ -12,6 +12,8 @@ openbox
 chromium
 matchbox-keyboard
 mpv
+w-scan
+dvb-tools
 udiskie
 zenity
 xterm

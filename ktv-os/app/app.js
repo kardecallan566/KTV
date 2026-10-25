@@ -78,7 +78,7 @@
     if (name === 'usb') loadUSB();
     if (name === 'rede') refreshNetwork();
     if (name === 'navegador') el('browser-search-input').focus();
-    if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();loadCommunityChannels();loadOpenTV();}
+    if (name === 'canais') {loadAntenna();loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();loadCommunityChannels();loadOpenTV();}
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
   }
@@ -86,7 +86,8 @@
     var r = button.getAttribute('data-route'), a = button.getAttribute('data-action');
     if (r) { route(r); return; }
     if (a === 'tv-aberta') {
-      dialog('TV aberta', 'A antena continua conectada à Samsung. Pressione SOURCE no controle da TV e selecione TV / Antena.\n\nPara usar canais abertos dentro do KTV OS precisaremos, futuramente, de um sintonizador ISDB-Tb compatível conectado ao computador.');
+      route('canais');
+      setTimeout(function(){var box=document.querySelector('.tv-aberta-panel');if(box)box.scrollIntoView({behavior:'smooth',block:'start'});},50);
     } else if (a === 'sources') {
       dialog('Entradas HDMI', 'As portas HDMI pertencem à Samsung. Para alternar, use SOURCE no controle da televisão.\n\nO HDMI-CEC experimental recebe botões quando existe um adaptador CEC compatível, mas ainda não alterna as entradas da Samsung.');
     } else if (a === 'refresh-usb') {
@@ -481,6 +482,55 @@
     card.appendChild(status);
     ensureGuide(kind);
   }
+  // Broadcast TV is received over a local USB tuner, never via a website.
+  var antennaTimer=null,antennaBusy=false;
+  function renderAntenna(state){
+    var container=el('antenna-channels');container.textContent='';
+    el('antenna-scan-indicator').textContent=state.scan_state==='running'?'Buscando…':
+      state.tuner_found?'Receptor conectado':'Sem receptor';
+    el('antenna-scan').disabled=state.scan_state==='running'||!state.available;
+    var help=state.scan_error||state.message||'Conecte o sintonizador USB ISDB-Tb.';
+    if(state.scan_state==='running')help='Buscando emissoras disponíveis pelo sinal de antena. Aguarde; isso pode durar alguns minutos.';
+    if(state.scan_state==='ready')help=(state.channels||[]).length+' canais encontrados. Selecione Assistir.';
+    el('antenna-message').textContent=help;
+    (state.channels||[]).forEach(function(channel){
+      var card=document.createElement('div');card.className='info-card channel-card';
+      var icon=document.createElement('span');icon.className='card-icon';icon.textContent='📡';
+      var name=document.createElement('strong');name.textContent=channel.name;
+      var info=document.createElement('small');info.textContent='TV aberta por antena • sem internet';
+      var controls=document.createElement('div');controls.className='channel-buttons';
+      controls.appendChild(miniButton('▶ Assistir',function(){
+        nativePlay({kind:'antenna',index:channel.id},channel.name,null);
+      },true));
+      card.appendChild(icon);card.appendChild(name);card.appendChild(info);
+      card.appendChild(controls);container.appendChild(card);
+    });
+    if(!(state.channels||[]).length)
+      message(container,state.tuner_found?'Nenhum canal salvo. Clique em Buscar canais.':
+        'É necessário um sintonizador USB ISDB-Tb suportado pelo Linux para receber o sinal da antena.');
+    if(antennaTimer){clearTimeout(antennaTimer);antennaTimer=null;}
+    if(state.scan_state==='running'){
+      antennaTimer=setTimeout(function(){loadAntenna();},2500);
+    }
+  }
+  function loadAntenna(){
+    if(antennaBusy)return;
+    antennaBusy=true;
+    get('/api/tv/antenna',function(err,data){
+      antennaBusy=false;
+      if(err){el('antenna-message').textContent='Falha ao consultar receptor: '+err.message;return;}
+      renderAntenna(data.antenna);
+    });
+  }
+  el('antenna-scan').addEventListener('click',function(){
+    if(!window.confirm('Buscar canais digitais ISDB-Tb na antena conectada ao receptor USB? Pode durar até 12 minutos.'))return;
+    post('/api/tv/antenna/scan',{},function(err,data){
+      if(err){el('antenna-message').textContent='Não foi possível iniciar a busca: '+err.message;return;}
+      renderAntenna(data.antenna);
+    });
+  });
+  el('antenna-refresh').addEventListener('click',loadAntenna);
+
   function loadOpenTV(){
     get('/api/tv-aberta',function(err,data){
       var container=el('tv-aberta-player-channels');container.textContent='';
