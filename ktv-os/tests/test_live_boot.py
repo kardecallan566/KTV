@@ -27,7 +27,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
     def test_real_linux_components_and_local_kiosk(self):
         packages = set((LINUX / 'packages.list.chroot').read_text().split())
         self.assertTrue({'linux-image-amd64', 'live-boot', 'live-config', 'mpv', 'udiskie', 'zenity', 'pulseaudio-utils', 'cec-utils',
-                         'lightdm', 'openbox', 'chromium', 'python3'} <= packages)
+                         'lightdm', 'openbox', 'chromium', 'python3', 'polkitd'} <= packages)
         lightdm = (LINUX / 'overlay/etc/lightdm/lightdm.conf.d/50-ktv-os.conf').read_text()
         self.assertIn('autologin-user=user', lightdm)
         self.assertIn('user-session=openbox', lightdm)
@@ -37,6 +37,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
         self.assertIn('python3 launcher.py --port 8787', session)
         self.assertIn('--kiosk --app=http://127.0.0.1:8787/', session)
         self.assertIn('python3 display_layout.py', session)
+        self.assertIn('export KTV_OS_LIVE=1', session)
         self.assertNotIn('--disable-web-security', session)
 
     def test_local_user_state_and_iso_hybrid(self):
@@ -53,6 +54,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
         self.assertIn('ktv-os/cec_bridge.py', builder)
         self.assertIn('ktv-os/network.py', builder)
         self.assertIn('ktv-os/display_layout.py', builder)
+        self.assertIn('ktv-os/system_actions.py', builder)
         self.assertIn('ktv-os/public_channels.py', builder)
         self.assertIn('timeout 30', builder)
         self.assertIn('set timeout=3', builder)

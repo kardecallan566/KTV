@@ -104,3 +104,19 @@ A construção da imagem passa a incluir `cec_bridge.py` e usar o nome `KTV-OS-A
 **Canais públicos:** TV Brasil e Canal Gov (endpoints HTTPS institucionais EBC) e TV Câmara (endpoint HTTPS institucional Câmara). Os links são fixos e vinculados a uma lista restrita de domínios; clicar em Assistir aciona apenas uma fonte cadastrada no código, sem aceitar URL arbitrária enviada pelo navegador. A procedência institucional do host foi verificada; **a disponibilidade da transmissão real, o codec, o licenciamento para cada tipo de uso e a segurança total do conteúdo de terceiros não foram comprovados**. Nenhuma IPTV comercial/pirata foi adicionada; essas sugestões são experimentais e podem mudar. O usuário pode adicionar os canais a sua lista pessoal se desejar. No sistema Linux, a reprodução é feita com mpv/HLS e requer internet.
 
 **Limitações:** não substitui o sintonizador ISDB-Tb da Samsung, não converte hardware ARM em x86-64 e não salva senhas de Wi-Fi na USB de canais. Teste HDMI, Wi-Fi, drivers e reprodução com sua TV física antes de tratar a Alpha como produto estável.
+
+
+## Alpha 0.8 — refinamentos de desligamento e HDMI (sem troca de versão)
+
+- O topo da interface agora traz **⏻ Desligar**, que exige confirmação explícita antes de solicitar `systemctl poweroff` pela sessão Linux Live via logind/polkit. A ação é bloqueada fora do quiosque Live (por exemplo ao abrir `launcher.py` no Windows) e não executa shell ou sudo. Não desliga a TV Samsung automaticamente. Quando a política do Linux não permite desligamento, consulte `/api/system/status` e logs da sessão.
+- Removido o botão **Tela cheia** e o atalho F, pois o navegador do sistema abre em modo `--kiosk` por padrão.
+- **Imagem e som → Organização das telas:** escolher **Espelhar** para duplicar exatamente a imagem HDMI no painel do notebook, ou **Usar somente a TV** para tornar HDMI primário e desligar outras saídas de vídeo do X11. Ambos são testes temporários por 20 s e só ficam ativos após confirmar. O servidor guarda resolução, posição, primariedade e estado ligado/desligado das saídas conectadas e tenta recuperar o layout anterior após timeout ou Cancelar. A alteração é da sessão atual, sem tocar na BIOS/TV. Não garante recuperação se o driver gráfico ou processo Linux travar.
+- O diagnóstico `/api/hardware` agora informa os monitores conectados, a resolução e as coordenadas visíveis para identificar um desktop estendido. Na inicialização, o Linux tenta o espelhamento se ambas as telas anunciarem um modo comum; se não houver, deixa a tela de recuperação acessível.
+- **IA:** planejamento isolado em [AI_ASSISTANT_PLAN.md](docs/AI_ASSISTANT_PLAN.md); nenhum peso/modelo foi embutido no boot. Recomendada arquitetura híbrida de comandos locais determinísticos e modelo GGUF pequeno opcional.
+
+### Teste sugerido com a Samsung
+
+1. Com HDMI conectado, abrir **Imagem e som** e escolher a saída HDMI correta (`HDMI-1`, `HDMI-A-0` etc).
+2. Selecionar **Espelhar notebook e TV**, testar e confirmar **somente se a imagem estiver visível**.
+3. Se ainda existir área estendida, tentar **Usar somente a TV HDMI**, confirmar apenas depois de verificar a imagem. Sem confirmação, a configuração anterior deverá retornar em cerca de 20 segundos.
+4. Se a tela ficar preta persistentemente, recuperar no console `Ctrl+Alt+F2` e coletar `xrandr --query`, `systemctl status lightdm` e `ktv-os-diagnostics` antes de repetir.

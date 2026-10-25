@@ -1,59 +1,109 @@
-"""Mirror HDMI TV and laptop instead of creating an extended X11 desktop.
+"""TV-first X11 display layout: mirror (one desktop) or HDMI-only.
 
-Only modes advertised by *both* displays are used. If no common mode,
-keep the current layout (do not blank the user's only recovery screen).
-Runs once at graphical session startup, no firmware/BIOS changes.
+All output names, modes and positions come from xrandr --query. When no
+safe mode is found the current desktop is preserved. The hardware API takes a
+snapshot before previews and restores it after 20 seconds if not confirmed.
 """
 import re
 import shutil
 import subprocess
-import sys
 
 OUTPUT_RE=re.compile(r'^([A-Za-z0-9_.-]+)\s+connected(?:\s|$)')
-MODE_RE=re.compile(r'^\s+(\d{3,5}x\d{3,5})\s+')
+MODE_RE=re.compile(r'^\s+(\d{3,5}x\d{3,5})(?:\s|$)')
+GEOM_RE=re.compile(r'\b(\d{3,5}x\d{3,5})([+-]\d+)([+-]\d+)\b')
 
 def outputs(raw):
     found=[]
+    current=None
     for line in raw.splitlines():
-        m=OUTPUT_RE.match(line)
-        if m:
-            found.append({'name':m.group(1),'modes':[]})
+        match=OUTPUT_RE.match(line)
+        if match:
+            geom=GEOM_RE.search(line)
+            name=match.group(1)
+            current={'name':name,'modes':[],'mode':geom.group(1) if geom else None,
+                     'x':int(geom.group(2)) if geom else 0,
+                     'y':int(geom.group(3)) if geom else 0,
+                     'primary':' primary ' in line,
+                     'external':name.upper().startswith(('HDMI','DP-','DISPLAYPORT'))}
+            found.append(current)
             continue
-        if not found:continue
-        m=MODE_RE.match(line)
-        if m and m.group(1) not in found[-1]['modes']:
-            found[-1]['modes'].append(m.group(1))
+        if line and not line[0].isspace():
+            current=None
+        if current is None:continue
+        mode=MODE_RE.match(line)
+        if mode:
+            name=mode.group(1)
+            if name not in current['modes']:current['modes'].append(name)
+            if '*' in line and current['mode'] is None:current['mode']=name
     return found
+
+def choose_mode(modes):
+    if not modes:return None
+    def key(mode):
+        try:
+            w,h=map(int,mode.split('x'))
+        except ValueError:return (0,0)
+        return (mode=='1920x1080',mode=='1280x720',w*h)
+    return max(modes,key=key)
+
+def layout_command(screens,target,kind):
+    if kind not in ('mirror','hdmi_only'):
+        raise ValueError('Modo HDMI desconhecido')
+    ext=next((x for x in screens if x['name']==target and x['external']),None)
+    if ext is None:
+        raise ValueError('Saída HDMI/DisplayPort não encontrada')
+    internal=next((x for x in screens if not x['external'] and
+                   x['name'].upper().startswith(('EDP','LVDS','DSI'))),None)
+    if kind=='mirror' and internal is None:
+        kind='hdmi_only'
+    if kind=='mirror':
+        common=set(ext['modes']).intersection(internal['modes'])
+        mode=choose_mode(common)
+        if not mode:raise ValueError('Sem resolucao comum; escolha somente TV ou mantenha o video atual')
+    else:
+        mode=ext['mode'] if ext['mode'] in ext['modes'] else choose_mode(ext['modes'])
+        if not mode:raise ValueError('Monitor HDMI não anunciou nenhuma resolução')
+    args=['xrandr','--output',target,'--primary','--mode',mode,'--pos','0x0']
+    for screen in screens:
+        if screen['name']==target:continue
+        if kind=='mirror' and screen is internal:
+            args.extend(['--output',screen['name'],'--mode',mode,'--same-as',target])
+        else:
+            args.extend(['--output',screen['name'],'--off'])
+    return args
+
+def restore_command(screens):
+    args=['xrandr']
+    for screen in screens:
+        args.extend(['--output',screen['name']])
+        if screen['mode'] is None:
+            args.append('--off')
+        else:
+            args.extend(['--mode',screen['mode'],'--pos',
+                         '{}x{}'.format(screen['x'],screen['y'])])
+            if screen['primary']:args.append('--primary')
+    return args
 
 def mirror(runner=None,which=None):
     runner=runner or subprocess.run
     which=which or shutil.which
-    if not which('xrandr'):
-        return 'xrandr nao encontrado'
+    if not which('xrandr'):return 'xrandr indisponível'
     try:
-        query=runner(['xrandr','--query'],capture_output=True,text=True,timeout=5,check=False)
-        if query.returncode:return 'Erro xrandr ao consultar monitores'
-        monitors=outputs(query.stdout)
-        hdmi=next((x for x in monitors if x['name'].upper().startswith(('HDMI','DP-'))),None)
-        internal=next((x for x in monitors if x['name'].upper().startswith(('EDP','LVDS','DSI'))),None)
-        if not hdmi:return 'Sem HDMI conectado: configuracao atual preservada'
-        if not internal:
-            r=runner(['xrandr','--output',hdmi['name'],'--primary','--auto','--pos','0x0'],
-                     capture_output=True,text=True,timeout=8,check=False)
-            return 'HDMI primario (tela unica)' if r.returncode==0 else 'HDMI nao configurado'
-        common=set(hdmi['modes']).intersection(internal['modes'])
-        if not common:
-            return 'Sem resolucao comum HDMI/painel: layout preservado para recuperacao'
-        def priority(mode):
-            w,h=map(int,mode.split('x'))
-            return (mode=='1920x1080',mode=='1280x720',w*h)
-        mode=max(common,key=priority)
-        result=runner(['xrandr','--output',hdmi['name'],'--primary','--mode',mode,'--pos','0x0',
-                       '--output',internal['name'],'--mode',mode,'--same-as',hdmi['name']],
-                      capture_output=True,text=True,timeout=8,check=False)
-        return ('Espelhamento HDMI e notebook em '+mode) if result.returncode==0 else ('Falha ao espelhar HDMI; layout anterior preservado')
-    except (OSError,subprocess.TimeoutExpired) as exc:
-        return 'Nao foi possivel espelhar a tela: '+str(exc)
+        result=runner(['xrandr','--query'],capture_output=True,text=True,timeout=5,check=False)
+        if result.returncode:return 'Falha ao consultar saídas xrandr: '+result.stderr.strip()[:100]
+        screens=outputs(result.stdout)
+        ext=next((x for x in screens if x['external']),None)
+        if ext is None:return 'Sem HDMI detectado; tela atual preservada'
+        try:
+            command=layout_command(screens,ext['name'],'mirror')
+        except ValueError as exc:
+            # Never turn off the built-in screen without explicit user consent.
+            return str(exc)+'; tela atual preservada'
+        changed=runner(command,capture_output=True,text=True,timeout=8,check=False)
+        return ('Espelhamento HDMI concluido com sucesso' if changed.returncode==0 else
+                'Falha ao espelhar: '+changed.stderr.strip()[:150])
+    except (OSError,subprocess.TimeoutExpired):
+        return 'Falha de driver ou tempo esgotado no xrandr; layout original preservado'
 
 if __name__=='__main__':
     print(mirror())
