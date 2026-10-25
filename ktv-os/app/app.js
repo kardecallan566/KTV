@@ -78,7 +78,7 @@
     if (name === 'usb') loadUSB();
     if (name === 'rede') refreshNetwork();
     if (name === 'navegador') el('browser-search-input').focus();
-    if (name === 'canais') {loadAntenna();loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();loadCommunityChannels();loadOpenTV();}
+    if (name === 'canais') {loadAntenna();loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();loadCommunityChannels();loadOpenTV();loadReidosGuide();}
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
   }
@@ -511,6 +511,8 @@
   // Broadcast TV is received over a local USB tuner, never via a website.
   var antennaTimer=null,antennaBusy=false;
   function renderAntenna(state){
+    antennaGuideChannels=(state.channels||[]).slice();
+    if(reidosGuide)renderReidosGuide();
     var container=el('antenna-channels');container.textContent='';
     el('antenna-scan-indicator').textContent=state.scan_state==='running'?'Buscando…':
       state.tuner_found?'Receptor conectado':'Sem receptor';
@@ -580,6 +582,89 @@
       });
     });
   }
+
+
+  // Read-only broadcaster schedule from Rei dos Canais. The API's 'embeds'
+  // are intentionally discarded by the server; no unreviewed stream executes.
+  var reidosGuide=null;
+  var antennaGuideChannels=[];
+  function guideClock(seconds){
+    if(typeFinite(seconds))return new Date(seconds*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return '';
+  }
+  function typeFinite(value){return typeof value==='number'&&isFinite(value);}
+  function normalizedAntenna(text){
+    return (text||'').toLocaleLowerCase('pt-BR').normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ')
+      .replace(/\s+/g,' ').trim();
+  }
+  function tunerForGuide(name){
+    var aliases={
+      'globo':/^(tv )?globo( (hd|sp|rj|df))?$/,
+      'band':/^(tv )?band( hd)?$/,
+      'record':/^(tv )?record( tv)?( hd)?$/,
+      'sbt':/^sbt( hd)?$/,
+      'redetv':/^rede ?tv( hd)?$/,
+      'tv-brasil':/^tv brasil( hd)?$/,
+      'tv-cultura':/^tv cultura( hd)?$/,
+      'tv-aparecida':/^tv aparecida( hd)?$/
+    };
+    var pattern=aliases[name];
+    if(!pattern)return null;
+    for(var i=0;i<antennaGuideChannels.length;i++){
+      if(pattern.test(normalizedAntenna(antennaGuideChannels[i].name)))return antennaGuideChannels[i];
+    }
+    return null;
+  }
+  function renderReidosGuide(){
+    var box=el('reidos-guide-channels');box.textContent='';
+    var rows=(reidosGuide&&reidosGuide.channels)||[];
+    el('reidos-count').textContent=rows.length+' emissoras identificadas';
+    if(!rows.length){
+      message(box,'Nenhuma programação complementar disponível no momento.');
+      return;
+    }
+    rows.forEach(function(c){
+      var card=document.createElement('div');card.className='info-card channel-card';
+      var title=document.createElement('strong');title.textContent=c.name;
+      var details=document.createElement('small');details.className='channel-epg';
+      var now=c.now, next=c.next;
+      details.textContent=(now?'Agora: '+guideClock(now.start)+' · '+now.title:'Agora: sem dados atuais')+
+        ' | '+(next?'A seguir: '+guideClock(next.start)+' · '+next.title:'A seguir: sem dados');
+      var controls=document.createElement('div');controls.className='channel-buttons';
+      var tuner=tunerForGuide(c.id);
+      if(tuner){
+        controls.appendChild(miniButton('▶ Assistir pela antena',function(){
+          nativePlay({kind:'antenna',index:tuner.id},c.name,null);
+        },true));
+      }else if(c.play_id==='tv-brasil'||c.play_id==='tv-cultura'){
+        controls.appendChild(miniButton('▶ Assistir no KTV',function(){
+          nativePlay({kind:'public',id:c.play_id},c.name,null);
+        },true));
+      }else{
+        var notice=document.createElement('small');
+        notice.textContent='Reprodução: busque o canal na antena. O site consultado não é fonte de vídeo autorizada.';
+        card.appendChild(notice);
+      }
+      card.appendChild(title);card.appendChild(details);card.appendChild(controls);
+      box.appendChild(card);
+    });
+  }
+  function loadReidosGuide(force){
+    if(reidosGuide&&!force){renderReidosGuide();return;}
+    el('reidos-status').textContent='Consultando programação da TV aberta…';
+    get('/api/guide/reidos/aberta',function(err,data){
+      if(err){
+        el('reidos-status').textContent='API externa indisponível. Canais existentes continuam funcionando.';
+        if(!reidosGuide)renderReidosGuide();
+        return;
+      }
+      reidosGuide=data;
+      el('reidos-status').textContent='Guia complementar (somente informação). A exibição não confirma direitos de retransmissão nem disponibilidade do vídeo.';
+      renderReidosGuide();
+    });
+  }
+  el('reidos-refresh').addEventListener('click',function(){loadReidosGuide(true);});
 
   // Curated public institutions only; no untrusted third-party IPTV aggregator.
   var publicChannelCache=[];
