@@ -10,6 +10,7 @@ import threading
 import uuid
 
 from channel_store import atomic_write, validate_collection, ChannelError, MAX_BACKUP
+from pluto_favorites import valid_ids, PlutoFavoritesError
 
 FOLDER = '.ktv-os-persistence'
 MARKER = 'device.json'
@@ -63,14 +64,15 @@ def _snapshot(folder):
     if not isinstance(data, dict) or data.get('format') != FORMAT:
         raise PersistenceError('Backup persistente invalido')
     try:
-        return validate_collection(data.get('channels'))
-    except ChannelError as exc:
+        return validate_collection(data.get('channels')), valid_ids(data.get('pluto_favorites', []))
+    except (ChannelError, PlutoFavoritesError) as exc:
         raise PersistenceError(str(exc))
 
 
 class PersistenceManager:
-    def __init__(self, store):
+    def __init__(self, store, favorites=None):
         self.store = store
+        self.favorites = favorites
         self.lock = threading.RLock()
         self.active_id = None
         self.active_identity = None
@@ -98,7 +100,8 @@ class PersistenceManager:
             marker_path = folder / MARKER
             identity = _check_marker(folder) if marker_path.exists() or marker_path.is_symlink() else uuid.uuid4().hex
             channels = self.store.load()
-            atomic_write(folder / SNAPSHOT, {'format': FORMAT, 'channels': channels})
+            atomic_write(folder / SNAPSHOT, {'format': FORMAT, 'channels': channels,
+                                             'pluto_favorites': self.favorites.load() if self.favorites else []})
             atomic_write(marker_path, {'format': FORMAT, 'identity': identity})
             self.active_id = device
             self.active_identity = identity
@@ -120,10 +123,11 @@ class PersistenceManager:
                 folder = _folder(mounted[0])
                 if _check_marker(folder) != self.active_identity:
                     raise PersistenceError('Pendrive diferente do dispositivo configurado')
-                atomic_write(folder / SNAPSHOT, {'format': FORMAT, 'channels': self.store.load()})
+                atomic_write(folder / SNAPSHOT, {'format': FORMAT, 'channels': self.store.load(),
+                                                 'pluto_favorites': self.favorites.load() if self.favorites else []})
                 self.pending = False
                 self.error = ''
-            except (ChannelError, PersistenceError, OSError) as exc:
+            except (ChannelError, PlutoFavoritesError, PersistenceError, OSError) as exc:
                 self.pending = True
                 self.error = str(exc)
             return self.status(mounts)
@@ -146,8 +150,8 @@ class PersistenceManager:
                 try:
                     folder = _folder(root)
                     identity = _check_marker(folder)
-                    channels = _snapshot(folder)
-                    candidates.append((device, identity, channels))
+                    channels, favorite_ids = _snapshot(folder)
+                    candidates.append((device, identity, channels, favorite_ids))
                 except (PersistenceError, OSError):
                     continue
             if len(candidates) > 1:
@@ -155,10 +159,12 @@ class PersistenceManager:
                 return self.status(mounts)
             if len(candidates) != 1:
                 return self.status(mounts)
-            device, identity, channels = candidates[0]
+            device, identity, channels, favorite_ids = candidates[0]
             try:
                 self.store.save(channels)
-            except (ChannelError, OSError) as exc:
+                if self.favorites is not None:
+                    self.favorites.save(favorite_ids)
+            except (ChannelError, PlutoFavoritesError, OSError) as exc:
                 self.error = str(exc)
                 return self.status(mounts)
             self.active_id = device

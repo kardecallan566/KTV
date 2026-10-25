@@ -11,7 +11,7 @@
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.8</span></div></div>
+      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.10</span></div></div>
       <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><span id="gamepad-status" class="gamepad-status" aria-live="polite"></span><button class="icon-button focusable power-button" id="poweroff-button" title="Desligar o computador KTV OS" aria-label="Desligar o KTV OS">⏻ Desligar</button></div>
     </header>
     <div class="layout">
@@ -62,13 +62,13 @@
             <p class="small-note">Catálogo comunitário de canais gratuitos da Pluto TV (BuddyChewChew/pluto), não oficial. Links temporários são atualizados sob demanda; acesso e reprodução dependem de disponibilidade, anúncios e condições do provedor.</p>
             <div class="channel-actions pluto-toolbar">
               <label for="pluto-category">Categoria</label>
-              <select id="pluto-category" class="focusable"><option value="all">Todas as categorias</option></select>
+              <select id="pluto-category" class="focusable"><option value="all">Todas as categorias</option><option value="favorites">★ Meus favoritos</option></select>
               <label for="pluto-search">Buscar canal</label>
               <input id="pluto-search" class="focusable" type="search" maxlength="64" placeholder="Filmes, anime, esportes...">
               <button id="pluto-refresh" class="ghost focusable" type="button">Atualizar lista</button>
               <span id="pluto-count" class="chip">Não carregado</span>
             </div>
-            <p class="small-note" id="pluto-status" role="status">Abra Canais para carregar a lista Pluto TV.</p>
+            <p class="small-note" id="pluto-status" role="status">Abra Canais para carregar a lista Pluto TV. Favoritos usam apenas o ID do canal, sem salvar links temporários.</p>
             <div id="pluto-channels" class="content-grid"></div>
             <button class="ghost focusable" id="pluto-more" type="button" hidden>Mostrar mais canais</button>
           </div>

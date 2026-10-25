@@ -34,3 +34,15 @@ node --check ktv-os/app/app.js
 No KTV OS (PC HDMI, com mpv instalado), abrir Canais, filtrar Anime/Filmes/Esportes, reproduzir alguns canais e testar o perfil de qualidade. Validar reprodução e áudio fisicamente; sucesso em testes automatizados **não comprova stream disponível**.
 
 A ISO `amd64` do KTV OS ainda não inicia diretamente em Raspberry Pi ARM. A imagem ARM64 é um checkpoint separado.
+
+
+## Alpha 0.10 — favoritos Pluto TV e diagnóstico
+
+- Cada canal da seção Pluto TV passa a exibir `☆ Favoritar` / `★ Favorito`. O filtro **★ Meus favoritos** mostra apenas os escolhidos; quando o filtro está em Todas as categorias, os favoritos aparecem primeiro.
+- Somente IDs hexadecimais de 24 caracteres são guardados em `~/.config/ktv-os/pluto_favorites.json`. O sistema **não persiste URLs de reprodução, JWT ou metadados de sessão**.
+- A API local permite `GET /api/pluto/favorites` (lista de IDs) e `POST /api/pluto/favorites/toggle` com JSON `{"id":"<ID>"}`. Existe validação de formato, proteção de origem e gravação atômica.
+- A persistência opt-in para um **segundo pendrive de dados** agora inclui IDs dos favoritos Pluto junto dos canais pessoais no snapshot. Não altera a unidade de boot, não formata pendrives e não grava no firmware da TV. Backups antigos sem o campo de favoritos continuam compatíveis. Sem persistência USB, uma sessão Linux Live reiniciada pode perder esses favoritos.
+- Quando o mpv termina sozinho (por exemplo por stream temporário indisponível), a interface informa que a reprodução encerrou e sugere atualizar a lista; **não garante** distinguir fim normal, expiração, DRM ou erro de rede.
+- O app e o artefato Linux Live passam a indicar **Alpha 0.10**. O arquivo esperado é `KTV-OS-Alpha-0.10-amd64.iso` (PC Intel/AMD; não Raspberry Pi ARM).
+
+Estas alterações não removem anúncios nem contornam DRM ou bloqueios regionais.

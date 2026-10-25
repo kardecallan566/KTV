@@ -51,7 +51,7 @@
     var first = document.querySelector('.nav-link.active'); if (first) first.focus();
     if (name === 'usb') loadUSB();
     if (name === 'rede') refreshNetwork();
-    if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoChannels();}
+    if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();}
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
   }
@@ -133,6 +133,11 @@
   function refreshQuality(){
     get('/api/player/status',function(err,data){
       if(err || !data.player || !data.player.playing){
+        if(!err && nativeActive && data.player && !data.player.playing){
+          nativeActive=false;
+          playerStop.hidden=true;
+          if(!overlay.hidden)el('dialog-message').textContent='Reprodução encerrada. Se o canal não exibiu imagem, o stream pode estar indisponível, ter expirado ou exigir DRM. Tente atualizar a lista Pluto TV ou outro canal.';
+        }
         el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
         if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
         return;
@@ -351,6 +356,14 @@
 
   // User-supplied Pluto TV catalog is fetched only on demand. Never expose signed URLs.
   var plutoChannels = [];
+  var plutoFavorites = [];
+  function loadPlutoFavorites(){
+    get('/api/pluto/favorites',function(err,data){
+      if(err)return;
+      plutoFavorites=Array.isArray(data.ids)?data.ids:[];
+      if(plutoLoaded)renderPlutoChannels();
+    });
+  }
   var plutoLoaded = false;
   var plutoPageSize = 36;
   var plutoVisible = plutoPageSize;
@@ -359,12 +372,13 @@
     var filter = el('pluto-category').value;
     var query = el('pluto-search').value.toLocaleLowerCase('pt-BR').trim();
     var selected = plutoChannels.filter(function(c){
-      return (filter==='all'||c.category===filter) &&
+      return (filter==='all'||(filter==='favorites'&&plutoFavorites.indexOf(c.id)!==-1)||c.category===filter) &&
         (!query || (c.name+' '+c.category).toLocaleLowerCase('pt-BR').indexOf(query)!==-1);
     });
+    selected.sort(function(a,b){return Number(plutoFavorites.indexOf(b.id)!==-1)-Number(plutoFavorites.indexOf(a.id)!==-1);});
     var container=el('pluto-channels');
     container.textContent='';
-    el('pluto-count').textContent=selected.length+' de '+plutoChannels.length+' canais';
+    el('pluto-count').textContent=selected.length+' de '+plutoChannels.length+' canais · '+plutoFavorites.length+' favoritos';
     if(!selected.length){
       message(container,plutoLoaded?'Nenhum canal corresponde aos filtros.':'Catálogo ainda não carregado.');
     }
@@ -379,6 +393,15 @@
           dialog(c.name,'Estes canais HLS exigem o mpv nativo. O endereço temporário também pode expirar.');
         });
       },true));
+      var favored=plutoFavorites.indexOf(c.id)!==-1;
+      controls.appendChild(miniButton(favored?'★ Favorito':'☆ Favoritar',function(){
+        post('/api/pluto/favorites/toggle',{id:c.id},function(err,data){
+          if(err){el('pluto-status').textContent='Não foi possível salvar favorito: '+err.message;return;}
+          plutoFavorites=data.ids||[];
+          renderPlutoChannels();
+          if(data.persistence && data.persistence.pending)el('pluto-status').textContent='Favorito salvo na sessão. Reconecte o pendrive de persistência para sincronizar.';
+        });
+      }));
       card.appendChild(icon);card.appendChild(name);card.appendChild(category);
       card.appendChild(controls);container.appendChild(card);
     });
@@ -404,8 +427,9 @@
       categories.sort(function(a,b){return a.localeCompare(b,'pt-BR');});
       filterEl.textContent='';
       var all=document.createElement('option');all.value='all';all.textContent='Todas as categorias';filterEl.appendChild(all);
+      var favoritesOption=document.createElement('option');favoritesOption.value='favorites';favoritesOption.textContent='★ Meus favoritos';filterEl.appendChild(favoritesOption);
       categories.forEach(function(c){var option=document.createElement('option');option.value=c;option.textContent=c;filterEl.appendChild(option);});
-      if(categories.indexOf(before)!==-1)filterEl.value=before;
+      if(before==='favorites'||categories.indexOf(before)!==-1)filterEl.value=before;
       el('pluto-status').textContent=plutoChannels.length+' canais disponíveis no catálogo. Reprodução sujeita à disponibilidade do provedor.';
       renderPlutoChannels();
     });
