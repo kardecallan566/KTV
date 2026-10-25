@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 import threading
 from urllib.parse import urlsplit
-from stream_urls import validate_stream_url, StreamURLError
+from stream_urls import validate_stream_url, validate_pluto_url, StreamURLError
 
 QUALITY_PROFILES = {
     'economy': {'hls_bitrate': 'min', 'forward': '12MiB', 'back': '4MiB'},
@@ -175,7 +175,10 @@ class NativePlayer:
         # destinations even when another caller forgets to validate streams.
         if source.startswith(('http://', 'https://')):
             try:
-                validate_stream_url(source)
+                if urlsplit(source).hostname == 'ipv4.pluto.tv':
+                    validate_pluto_url(source)
+                else:
+                    validate_stream_url(source)
             except StreamURLError as exc:
                 raise ValueError(str(exc)) from exc
         elif '://' in source or source.startswith(('data:', 'edl:', 'lavf:', 'ytdl:', 'mpv:')):
