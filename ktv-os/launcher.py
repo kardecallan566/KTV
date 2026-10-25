@@ -35,11 +35,12 @@ from public_channels import validated_catalog, public_channel
 from pluto_catalog import PlutoCatalog, PlutoError
 from pluto_favorites import PlutoFavorites, PlutoFavoritesError
 from pluto_recovery import PlutoRecovery
+from reidos_guide import ReiGuide, DiscoveryError
 from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.19.0'
+VERSION = '0.20.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -130,10 +131,11 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None, community=None, input_controller=None, epg=None, stream_check=None, antenna=None, pluto_recovery=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None, community=None, input_controller=None, epg=None, stream_check=None, antenna=None, pluto_recovery=None, rei_guide=None):
         self.pluto = pluto if pluto is not None else PlutoCatalog()
         self.browser = browser if browser is not None else InternetBrowser()
         self.community = community if community is not None else CommunityCatalog()
+        self.rei_guide = rei_guide if rei_guide is not None else ReiGuide()
         self.input_controller = input_controller if input_controller is not None else InputController()
         self.epg = epg if epg is not None else EPGGuide()
         self.stream_check = stream_check if stream_check is not None else StreamCheck()
@@ -173,7 +175,7 @@ class KTVOSServer(ThreadingHTTPServer):
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.19'
+    server_version = 'KTV-OS/0.20'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -221,6 +223,11 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error': str(exc)}, 503)
         if path == '/api/input/status':
             return self.send_json({'input': self.server.input_controller.status()})
+        if path == '/api/guide/reidos/aberta':
+            try:
+                return self.send_json(self.server.rei_guide.listing())
+            except DiscoveryError as exc:
+                return self.send_json({'error':str(exc)},503)
         if path == '/api/community/channels':
             try:
                 return self.send_json(self.server.community.listing())
