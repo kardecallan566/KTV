@@ -40,6 +40,27 @@ class LinuxLiveProfileTests(unittest.TestCase):
         self.assertIn('export KTV_OS_LIVE=1', session)
         self.assertNotIn('--disable-web-security', session)
 
+    def test_gpu_boot_recovery_is_opt_in_and_bounded(self):
+        session = (LINUX / 'overlay/usr/local/bin/ktv-os-session').read_text()
+        self.assertIn('ktv[.]safe=1', session)
+        self.assertIn('if (( SAFE_BOOT ))', session)
+        self.assertIn('timeout 16s python3 display_layout.py', session)
+        self.assertIn('browser_safe="$SAFE_BOOT"', session)
+        self.assertIn('browser_args+=(--disable-gpu --disable-gpu-compositing', session)
+        self.assertIn('crashes >= 2 && browser_safe == 0', session)
+        self.assertIn('crashes >= 5', session)
+        self.assertNotIn('pci=noaer', session)
+        self.assertNotIn('--no-sandbox', session)
+        diagnostics = (LINUX / 'overlay/usr/local/bin/ktv-os-diagnostics').read_text()
+        self.assertIn('journalctl -k -b', diagnostics)
+        self.assertIn('lspci -nn -s 01:00.0', diagnostics)
+        self.assertIn('systemctl is-active lightdm', diagnostics)
+        self.assertIn('ktv-os-session', (LINUX / 'overlay/etc/xdg/openbox/autostart').read_text())
+        for filename in ('ktv-os-session', 'ktv-os-diagnostics'):
+            script = LINUX / 'overlay/usr/local/bin' / filename
+            result = subprocess.run(['bash', '-n', str(script)], text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, filename + ': ' + result.stderr)
+
     def test_local_user_state_and_iso_hybrid(self):
         launcher = (ROOT / 'ktv-os/launcher.py').read_text()
         self.assertIn("STATE = Path.home() / '.config' / 'ktv-os'", launcher)

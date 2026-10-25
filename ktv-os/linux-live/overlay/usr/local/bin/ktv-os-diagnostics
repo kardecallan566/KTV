@@ -6,6 +6,15 @@ OUT="${HOME:-/home/user}/ktv-os-diagnostics.txt"
   echo "KTV OS - Diagnostico local $(date -Is)"
   echo "Kernel: $(uname -srmo)"
   echo "Display: ${DISPLAY:-n/d}"
+  echo "Parametros de recuperacao (sem expor toda a linha de boot):"
+  tr ' ' '\n' </proc/cmdline 2>/dev/null | grep -E '^(ktv[.]safe=|pcie_aspm=|nomodeset$|nouveau[.]modeset=)' || true
+  echo "Dispositivo PCIe 01:00.0 (somente nome e IDs de modelo):"
+  lspci -nn -s 01:00.0 2>/dev/null || true
+  echo "Eventos graficos e PCIe deste boot (ultimos 40):"
+  journalctl -k -b --no-pager -o cat 2>/dev/null | grep -Ei 'pcieport|AER:|PCIe Bus Error|nouveau|NVRM|nvidia|drm.*error' | tail -n 40 || true
+  echo "LightDM (estado e ultimos eventos):"
+  systemctl is-active lightdm 2>/dev/null || true
+  journalctl -b -u lightdm --no-pager -n 15 -o cat 2>/dev/null || true
   echo "Saidas de video:"
   xrandr --query 2>&1 | grep -E ' connected| disconnected' | head -20 || true
   echo "GPU (apenas tipo):"

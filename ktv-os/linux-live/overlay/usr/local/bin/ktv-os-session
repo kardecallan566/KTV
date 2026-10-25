@@ -12,13 +12,25 @@ if [[ -f "$SESSION_LOG" ]]; then
 fi
 : > "$SESSION_LOG"
 exec >> "$SESSION_LOG" 2>&1
-printf '=== KTV OS 0.8 - sessao iniciada: %s ===\n' "$(date -Is)"
+printf '=== KTV OS - sessao iniciada: %s ===\n' "$(date -Is)"
 cd /opt/ktv-os || exit 1
 export KTV_OS_LIVE=1
+# Opt-in rescue boot: append ktv.safe=1 to the kernel command line.
+# It alters only this Live session; no disk/firmware changes.
+SAFE_BOOT=0
+if grep -Eq '(^|[[:space:]])ktv[.]safe=1([[:space:]]|$)' /proc/cmdline 2>/dev/null; then
+  SAFE_BOOT=1
+  printf 'Modo de recuperacao KTV ativo (ktv.safe=1).\n'
+fi
 # Align laptop and HDMI to one mirrored desktop before launching Chromium.
 # Failure is non-fatal: keep the current screen for troubleshooting.
 sleep 2
-python3 display_layout.py || true
+if (( SAFE_BOOT )); then
+  printf 'Recuperacao: espelhamento automatico HDMI ignorado; resolucoes preservadas.\n'
+else
+  # Never wait forever for an unresponsive GPU/XRandR link.
+  timeout 16s python3 display_layout.py || printf 'Aviso: HDMI automatico falhou/expirou; layout nao foi forçado.\n'
+fi
 SERVER_PID=''
 cleanup() {
   if [[ -n "$SERVER_PID" ]]; then
@@ -67,17 +79,29 @@ while true; do
     break
   fi
   crashes=0
+  browser_safe="$SAFE_BOOT"
   while kill -0 "$SERVER_PID" 2>/dev/null; do
     started="$(date +%s)"
-    chromium --no-first-run --disable-session-crashed-bubble \
-      --noerrdialogs --password-store=basic \
-      --kiosk --app=http://127.0.0.1:8787/ || true
+    browser_args=(--no-first-run --disable-session-crashed-bubble
+      --noerrdialogs --password-store=basic --kiosk
+      --app=http://127.0.0.1:8787/)
+    if (( browser_safe )); then
+      # Chromium only: CPU compositing when a hybrid NVIDIA/Intel GPU fails.
+      browser_args+=(--disable-gpu --disable-gpu-compositing
+        --disable-accelerated-video-decode)
+    fi
+    chromium "${browser_args[@]}" || true
     elapsed=$(( $(date +%s) - started ))
     if (( elapsed < 12 )); then crashes=$((crashes + 1)); else crashes=0; fi
-    printf 'Navegador KTV OS terminou apos %s segundos; falhas curtas: %s\n' "$elapsed" "$crashes"
-    if (( crashes >= 3 )); then
-      if prompt_recovery 'A interface grafica fechou repetidamente. Tentar reinicia-la?'; then
+    printf 'Navegador terminou apos %s segundos; falhas curtas: %s; renderizacao segura: %s\n' "$elapsed" "$crashes" "$browser_safe"
+    if (( crashes >= 2 && browser_safe == 0 )); then
+      browser_safe=1
+      printf 'Recuperacao automatica: reiniciando Chromium sem aceleracao GPU.\n'
+    fi
+    if (( crashes >= 5 )); then
+      if prompt_recovery 'Falha grafica persistente, inclusive no modo seguro. Confira HDMI/driver e execute ktv-os-diagnostics no console.'; then
         crashes=0
+        browser_safe=1
       else
         break
       fi

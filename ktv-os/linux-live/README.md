@@ -131,3 +131,30 @@ O `build-iso.sh` agora inclui `pluto_catalog.py` dentro de `/opt/ktv-os/`, além
 **Não use para testar Pluto TV o artefato anteriormente chamado `KTV-OS-Alpha-0.8-amd64` da compilação do merge Alpha 0.9.** Ele foi montado com um empacotador antigo, sem `pluto_catalog.py`. Utilize a nova compilação da `main` após esta correção.
 
 Os links assinados da Pluto TV não são gravados na ISO: a playlist é carregada em tempo de execução. Os streams ainda dependem da disponibilidade, autenticação, região e compatibilidade do provedor.
+
+
+## Alpha 0.11 — recuperação de boot PCIe/GPU (teste no notebook)
+
+A ISO 0.10 foi reportada sem conseguir chegar à interface gráfica no PC+HDMI. Fotos mostram muitos avisos \`pcieport\`, \`AER: Correctable error message received from 0000:01:00.0\`, \`PCIe Bus Error: severity=Correctable, type=Data Link Layer\`, possivelmente no caminho PCIe da GPU NVIDIA do notebook. **AER corrigível não prova kernel panic nem explica sozinho por que o Xorg/LightDM pode ter falhado.** Compilar no GitHub não reproduz o hardware físico.
+
+**Mudanças**:
+- O espelhamento inicial pelo \`display_layout.py\` passa a ter limite de 16 segundos, sem alterar a resolução caso ele falhe.
+- Se o Chromium sair em poucos segundos duas vezes, a sessão tenta **renderização de software** (\`--disable-gpu\`, \`--disable-gpu-compositing\`, \`--disable-accelerated-video-decode\`). Após cinco falhas curtas, exibe recuperação em vez de reiniciar indefinidamente.
+- A sessão reconhece o parâmetro de boot opcional **\`ktv.safe=1\`**: pula o espelhamento HDMI automático e abre o Chromium sem aceleração da GPU desde o início. A opção afeta somente esta inicialização e não mexe em SSD, BIOS ou firmware Samsung.
+- O diagnóstico local agora captura estado do LightDM, mensagens relevantes PCIe/AER/DRM e identificação básica de \`01:00.0\`, além dos logs KTV. O relatório fica em \`~/ktv-os-diagnostics.txt\`. Nenhum dado é enviado automaticamente.
+
+### Procedimento de teste recomendado
+
+1. Baixe a **ISO Alpha 0.11** somente quando o novo GitHub Actions exibir sucesso e o checksum SHA256 corresponder. Grave o pendrive com Rufus/Ventoy, fazendo backup da unidade (será apagada).
+2. Experimente o boot normal, deixando o cabo HDMI conectado. Se a tela ficar só com erros PCIe por vários minutos, evite reboots forçados repetidos.
+3. Reinicie pelo pendrive e, no menu GRUB/UEFI, pressione uma seta rapidamente para pausar a contagem (3 s) e **E** para editar a entrada. Na linha que começa com \`linux\`, adicione um espaço seguido de \`ktv.safe=1\` ao fim dos parâmetros. Pressione **Ctrl+X** ou **F10** para inicializar a edição apenas nesta sessão.
+4. Se os avisos **PCIe/AER** persistirem mesmo no modo KTV seguro, experimente **separadamente** acrescentar \`pcie_aspm=off\` ao final da mesma linha de boot, junto com \`ktv.safe=1\`. É uma hipótese de compatibilidade com o gerenciamento de energia PCIe, **não é correção garantida**. Pode aumentar consumo/aquecimento e não deve ser aplicado globalmente até testes.
+5. Em modo BIOS/Syslinux, destaque a entrada Live e use **Tab** para editar os argumentos, se a versão do menu oferecer essa opção. O parâmetro é temporário.
+6. Se continuar sem interface, tente **Ctrl+Alt+F2**, faça login no usuário da sessão Live (\`user\`, se disponível), e execute: \`/usr/local/bin/ktv-os-diagnostics\`. Use \`systemctl status lightdm --no-pager\` e \`lspci -nn -s 01:00.0\` para diagnóstico local. Envie o conteúdo relevante de \`~/ktv-os-diagnostics.txt\`, sem senhas/identificadores pessoais.
+7. Se \`Ctrl+Alt+F2\` também não abrir console, anote se a tela reinicia toda a sequência de boot ou se apenas as linhas AER continuam com o tempo avançando — são falhas diferentes.
+
+**Não aplicar como padrão** \`pci=noaer\`, \`nomodeset\` ou \`pcie_aspm=force\`. \`pci=noaer\` ocultaria informação de falhas reais; \`nomodeset\` pode inutilizar a aceleração/HDMI; \`pcie_aspm=force\` pode causar travamentos. Antes de testar mudanças persistentes de firmware/drivers, identificar chipset/GPU/kernel e coletar logs.
+
+Documentação de referência:
+- https://docs.kernel.org/PCI/pcieaer-howto.html
+- https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.html
