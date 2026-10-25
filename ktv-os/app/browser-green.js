@@ -7,9 +7,8 @@ function search(value){
   var text=(value||'').trim();
   if(!text||text.length>180){status.textContent='Digite uma pesquisa de até 180 caracteres.';return;}
   var target='https://duckduckgo.com/?q='+encodeURIComponent(text);
-  var tab=window.open(target,'_blank','noopener,noreferrer');
-  status.textContent='Pesquisa enviada ao DuckDuckGo em uma nova aba. Use Alt+Tab ou Ctrl+Tab para voltar.';
-  if(!tab)status.textContent='O navegador pode ter bloqueado a nova aba. Permita pop-ups deste endereço local.';
+  window.open(target,'_blank','noopener,noreferrer');
+  status.textContent='Pesquisa solicitada em nova aba do Chromium. Se nada abrir, verifique o bloqueio de pop-ups deste portal.';
 }
 form.addEventListener('submit',function(e){e.preventDefault();search(query.value);});
 document.querySelectorAll('[data-search]').forEach(function(button){
