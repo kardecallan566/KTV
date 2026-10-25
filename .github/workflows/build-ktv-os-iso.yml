@@ -26,6 +26,7 @@ on:
       - "ktv-os/public_channels.py"
       - "ktv-os/pluto_catalog.py"
       - "ktv-os/pluto_recovery.py"
+      - "ktv-os/reidos_guide.py"
       - "ktv-os/pluto_favorites.py"
       - "ktv-os/persistence.py"
       - "ktv-os/app/**"
