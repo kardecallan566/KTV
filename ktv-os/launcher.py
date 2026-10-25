@@ -310,7 +310,11 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         if path == '/api/persistence/status':
             return self.send_json({'persistence': self.server.persistence.status(usb_mounts())})
         if path == '/api/player/status':
-            return self.send_json({'player': self.server.player.status()})
+            player_status=self.server.player.status()
+            # The user can close mpv with Q; release the hardware tuner as well.
+            if not player_status.get('playing'):
+                self.server.antenna.stop()
+            return self.send_json({'player':player_status})
         if path == '/api/media':
             params = parse_qs(url.query)
             source = params.get('source', ['local'])[0]
