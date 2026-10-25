@@ -54,3 +54,10 @@
 #public-filter-hint{margin-top:6px;margin-bottom:15px}
 
 .quality-panel{margin:16px 0 28px;padding:22px}.quality-panel h2{margin-top:0}.quality-panel label{display:inline-block;margin:8px 12px 8px 0}.quality-panel select{min-height:44px;background:#0b2339;border:1px solid #4d718c;border-radius:9px;color:#f3faff;padding:8px 12px}.quality-panel #quality-telemetry{overflow-wrap:anywhere}
+
+.pluto-section{margin:28px 0 36px}
+.pluto-toolbar{gap:12px}
+.pluto-toolbar label{color:#cce4f7;font-weight:700}
+.pluto-toolbar select,.pluto-toolbar input{min-height:46px;max-width:100%;padding:8px 11px;border:1px solid #4d718c;border-radius:9px;background:#0b2339;color:#f3faff;font-size:15px}
+.pluto-toolbar select{min-width:205px}.pluto-toolbar input{width:min(250px,100%)}
+#pluto-more{margin:18px 0 8px}
