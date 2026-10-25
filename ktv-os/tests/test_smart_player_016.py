@@ -79,6 +79,12 @@ class IntegratedPlayerTests(unittest.TestCase):
                 with urlopen(base+'/api/tv-aberta',timeout=3) as r:
                     channels=json.load(r)['channels']
                     self.assertNotIn('SBT',[x['name'] for x in channels])
+                with urlopen(base+'/',timeout=3) as r:
+                    policy=r.headers.get('Content-Security-Policy','')
+                    self.assertIn('frame-src https://aovivo.ebc.com.br',policy)
+                    self.assertIn('https://culturaplay.tvcultura.com.br',policy)
+                    self.assertIn("object-src 'none'",policy)
+                    self.assertEqual(r.headers.get('X-Frame-Options'),'DENY')
                 for path in ('/api/smart-player/open','/api/tv-aberta/open'):
                     with self.assertRaises(HTTPError) as exc:
                         post(path,{'kind':'public','id':'tv-brasil','url':'https://evil.example'})
