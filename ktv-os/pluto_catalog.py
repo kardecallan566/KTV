@@ -110,10 +110,10 @@ class PlutoCatalog:
         self.updated = 0
         self.loaded = False
 
-    def _load(self):
+    def _load(self, force_refresh=False):
         with self.lock:
             now = self.clock()
-            if self.loaded and now - self.updated < CACHE_SECONDS:
+            if not force_refresh and self.loaded and now - self.updated < CACHE_SECONDS:
                 return
             try:
                 channels = parse_playlist(self.fetcher())
@@ -132,10 +132,10 @@ class PlutoCatalog:
                 for channel in self.channels.values()
             ]
 
-    def play_url(self, ident):
+    def play_url(self, ident, force_refresh=False):
         if not isinstance(ident, str) or not CHANNEL_ID.fullmatch(ident):
             raise ValueError('Canal Pluto TV invalido')
-        self._load()
+        self._load(force_refresh=force_refresh)
         with self.lock:
             channel = self.channels.get(ident)
             if not channel:

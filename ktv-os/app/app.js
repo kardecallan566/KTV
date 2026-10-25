@@ -204,6 +204,32 @@
   var qualityTimer = null;
   function refreshQuality(){
     get('/api/player/status',function(err,data){
+      var recovery=data&&data.recovery;
+      if(!err&&data.player&&data.player.playing&&recovery&&recovery.active){
+        nativeActive=true;
+        playerStop.hidden=false;
+        if(recovery.message && recovery.attempts>0)
+          smartNotice.textContent=recovery.message;
+      }
+      if(!err&&data.player&&!data.player.playing&&recovery&&recovery.active){
+        if(recovery.phase==='attention'){
+          nativeActive=false;
+          playerStop.hidden=false; // Allow manual cancellation of this session.
+          el('quality-telemetry').textContent=recovery.message||'Não foi possível recuperar o canal.';
+          if(!overlay.hidden)el('dialog-message').textContent=
+            'A recuperação automática chegou ao limite. Pressione Assistir para tentar novamente.';
+          if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
+          return;
+        }
+        // The server worker survives even when Chromium is fullscreen or suspended.
+        nativeActive=true;
+        playerStop.hidden=false;
+        el('quality-telemetry').textContent='Pluto TV: reconexão automática ativa'+
+          (recovery.retry_seconds?' · próxima tentativa em '+recovery.retry_seconds+' s':'')+'.';
+        if(!overlay.hidden)el('dialog-message').textContent=
+          'O canal foi interrompido; KTV OS está renovando o link e tentando voltar ao ar.';
+        return;
+      }
       if(err || !data.player || !data.player.playing){
         if(!err && nativeActive && data.player && !data.player.playing){
           nativeActive=false;

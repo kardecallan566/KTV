@@ -34,11 +34,12 @@ from network import NetworkManager, NetworkError
 from public_channels import validated_catalog, public_channel
 from pluto_catalog import PlutoCatalog, PlutoError
 from pluto_favorites import PlutoFavorites, PlutoFavoritesError
+from pluto_recovery import PlutoRecovery
 from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.18.0'
+VERSION = '0.19.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -129,7 +130,7 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None, community=None, input_controller=None, epg=None, stream_check=None, antenna=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None, community=None, input_controller=None, epg=None, stream_check=None, antenna=None, pluto_recovery=None):
         self.pluto = pluto if pluto is not None else PlutoCatalog()
         self.browser = browser if browser is not None else InternetBrowser()
         self.community = community if community is not None else CommunityCatalog()
@@ -144,6 +145,8 @@ class KTVOSServer(ThreadingHTTPServer):
         if self.media_dir and not self.media_dir.is_dir():
             raise ValueError('--media-dir deve ser uma pasta existente')
         self.player = player if player is not None else NativePlayer()
+        self.pluto_recovery = (pluto_recovery if pluto_recovery is not None
+                               else PlutoRecovery(self.pluto, self.player))
         self.hardware = hardware if hardware is not None else HardwareManager()
         self.cec = cec if cec is not None else CECBridge()
         self.network = network if network is not None else NetworkManager()
@@ -163,13 +166,14 @@ class KTVOSServer(ThreadingHTTPServer):
 
     def server_close(self):
         self._persistence_stop.set()
+        self.pluto_recovery.close()
         self.antenna.close()
         self.hardware.close()
         self.cec.close()
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.18'
+    server_version = 'KTV-OS/0.19'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -204,6 +208,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         if path == '/api/status':
             return self.send_json({'version': VERSION, 'host': self.server.server_address[0],
                                    'usb_direct_tv': self.server.antenna.available(), 'player': self.server.player.status(),
+                                   'pluto_recovery': self.server.pluto_recovery.status(),
                                    'persistence': self.server.persistence.status(usb_mounts())})
         if path == '/api/system/status':
             return self.send_json({'system': self.server.system_actions.status()})
@@ -314,7 +319,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             # The user can close mpv with Q; release the hardware tuner as well.
             if not player_status.get('playing'):
                 self.server.antenna.stop()
-            return self.send_json({'player':player_status})
+            return self.send_json({'player':player_status,
+                                   'recovery':self.server.pluto_recovery.status()})
         if path == '/api/media':
             params = parse_qs(url.query)
             source = params.get('source', ['local'])[0]
@@ -494,12 +500,14 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             except AntennaError as exc:
                 return self.send_json({'error':str(exc)},400)
         if path == '/api/player/stop':
+            self.server.pluto_recovery.cancel()
             self.server.player.stop()
             self.server.antenna.stop()
             return self.send_json({'ok':True,'player':self.server.player.status()})
         kind = payload.get('kind')
         try:
             if kind == 'antenna':
+                self.server.pluto_recovery.cancel()
                 self.server.player.stop()
                 quality=payload.get('quality','balanced')
                 decode=payload.get('decode','default')
@@ -545,12 +553,16 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             decode = payload.get('decode', 'default')
             if type(decode) is not str or decode not in ('default', 'compatible'):
                 raise ValueError('Modo de decodificacao invalido')
+            # A manual channel change cancels automatic Pluto restoration.
+            self.server.pluto_recovery.cancel()
             # Compatibility with simple mocked players used in old regression suites.
             from player import NativePlayer
             if isinstance(self.server.player, NativePlayer):
                 info = self.server.player.play(source, title, quality=quality, decode=decode)
             else:
                 info = self.server.player.play(source, title)
+            if kind == 'pluto':
+                self.server.pluto_recovery.activate(payload.get('id'),quality,decode)
         except (ValueError, OSError) as exc:
             return self.send_json({'error': str(exc)}, 400)
         except RuntimeError as exc:
