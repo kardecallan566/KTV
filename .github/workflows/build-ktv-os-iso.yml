@@ -14,6 +14,7 @@ on:
       - "ktv-os/community_catalog.py"
       - "ktv-os/epg_guide.py"
       - "ktv-os/stream_check.py"
+      - "ktv-os/smart_player.py"
       - "ktv-os/channel_store.py"
       - "ktv-os/persistence.py"
       - "ktv-os/hardware.py"
