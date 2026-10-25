@@ -56,6 +56,22 @@
             </select></div>
           <p class="small-note" id="public-filter-hint">As categorias indicam tipos de programas da emissora, não um canal dedicado ao assunto 24 horas por dia.</p>
           <div id="public-channels" class="content-grid"></div>
+
+          <div class="pluto-section">
+            <h2 class="section-title">Pluto TV — canais ao vivo</h2>
+            <p class="small-note">Catálogo comunitário de canais gratuitos da Pluto TV (BuddyChewChew/pluto), não oficial. Links temporários são atualizados sob demanda; acesso e reprodução dependem de disponibilidade, anúncios e condições do provedor.</p>
+            <div class="channel-actions pluto-toolbar">
+              <label for="pluto-category">Categoria</label>
+              <select id="pluto-category" class="focusable"><option value="all">Todas as categorias</option></select>
+              <label for="pluto-search">Buscar canal</label>
+              <input id="pluto-search" class="focusable" type="search" maxlength="64" placeholder="Filmes, anime, esportes...">
+              <button id="pluto-refresh" class="ghost focusable" type="button">Atualizar lista</button>
+              <span id="pluto-count" class="chip">Não carregado</span>
+            </div>
+            <p class="small-note" id="pluto-status" role="status">Abra Canais para carregar a lista Pluto TV.</p>
+            <div id="pluto-channels" class="content-grid"></div>
+            <button class="ghost focusable" id="pluto-more" type="button" hidden>Mostrar mais canais</button>
+          </div>
           <h2 class="section-title">Meus canais</h2><div id="channels" class="content-grid"></div>
           <div class="panel channel-editor" id="channel-editor" hidden>
             <h2 id="channel-editor-title">Novo canal</h2>
