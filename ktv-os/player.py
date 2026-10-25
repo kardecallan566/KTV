@@ -25,6 +25,7 @@ VIDEO_PROPERTIES = (
     'video-params', 'video-codec', 'container-fps', 'estimated-vf-fps',
     'frame-drop-count', 'decoder-frame-drop-count', 'demuxer-cache-duration',
     'hwdec-current', 'vid', 'aid', 'video-out-params',
+    'time-pos', 'pause', 'eof-reached',
 )
 
 
@@ -108,6 +109,9 @@ class NativePlayer:
         video_track = properties.get('vid')
         audio_track = properties.get('aid')
         return {
+            'time_pos': _number(properties.get('time-pos'), 8640000),
+            'paused': properties.get('pause') is True,
+            'eof_reached': properties.get('eof-reached') is True,
             'video_rendered': isinstance(output, dict),
             'video_track': type(video_track) is int and video_track > 0,
             'audio_track': type(audio_track) is int and audio_track > 0,
@@ -192,6 +196,13 @@ class NativePlayer:
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
             '--force-window=yes', '--really-quiet',
         ]
+        is_pluto = (urlsplit(source).hostname == 'ipv4.pluto.tv'
+                    and urlsplit(source).path.endswith('/master.m3u8'))
+        if is_pluto:
+            # End-of-playlist should be detected by the recovery worker, not
+            # exit silently. A user-initiated Q/CLOSE_WIN exits with code 77.
+            args.extend(('--keep-open=yes','--network-timeout=20',
+                         '--demuxer-thread=yes','--cache=yes','--cache-secs=15'))
         if decode == 'compatible':
             # Manual fallback for audio-only/black picture or buggy GPU drivers.
             # Software decoding + X11 output is slower: never enable by default.
@@ -210,6 +221,12 @@ class NativePlayer:
             self.ipc_dir = tempfile.mkdtemp(prefix='ktv-mpv-')
             self.ipc_path = os.path.join(self.ipc_dir, 'control.sock')
             args.append('--input-ipc-server=' + self.ipc_path)
+            if is_pluto:
+                bindings=os.path.join(self.ipc_dir,'pluto-keys.conf')
+                with open(bindings,'w',encoding='ascii') as config:
+                    config.write('q quit 77\nQ quit 77\nCLOSE_WIN quit 77\n')
+                os.chmod(bindings,0o600)
+                args.append('--input-conf='+bindings)
         args.extend(('--', source))
         with self.lock:
             try:
