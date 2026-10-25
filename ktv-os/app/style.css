@@ -38,3 +38,8 @@
 
 /* KTV OS 0.7 — optional HDMI-CEC receiver */
 #cec-status{white-space:normal;line-height:1.45}
+
+/* KTV OS 0.8 */
+#wifi-password{min-height:48px;min-width:220px;max-width:100%;background:#081a2c;color:#f0faff;border:1px solid #4d718c;border-radius:10px;padding:10px;font-size:16px}
+#wifi-password:focus-visible{outline:3px solid #7af1d9}
+#public-channels{margin-bottom:20px}

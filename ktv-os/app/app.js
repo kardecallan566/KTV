@@ -40,7 +40,8 @@
     Array.prototype.forEach.call(document.querySelectorAll('.nav-link'), function (n) { n.classList.toggle('active', n.getAttribute('data-route') === name); });
     var first = document.querySelector('.nav-link.active'); if (first) first.focus();
     if (name === 'usb') loadUSB();
-    if (name === 'canais') loadChannels();
+    if (name === 'rede') refreshNetwork();
+    if (name === 'canais') {loadChannels();loadPublicChannels();}
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
   }
@@ -270,6 +271,84 @@
       card.appendChild(icon);card.appendChild(title);card.appendChild(category);card.appendChild(buttons);box.appendChild(card);
     });
   }
+
+  // Curated public institutions only; no untrusted third-party IPTV aggregator.
+  function loadPublicChannels(){
+    get('/api/public-channels',function(err,data){
+      var container=el('public-channels');container.textContent='';
+      if(err){message(container,'Catálogo indisponível: '+err.message);return;}
+      (data.channels||[]).forEach(function(c){
+        var card=document.createElement('div');card.className='info-card channel-card';
+        var icon=document.createElement('span');icon.className='card-icon';icon.textContent='◉';
+        var title=document.createElement('strong');title.textContent=c.name;
+        var label=document.createElement('small');label.textContent=c.provider+' • sinal experimental';
+        var controls=document.createElement('div');controls.className='channel-buttons';
+        controls.appendChild(miniButton('▶ Assistir',function(){
+          nativePlay({kind:'public',id:c.id},c.name,function(){
+            dialog(c.name,'Este canal usa HLS. Instale e utilize o KTV OS Linux Live com mpv para reproduzir. O link pode estar indisponível.');
+          });
+        },true));
+        controls.appendChild(miniButton('Adicionar aos meus canais',function(){
+          post('/api/channels/change',{action:'add',name:c.name,url:c.url,category:c.category},function(fault,response){
+            statusMsg('channel-result',fault?'Falha ao adicionar: '+fault.message:'Canal adicionado à sua lista pessoal.');
+            if(!fault){channelCache=response.channels;renderChannels();}
+          });
+        }));
+        card.appendChild(icon);card.appendChild(title);card.appendChild(label);card.appendChild(controls);container.appendChild(card);
+      });
+    });
+  }
+
+  function refreshNetwork(){
+    get('/api/network/status',function(err,data){
+      if(err){el('network-status').textContent='Servidor de rede indisponível: '+err.message;return;}
+      var n=data.network;
+      el('network-status').textContent=n.available?('Wi-Fi: '+(n.wifi_enabled?'ativado':'desativado')):('Rede indisponível: '+n.error);
+      var root=el('network-devices');root.textContent='';
+      (n.devices||[]).forEach(function(d){
+        root.appendChild(makeCard(d.kind==='ethernet'?'Ethernet':'Wi-Fi',d.name+' · '+d.state+' · '+(d.connection||'sem conexão'),function(){}));
+      });
+    });
+  }
+  function scanNetwork(){
+    el('wifi-feedback').textContent='Buscando redes…';
+    get('/api/network/wifi',function(err,data){
+      if(err){el('wifi-feedback').textContent='Erro na busca: '+err.message;return;}
+      var choices=el('wifi-ssid'),saved=choices.value;
+      choices.textContent='';
+      (data.networks||[]).forEach(function(n){
+        var option=document.createElement('option');option.value=n.ssid;
+        option.textContent=n.ssid+' · '+n.signal+'%'+(n.secure?' 🔒':'')+(n.connected?' ✓ conectado':'');
+        choices.appendChild(option);
+      });
+      if((data.networks||[]).some(function(n){return n.ssid===saved;}))choices.value=saved;
+      el('wifi-feedback').textContent=data.networks.length+' rede(s) encontrada(s).';
+      refreshNetwork();
+    });
+  }
+  el('wifi-scan').addEventListener('click',scanNetwork);
+  el('network-refresh').addEventListener('click',refreshNetwork);
+  el('wifi-enable').addEventListener('click',function(){
+    post('/api/network/wifi-radio',{enabled:true},function(err,data){
+      el('wifi-feedback').textContent=err?('Falha ao ativar Wi-Fi: '+err.message):data.result.message;
+      if(!err)scanNetwork();
+    });
+  });
+  el('wifi-connect').addEventListener('click',function(){
+    var ssid=el('wifi-ssid').value;
+    if(!ssid){el('wifi-feedback').textContent='Primeiro selecione uma rede Wi-Fi.';return;}
+    el('wifi-connect').disabled=true;
+    el('wifi-feedback').textContent='Tentando conectar…';
+    var secret=el('wifi-password').value;
+    post('/api/network/connect',{ssid:ssid,password:secret},function(err,data){
+      el('wifi-password').value='';secret='';
+      el('wifi-connect').disabled=false;
+      el('wifi-feedback').textContent=err?('Falha na conexão: '+err.message):data.result.message;
+      refreshNetwork();
+    });
+  });
+  loadPublicChannels();
+
   function loadChannels(){
     get('/api/channels',function(err,data){
       if(err){message(el('channels'),'Não foi possível carregar os canais: '+err.message);return;}

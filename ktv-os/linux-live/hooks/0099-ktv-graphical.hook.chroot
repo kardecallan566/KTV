@@ -1,0 +1,6 @@
+#!/bin/sh
+# Executed inside the disposable Debian Live filesystem during ISO build.
+set -eu
+systemctl set-default graphical.target
+systemctl enable lightdm.service
+systemctl enable NetworkManager.service

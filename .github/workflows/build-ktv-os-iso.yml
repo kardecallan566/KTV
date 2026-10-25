@@ -12,6 +12,9 @@ on:
       - "ktv-os/persistence.py"
       - "ktv-os/hardware.py"
       - "ktv-os/cec_bridge.py"
+      - "ktv-os/network.py"
+      - "ktv-os/display_layout.py"
+      - "ktv-os/public_channels.py"
       - "ktv-os/app/**"
       - ".github/workflows/build-ktv-os-iso.yml"
 
@@ -51,7 +54,7 @@ jobs:
       - name: Disponibilizar ISO inicializavel
         uses: actions/upload-artifact@v4
         with:
-          name: KTV-OS-Alpha-0.7-amd64
+          name: KTV-OS-Alpha-0.8-amd64
           path: |
             ktv-os/linux-live/dist/KTV-OS-Alpha-*.iso
             ktv-os/linux-live/dist/KTV-OS-Alpha-*.iso.sha256
