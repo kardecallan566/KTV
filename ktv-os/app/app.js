@@ -276,31 +276,50 @@
   }
 
   // Curated public institutions only; no untrusted third-party IPTV aggregator.
-  function loadPublicChannels(){
-    get('/api/public-channels',function(err,data){
-      var container=el('public-channels');container.textContent='';
-      if(err){message(container,'Catálogo indisponível: '+err.message);return;}
-      (data.channels||[]).forEach(function(c){
-        var card=document.createElement('div');card.className='info-card channel-card';
-        var icon=document.createElement('span');icon.className='card-icon';icon.textContent='◉';
-        var title=document.createElement('strong');title.textContent=c.name;
-        var label=document.createElement('small');label.textContent=c.provider+' • sinal experimental';
-        var controls=document.createElement('div');controls.className='channel-buttons';
-        controls.appendChild(miniButton('▶ Assistir',function(){
-          nativePlay({kind:'public',id:c.id},c.name,function(){
-            dialog(c.name,'Este canal usa HLS. Instale e utilize o KTV OS Linux Live com mpv para reproduzir. O link pode estar indisponível.');
-          });
-        },true));
-        controls.appendChild(miniButton('Adicionar aos meus canais',function(){
-          post('/api/channels/change',{action:'add',name:c.name,url:c.url,category:c.category},function(fault,response){
-            statusMsg('channel-result',fault?'Falha ao adicionar: '+fault.message:'Canal adicionado à sua lista pessoal.');
-            if(!fault){channelCache=response.channels;renderChannels();}
-          });
-        }));
-        card.appendChild(icon);card.appendChild(title);card.appendChild(label);card.appendChild(controls);container.appendChild(card);
-      });
+  var publicChannelCache=[];
+  function renderPublicChannels(){
+    var container=el('public-channels'),filter=el('public-channel-filter').value;
+    container.textContent='';
+    var selected=publicChannelCache.filter(function(c){
+      return filter==='all'||(Array.isArray(c.genres)&&c.genres.indexOf(filter)!==-1);
+    });
+    if(!selected.length){
+      message(container,filter==='Animes'
+        ?'Ainda não há um stream direto de anime cuja origem e autorização tenhamos confirmado. Não incluímos IPTV pirata.'
+        :'Ainda não temos canais verificados nesta categoria. Os assuntos representam parte da programação, que varia conforme o horário.');
+      return;
+    }
+    selected.forEach(function(c){
+      var card=document.createElement('div');card.className='info-card channel-card';
+      var icon=document.createElement('span');icon.className='card-icon';icon.textContent='◉';
+      var title=document.createElement('strong');title.textContent=c.name;
+      var label=document.createElement('small');
+      label.textContent=c.provider+' · '+(c.category||'TV pública')+' · link experimental';
+      var info=document.createElement('small');
+      info.textContent=c.note||'A programação pode variar.';
+      var controls=document.createElement('div');controls.className='channel-buttons';
+      controls.appendChild(miniButton('▶ Assistir',function(){
+        nativePlay({kind:'public',id:c.id},c.name,function(){
+          dialog(c.name,'Este canal usa HLS. Instale e utilize o KTV OS Linux Live com mpv para reproduzir. O link pode estar indisponível.');
+        });
+      },true));
+      controls.appendChild(miniButton('Adicionar aos meus canais',function(){
+        post('/api/channels/change',{action:'add',name:c.name,url:c.url,category:c.category},function(fault,response){
+          statusMsg('channel-result',fault?'Falha ao adicionar: '+fault.message:'Canal adicionado à sua lista pessoal.');
+          if(!fault){channelCache=response.channels;renderChannels();}
+        });
+      }));
+      card.appendChild(icon);card.appendChild(title);card.appendChild(label);card.appendChild(info);card.appendChild(controls);container.appendChild(card);
     });
   }
+  function loadPublicChannels(){
+    get('/api/public-channels',function(err,data){
+      if(err){message(el('public-channels'),'Catálogo indisponível: '+err.message);return;}
+      publicChannelCache=(data.channels||[]);
+      renderPublicChannels();
+    });
+  }
+  el('public-channel-filter').addEventListener('change',renderPublicChannels);
 
   function refreshNetwork(){
     get('/api/network/status',function(err,data){
