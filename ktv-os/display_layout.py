@@ -59,7 +59,7 @@ def layout_command(screens,target,kind):
     if kind=='mirror':
         common=set(ext['modes']).intersection(internal['modes'])
         mode=choose_mode(common)
-        if not mode:raise ValueError('Sem resolução comum; escolha somente TV ou mantenha o vídeo atual')
+        if not mode:raise ValueError('Sem resolucao comum; escolha somente TV ou mantenha o video atual')
     else:
         mode=ext['mode'] if ext['mode'] in ext['modes'] else choose_mode(ext['modes'])
         if not mode:raise ValueError('Monitor HDMI não anunciou nenhuma resolução')
@@ -100,7 +100,7 @@ def mirror(runner=None,which=None):
             # Never turn off the built-in screen without explicit user consent.
             return str(exc)+'; tela atual preservada'
         changed=runner(command,capture_output=True,text=True,timeout=8,check=False)
-        return ('HDMI espelhado com sucesso' if changed.returncode==0 else
+        return ('Espelhamento HDMI concluido com sucesso' if changed.returncode==0 else
                 'Falha ao espelhar: '+changed.stderr.strip()[:150])
     except (OSError,subprocess.TimeoutExpired):
         return 'Falha de driver ou tempo esgotado no xrandr; layout original preservado'
