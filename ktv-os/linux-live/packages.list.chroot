@@ -10,6 +10,7 @@ xorg
 xserver-xorg-input-libinput
 openbox
 chromium
+matchbox-keyboard
 mpv
 udiskie
 zenity
