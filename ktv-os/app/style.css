@@ -102,3 +102,10 @@
 .embed-viewport iframe{display:block;width:100%;height:100%;border:0;background:#020606}
 #player-embed:not([hidden]){background:linear-gradient(105deg,#185d40,#299969);border:1px solid #57d18f;color:#f4fff9}
 @media(max-width:650px){.embed-viewport{min-height:200px}#integrated-player .embedded-provider{font-size:13px}}
+
+/* Alpha 0.18 - reception of free-to-air ISDB-Tb television via USB antenna */
+.antenna-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0}
+.antenna-toolbar button:disabled{opacity:.55;cursor:not-allowed}
+#antenna-channels .channel-card{border-color:#4c9973;background:linear-gradient(135deg,#103524,#142d3e)}
+.section-divider{border:0;border-top:1px solid #33765b;margin:28px 0}
+#antenna-message{color:#b7eccb;line-height:1.6}
