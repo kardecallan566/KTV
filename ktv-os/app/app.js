@@ -321,8 +321,8 @@
   }
   function playChannel(c,index){
     nativePlay({kind:'channel',index:index},c.name,function(){
-      if (/\.mp4(?:\?|$)/i.test(c.url)) {
-        dialog(c.name,'MP4 pelo navegador; compatibilidade depende dos codecs.');
+      if (/\.(mp4|webm|m4v)(?:\?|$)/i.test(c.url)) {
+        dialog(c.name,'Mídia MP4/WebM/M4V pelo navegador; reprodução depende dos codecs.');
         video.src=c.url;video.hidden=false;video.play().catch(function(){});
       } else {
         dialog(c.name,'HLS exige o player mpv, incluído na ISO Linux KTV OS. Não foi iniciado.');
