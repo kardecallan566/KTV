@@ -19,6 +19,7 @@ import webbrowser
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 from player import NativePlayer, safe_media_path
+from internet_browser import InternetBrowser, BrowserError
 from channel_store import ChannelStore, ChannelError
 from persistence import PersistenceManager, PersistenceError
 from hardware import HardwareManager, HardwareError
@@ -31,7 +32,7 @@ from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.11.0'
+VERSION = '0.12.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -117,8 +118,9 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None):
         self.pluto = pluto if pluto is not None else PlutoCatalog()
+        self.browser = browser if browser is not None else InternetBrowser()
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.pluto_favorites = PlutoFavorites(self.state_dir)
         self.state_dir.mkdir(parents=True, exist_ok=True)
@@ -150,7 +152,7 @@ class KTVOSServer(ThreadingHTTPServer):
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.8'
+    server_version = 'KTV-OS/0.12'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -188,6 +190,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json(self.server.network.scan())
             except NetworkError as exc:
                 return self.send_json({'error': str(exc)}, 503)
+        if path == '/api/browser/status':
+            return self.send_json({'browser': self.server.browser.status()})
         if path == '/api/public-channels':
             return self.send_json({'channels': validated_catalog()})
         if path == '/api/pluto/favorites':
@@ -244,7 +248,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ('/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
+        if path not in ('/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
@@ -263,7 +267,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_json({'error': 'JSON obrigatorio'}, 415)
         try:
             size = int(self.headers.get('Content-Length', '-1'))
-            if size < 0 or size > 4096:
+            if size < 0 or size > (131072 if path == '/api/channels/import-m3u' else 4096):
                 return self.send_json({'error': 'Tamanho invalido'}, 413)
             payload = json.loads(self.rfile.read(size))
             if not isinstance(payload, dict):
@@ -329,6 +333,23 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                     info = self.server.persistence.disable(usb_mounts())
                 return self.send_json({'ok': True, 'persistence': info})
             except (PersistenceError, ChannelError, OSError) as exc:
+                return self.send_json({'error': str(exc)}, 400)
+
+        if path == '/api/browser/search':
+            try:
+                result = self.server.browser.open_search(payload.get('query'))
+                return self.send_json({'ok': True, 'browser': result})
+            except BrowserError as exc:
+                return self.send_json({'error': str(exc)}, 400)
+            except RuntimeError as exc:
+                return self.send_json({'error': str(exc)}, 503)
+
+        if path == '/api/channels/import-m3u':
+            try:
+                result = self.server.channels.import_m3u(payload.get('content'))
+                persisted = self.server.persistence.sync(usb_mounts())
+                return self.send_json({'ok': True, **result, 'persistence': persisted})
+            except (ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 400)
 
         if path == '/api/channels/change':
@@ -401,10 +422,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             quality = payload.get('quality', 'balanced')
             if type(quality) is not str or quality not in ('economy', 'balanced', 'best'):
                 raise ValueError('Perfil de qualidade invalido')
+            decode = payload.get('decode', 'default')
+            if type(decode) is not str or decode not in ('default', 'compatible'):
+                raise ValueError('Modo de decodificacao invalido')
             # Compatibility with simple mocked players used in old regression suites.
             from player import NativePlayer
             if isinstance(self.server.player, NativePlayer):
-                info = self.server.player.play(source, title, quality=quality)
+                info = self.server.player.play(source, title, quality=quality, decode=decode)
             else:
                 info = self.server.player.play(source, title)
         except (ValueError, OSError) as exc:

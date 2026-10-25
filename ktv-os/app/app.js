@@ -6,6 +6,8 @@
   var video = document.getElementById('video-player');
   var image = document.getElementById('image-player');
   var playerStop = document.getElementById('player-stop');
+  var compatibleButton = document.getElementById('player-compatible');
+  var lastNativeRequest = null;
   var nativeAvailable = false;
   var nativeActive = false;
   var pendingVideoToken = null;
@@ -29,7 +31,10 @@
   function dialog(title, body) {
     el('dialog-title').textContent = title;
     el('dialog-message').textContent = body;
-    overlay.hidden = false; playerStop.hidden = !nativeActive; dialogClose.focus();
+    overlay.hidden = false;
+    playerStop.hidden = !nativeActive;
+    compatibleButton.hidden = !lastNativeRequest || lastNativeRequest.decode === 'compatible';
+    dialogClose.focus();
   }
   function closeDialog() {
     if (overlay.hidden) return;
@@ -38,6 +43,8 @@
     image.removeAttribute('src'); image.hidden = true; overlay.hidden = true;
     if (nativeActive) stopNative();
     playerStop.hidden = true;
+    compatibleButton.hidden = true;
+    lastNativeRequest = null;
     var active = document.querySelector('.nav-link.active');
     if (active) active.focus();
   }
@@ -51,6 +58,7 @@
     var first = document.querySelector('.nav-link.active'); if (first) first.focus();
     if (name === 'usb') loadUSB();
     if (name === 'rede') refreshNetwork();
+    if (name === 'navegador') el('browser-search-input').focus();
     if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();}
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
@@ -127,6 +135,7 @@
     stopQualityPolling();
     playerStop.hidden = true;
     post('/api/player/stop', {}, function(){});
+    compatibleButton.hidden = true;
   }
   playerStop.addEventListener('click', function(){stopNative();el('dialog-message').textContent='Reprodução encerrada. Pressione Voltar.';});
   var qualityTimer = null;
@@ -136,7 +145,8 @@
         if(!err && nativeActive && data.player && !data.player.playing){
           nativeActive=false;
           playerStop.hidden=true;
-          if(!overlay.hidden)el('dialog-message').textContent='Reprodução encerrada. Se o canal não exibiu imagem, o stream pode estar indisponível, ter expirado ou exigir DRM. Tente atualizar a lista Pluto TV ou outro canal.';
+          if(!overlay.hidden)el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code?' (código '+data.player.exit_code+')':'')+'. O stream pode ter terminado, travado ou exigido um codec/DRM indisponível. Experimente Tentar modo compatível ou outro canal.';
+          if(lastNativeRequest && lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
         }
         el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
         if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
@@ -151,6 +161,7 @@
       if(v.dropped_frames!==null && v.dropped_frames!==undefined)parts.push('Quadros perdidos: '+v.dropped_frames);
       if(v.buffer_seconds!==null && v.buffer_seconds!==undefined)parts.push('Buffer: '+v.buffer_seconds+' s');
       if(v.hardware_decoder)parts.push('Decoder: '+v.hardware_decoder);
+      if(v.video_track && v.audio_track && v.video_rendered===false)parts.push('Vídeo ainda não renderizado — tente modo compatível se persistir');
       el('quality-telemetry').textContent=parts.length?parts.join(' · '):'Reproduzindo; o mpv ainda não informou métricas.';
     });
   }
@@ -158,21 +169,55 @@
     if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
     el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
   }
-  function nativePlay(payload,title,fallback) {
+  function nativePlay(payload,title,fallback,decode) {
     if (!nativeAvailable) {
       if(fallback){fallback();return;}
       dialog(title,'Player mpv indisponível. Na imagem Linux KTV OS o mpv já vem instalado. Para testar no Windows, instale o mpv e reinicie o KTV OS.');
       return;
     }
+    stopQualityPolling();
+    decode=decode||'default';
+    // Only validated references (kind/id/index), never signed Pluto URLs.
+    lastNativeRequest={payload:Object.assign({},payload),title:title,decode:decode};
     payload.quality=el('quality-profile').value;
+    payload.decode=decode;
     post('/api/player/play',payload,function(err){
-      if(err){dialog(title,'Não foi possível iniciar o player: '+err.message);return;}
+      if(err){dialog(title,'Não foi possível iniciar o player: '+err.message+'. Tente outro canal ou modo compatível.');return;}
       nativeActive=true;
       refreshQuality();
       if(!qualityTimer)qualityTimer=setInterval(refreshQuality,2500);
-      dialog(title,'Reproduzindo pelo mpv nativo em tela cheia.\nUse Q para fechar a janela do mpv e voltar à interface do KTV OS.');
+      dialog(title,'Reproduzindo pelo mpv nativo ('+(decode==='compatible'?'modo compatível — mais CPU':'modo normal')+').\nSe houver apenas áudio, vídeo preto ou travamento, pressione Q para fechar o mpv e selecione Tentar modo compatível.');
     });
   }
+  compatibleButton.addEventListener('click',function(){
+    if(!lastNativeRequest)return;
+    var previous=lastNativeRequest;
+    nativePlay(Object.assign({},previous.payload),previous.title,null,'compatible');
+  });
+
+  el('browser-search-form').addEventListener('submit',function(event){
+    event.preventDefault();
+    var query=el('browser-search-input').value.trim();
+    post('/api/browser/search',{query:query},function(err){
+      el('browser-search-result').textContent=err?'Não foi possível abrir: '+err.message:
+        'Pesquisa aberta no Chromium. Alt+Tab retorna ao KTV OS; Alt+F4 fecha a janela.';
+    });
+  });
+
+  el('m3u-import-form').addEventListener('submit',function(event){
+    event.preventDefault();
+    var content=el('m3u-import-text').value;
+    if(!window.confirm('Importar canais da playlist que você possui autorização para assistir?'))return;
+    post('/api/channels/import-m3u',{content:content},function(err,data){
+      if(err){statusMsg('m3u-import-result','Falha ao importar: '+err.message);return;}
+      channelCache=data.channels;
+      channelVisible=36;
+      renderChannels();
+      el('m3u-import-text').value='';
+      statusMsg('m3u-import-result',data.added+' canais adicionados; '+data.ignored+' ignorados (duplicados, inválidos ou limite atingido).');
+    });
+  });
+
   function webMedia(item,source,device) {
     var src=(source==='usb'?'/media/usb/'+encodeURIComponent(device)+'/':'/media/')+encodeURIComponent(item.name);
     if(item.type==='image') {
@@ -218,6 +263,7 @@
     loadMedia('local',null,'Minha biblioteca');
   }
   var channelCache = [];
+  var channelVisible = 36;
   var selectedChannelId = null;
   var channelForm = el('channel-form');
   function statusMsg(id, msg) {
@@ -291,7 +337,7 @@
     // Preserve original indexes for player API while displaying favorites first.
     var sorted=channelCache.map(function(c,index){return {item:c,index:index};});
     sorted.sort(function(a,b){return Number(b.item.favorite)-Number(a.item.favorite)||a.index-b.index;});
-    sorted.forEach(function(entry){
+    sorted.slice(0,channelVisible).forEach(function(entry){
       var item=entry.item;
       var card=document.createElement('div');card.className='info-card channel-card';
       var icon=document.createElement('span');icon.className='card-icon';icon.textContent='▷';
@@ -306,7 +352,9 @@
       buttons.appendChild(miniButton('Excluir',function(){channelAction('delete',item);}));
       card.appendChild(icon);card.appendChild(title);card.appendChild(category);card.appendChild(buttons);box.appendChild(card);
     });
+    el('channels-more').hidden=channelVisible>=sorted.length;
   }
+  el('channels-more').addEventListener('click',function(){channelVisible+=36;renderChannels();});
 
   // Curated public institutions only; no untrusted third-party IPTV aggregator.
   var publicChannelCache=[];

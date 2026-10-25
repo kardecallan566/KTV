@@ -61,3 +61,12 @@
 .pluto-toolbar select,.pluto-toolbar input{min-height:46px;max-width:100%;padding:8px 11px;border:1px solid #4d718c;border-radius:9px;background:#0b2339;color:#f3faff;font-size:15px}
 .pluto-toolbar select{min-width:205px}.pluto-toolbar input{width:min(250px,100%)}
 #pluto-more{margin:18px 0 8px}
+
+/* Alpha 0.12 — browser and legal M3U import */
+.browser-panel form,#m3u-import-form{display:flex;gap:13px;flex-direction:column;align-items:flex-start;max-width:830px}
+.browser-panel label,#m3u-import-form label{font-weight:700;color:#cce4f7}
+.browser-panel input,#m3u-import-text{background:#081a2c;color:#f0faff;border:1px solid #4d718c;border-radius:10px;padding:13px;font-size:17px;width:100%;max-width:830px}
+#m3u-import-text{min-height:135px;font-size:14px;line-height:1.6;resize:vertical}
+.browser-panel input:focus-visible,#m3u-import-text:focus-visible{outline:3px solid #7af1d9}
+#channels-more{margin:16px 0 30px}
+#player-compatible[hidden]{display:none}

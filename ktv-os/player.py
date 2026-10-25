@@ -23,7 +23,7 @@ QUALITY_PROFILES = {
 VIDEO_PROPERTIES = (
     'video-params', 'video-codec', 'container-fps', 'estimated-vf-fps',
     'frame-drop-count', 'decoder-frame-drop-count', 'demuxer-cache-duration',
-    'hwdec-current',
+    'hwdec-current', 'vid', 'aid', 'video-out-params',
 )
 
 
@@ -44,6 +44,8 @@ class NativePlayer:
         self.process = None
         self.current = None
         self.quality = None
+        self.decode = None
+        self.last_exit_code = None
         self.ipc_dir = None
         self.ipc_path = None
 
@@ -101,7 +103,13 @@ class NativePlayer:
             fps = _number(properties.get('container-fps'), 240)
         codec = properties.get('video-codec')
         hwdec = properties.get('hwdec-current')
+        output = properties.get('video-out-params')
+        video_track = properties.get('vid')
+        audio_track = properties.get('aid')
         return {
+            'video_rendered': isinstance(output, dict),
+            'video_track': type(video_track) is int and video_track > 0,
+            'audio_track': type(audio_track) is int and audio_track > 0,
             'width': width if width and width >= 16 else None,
             'height': height if height and height >= 16 else None,
             'fps': fps if fps and fps > 0 else None,
@@ -114,17 +122,23 @@ class NativePlayer:
 
     def status(self):
         with self.lock:
-            playing = self.process is not None and self.process.poll() is None
+            code = self.process.poll() if self.process is not None else None
+            playing = self.process is not None and code is None
             if not playing:
+                if self.process is not None:
+                    self.last_exit_code = code
                 self.process = None
                 self.current = None
                 self.quality = None
+                self.decode = None
                 self._clear_ipc()
             return {
                 'available': self.available,
                 'playing': playing,
                 'name': self.current,
                 'quality': self.quality if playing else None,
+                'decode': self.decode if playing else None,
+                'exit_code': None if playing else self.last_exit_code,
                 'video': self._read_video_state() if playing else None,
             }
 
@@ -137,6 +151,8 @@ class NativePlayer:
             self.process = None
             self.current = None
             self.quality = None
+            self.decode = None
+            self.last_exit_code = None
             try:
                 if process.poll() is None:
                     process.terminate()
@@ -149,18 +165,26 @@ class NativePlayer:
                 self._clear_ipc()
             return True
 
-    def play(self, source, name, quality='balanced'):
+    def play(self, source, name, quality='balanced', decode='default'):
         if not self.executable:
             raise RuntimeError('mpv nao instalado. Disponivel na imagem KTV OS Linux Live.')
         if not isinstance(source, str) or not source or source.startswith('-') or '\0' in source:
             raise ValueError('Fonte de video invalida')
         if type(quality) is not str or quality not in QUALITY_PROFILES:
             raise ValueError('Perfil de qualidade invalido')
+        if type(decode) is not str or decode not in ('default', 'compatible'):
+            raise ValueError('Modo de decodificacao invalido')
         self.stop()
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
-            '--force-window=yes', '--hwdec=auto-safe', '--really-quiet',
+            '--force-window=yes', '--really-quiet',
         ]
+        if decode == 'compatible':
+            # Manual fallback for audio-only/black picture or buggy GPU drivers.
+            # Software decoding + X11 output is slower: never enable by default.
+            args.extend(('--hwdec=no', '--vo=x11', '--profile=sw-fast'))
+        else:
+            args.append('--hwdec=auto-safe')
         if urlsplit(source).path.lower().endswith('.m3u8'):
             chosen = QUALITY_PROFILES[quality]
             args.extend((
@@ -183,6 +207,8 @@ class NativePlayer:
                 raise RuntimeError('Nao foi possivel iniciar mpv: {}'.format(exc))
             self.current = name
             self.quality = quality
+            self.decode = decode
+            self.last_exit_code = None
             return self.status()
 
     def close(self):
