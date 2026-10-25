@@ -40,6 +40,7 @@
           </div>
         </section>
         <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de streams HLS/MP4 pelo mpv nativo quando disponível. Cadastre apenas fontes próprias ou autorizadas.</p><div class="channel-actions"><button class="primary focusable" id="channel-create">+ Adicionar canal</button><span class="chip" id="channel-count">0 canais</span></div>
+          <div class="panel quality-panel"><h2>Qualidade de reprodução · Alpha 0.9</h2><p class="small-note">Seleção inicial de variante HLS, sem transcodificação ou IA. O modo equilibrado tenta limitar a variante a aproximadamente 4 Mb/s, quando a playlist oferecer opções.</p><label for="quality-profile">Perfil de reprodução</label> <select class="focusable" id="quality-profile"><option value="balanced">Equilibrado (padrão)</option><option value="economy">Econômico (menor variante)</option><option value="best">Melhor disponível</option></select><p id="quality-telemetry" class="small-note" role="status">Inicie um canal para consultar resolução, codec, FPS e buffer (quando informados pelo mpv).</p></div>
           <h2 class="section-title">Canais públicos</h2><p class="small-note">Transmissões públicas em servidores institucionais. A disponibilidade dos streams é experimental; a reprodução pode falhar ou sofrer restrições de acesso.</p><div class="channel-actions"><label for="public-channel-filter">Explorar por assunto</label>
             <select id="public-channel-filter" class="focusable" aria-label="Filtrar canais por assunto">
               <option value="all">Todos os canais públicos</option>
@@ -55,6 +56,22 @@
             </select></div>
           <p class="small-note" id="public-filter-hint">As categorias indicam tipos de programas da emissora, não um canal dedicado ao assunto 24 horas por dia.</p>
           <div id="public-channels" class="content-grid"></div>
+
+          <div class="pluto-section">
+            <h2 class="section-title">Pluto TV — canais ao vivo</h2>
+            <p class="small-note">Catálogo comunitário de canais gratuitos da Pluto TV (BuddyChewChew/pluto), não oficial. Links temporários são atualizados sob demanda; acesso e reprodução dependem de disponibilidade, anúncios e condições do provedor.</p>
+            <div class="channel-actions pluto-toolbar">
+              <label for="pluto-category">Categoria</label>
+              <select id="pluto-category" class="focusable"><option value="all">Todas as categorias</option></select>
+              <label for="pluto-search">Buscar canal</label>
+              <input id="pluto-search" class="focusable" type="search" maxlength="64" placeholder="Filmes, anime, esportes...">
+              <button id="pluto-refresh" class="ghost focusable" type="button">Atualizar lista</button>
+              <span id="pluto-count" class="chip">Não carregado</span>
+            </div>
+            <p class="small-note" id="pluto-status" role="status">Abra Canais para carregar a lista Pluto TV.</p>
+            <div id="pluto-channels" class="content-grid"></div>
+            <button class="ghost focusable" id="pluto-more" type="button" hidden>Mostrar mais canais</button>
+          </div>
           <h2 class="section-title">Meus canais</h2><div id="channels" class="content-grid"></div>
           <div class="panel channel-editor" id="channel-editor" hidden>
             <h2 id="channel-editor-title">Novo canal</h2>

@@ -51,7 +51,7 @@
     var first = document.querySelector('.nav-link.active'); if (first) first.focus();
     if (name === 'usb') loadUSB();
     if (name === 'rede') refreshNetwork();
-    if (name === 'canais') {loadChannels();loadPublicChannels();}
+    if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoChannels();}
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
   }
@@ -124,19 +124,47 @@
   }
   function stopNative() {
     nativeActive = false;
+    stopQualityPolling();
     playerStop.hidden = true;
     post('/api/player/stop', {}, function(){});
   }
   playerStop.addEventListener('click', function(){stopNative();el('dialog-message').textContent='Reprodução encerrada. Pressione Voltar.';});
+  var qualityTimer = null;
+  function refreshQuality(){
+    get('/api/player/status',function(err,data){
+      if(err || !data.player || !data.player.playing){
+        el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
+        if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
+        return;
+      }
+      var v=data.player.video;
+      if(!v){el('quality-telemetry').textContent='Reproduzindo. Diagnóstico de vídeo indisponível neste dispositivo.';return;}
+      var parts=[];
+      if(v.width && v.height)parts.push(v.width+'×'+v.height);
+      if(v.codec)parts.push('Codec: '+v.codec);
+      if(v.fps)parts.push('FPS: '+v.fps);
+      if(v.dropped_frames!==null && v.dropped_frames!==undefined)parts.push('Quadros perdidos: '+v.dropped_frames);
+      if(v.buffer_seconds!==null && v.buffer_seconds!==undefined)parts.push('Buffer: '+v.buffer_seconds+' s');
+      if(v.hardware_decoder)parts.push('Decoder: '+v.hardware_decoder);
+      el('quality-telemetry').textContent=parts.length?parts.join(' · '):'Reproduzindo; o mpv ainda não informou métricas.';
+    });
+  }
+  function stopQualityPolling(){
+    if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
+    el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
+  }
   function nativePlay(payload,title,fallback) {
     if (!nativeAvailable) {
       if(fallback){fallback();return;}
       dialog(title,'Player mpv indisponível. Na imagem Linux KTV OS o mpv já vem instalado. Para testar no Windows, instale o mpv e reinicie o KTV OS.');
       return;
     }
+    payload.quality=el('quality-profile').value;
     post('/api/player/play',payload,function(err){
       if(err){dialog(title,'Não foi possível iniciar o player: '+err.message);return;}
       nativeActive=true;
+      refreshQuality();
+      if(!qualityTimer)qualityTimer=setInterval(refreshQuality,2500);
       dialog(title,'Reproduzindo pelo mpv nativo em tela cheia.\nUse Q para fechar a janela do mpv e voltar à interface do KTV OS.');
     });
   }
@@ -320,6 +348,72 @@
     });
   }
   el('public-channel-filter').addEventListener('change',renderPublicChannels);
+
+  // User-supplied Pluto TV catalog is fetched only on demand. Never expose signed URLs.
+  var plutoChannels = [];
+  var plutoLoaded = false;
+  var plutoPageSize = 36;
+  var plutoVisible = plutoPageSize;
+  var plutoPending = false;
+  function renderPlutoChannels(){
+    var filter = el('pluto-category').value;
+    var query = el('pluto-search').value.toLocaleLowerCase('pt-BR').trim();
+    var selected = plutoChannels.filter(function(c){
+      return (filter==='all'||c.category===filter) &&
+        (!query || (c.name+' '+c.category).toLocaleLowerCase('pt-BR').indexOf(query)!==-1);
+    });
+    var container=el('pluto-channels');
+    container.textContent='';
+    el('pluto-count').textContent=selected.length+' de '+plutoChannels.length+' canais';
+    if(!selected.length){
+      message(container,plutoLoaded?'Nenhum canal corresponde aos filtros.':'Catálogo ainda não carregado.');
+    }
+    selected.slice(0,plutoVisible).forEach(function(c){
+      var card=document.createElement('div');card.className='info-card channel-card';
+      var icon=document.createElement('span');icon.className='card-icon';icon.textContent='▶';
+      var name=document.createElement('strong');name.textContent=c.name;
+      var category=document.createElement('small');category.textContent=c.category+' · Pluto TV (lista comunitária)';
+      var controls=document.createElement('div');controls.className='channel-buttons';
+      controls.appendChild(miniButton('▶ Assistir',function(){
+        nativePlay({kind:'pluto',id:c.id},c.name,function(){
+          dialog(c.name,'Estes canais HLS exigem o mpv nativo. O endereço temporário também pode expirar.');
+        });
+      },true));
+      card.appendChild(icon);card.appendChild(name);card.appendChild(category);
+      card.appendChild(controls);container.appendChild(card);
+    });
+    el('pluto-more').hidden=plutoVisible>=selected.length;
+  }
+  function loadPlutoChannels(force){
+    if(plutoPending || (plutoLoaded && !force))return;
+    plutoPending=true;
+    el('pluto-status').textContent='Carregando catálogo remoto da Pluto TV…';
+    get('/api/pluto/channels',function(err,data){
+      plutoPending=false;
+      if(err){
+        el('pluto-status').textContent='Não foi possível atualizar a playlist agora. Confira a conexão com a internet e tente novamente.';
+        if(!plutoLoaded)message(el('pluto-channels'),'Catálogo indisponível.');
+        return;
+      }
+      plutoChannels=(data.channels||[]);
+      plutoLoaded=true;
+      plutoVisible=plutoPageSize;
+      var filterEl=el('pluto-category'), before=filterEl.value;
+      var categories=[];
+      plutoChannels.forEach(function(c){if(categories.indexOf(c.category)===-1)categories.push(c.category);});
+      categories.sort(function(a,b){return a.localeCompare(b,'pt-BR');});
+      filterEl.textContent='';
+      var all=document.createElement('option');all.value='all';all.textContent='Todas as categorias';filterEl.appendChild(all);
+      categories.forEach(function(c){var option=document.createElement('option');option.value=c;option.textContent=c;filterEl.appendChild(option);});
+      if(categories.indexOf(before)!==-1)filterEl.value=before;
+      el('pluto-status').textContent=plutoChannels.length+' canais disponíveis no catálogo. Reprodução sujeita à disponibilidade do provedor.';
+      renderPlutoChannels();
+    });
+  }
+  el('pluto-category').addEventListener('change',function(){plutoVisible=plutoPageSize;renderPlutoChannels();});
+  el('pluto-search').addEventListener('input',function(){plutoVisible=plutoPageSize;renderPlutoChannels();});
+  el('pluto-refresh').addEventListener('click',function(){loadPlutoChannels(true);});
+  el('pluto-more').addEventListener('click',function(){plutoVisible+=plutoPageSize;renderPlutoChannels();});
 
   function refreshNetwork(){
     get('/api/network/status',function(err,data){
