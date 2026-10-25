@@ -124,19 +124,47 @@
   }
   function stopNative() {
     nativeActive = false;
+    stopQualityPolling();
     playerStop.hidden = true;
     post('/api/player/stop', {}, function(){});
   }
   playerStop.addEventListener('click', function(){stopNative();el('dialog-message').textContent='Reprodução encerrada. Pressione Voltar.';});
+  var qualityTimer = null;
+  function refreshQuality(){
+    get('/api/player/status',function(err,data){
+      if(err || !data.player || !data.player.playing){
+        el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
+        if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
+        return;
+      }
+      var v=data.player.video;
+      if(!v){el('quality-telemetry').textContent='Reproduzindo. Diagnóstico de vídeo indisponível neste dispositivo.';return;}
+      var parts=[];
+      if(v.width && v.height)parts.push(v.width+'×'+v.height);
+      if(v.codec)parts.push('Codec: '+v.codec);
+      if(v.fps)parts.push('FPS: '+v.fps);
+      if(v.dropped_frames!==null && v.dropped_frames!==undefined)parts.push('Quadros perdidos: '+v.dropped_frames);
+      if(v.buffer_seconds!==null && v.buffer_seconds!==undefined)parts.push('Buffer: '+v.buffer_seconds+' s');
+      if(v.hardware_decoder)parts.push('Decoder: '+v.hardware_decoder);
+      el('quality-telemetry').textContent=parts.length?parts.join(' · '):'Reproduzindo; o mpv ainda não informou métricas.';
+    });
+  }
+  function stopQualityPolling(){
+    if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
+    el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
+  }
   function nativePlay(payload,title,fallback) {
     if (!nativeAvailable) {
       if(fallback){fallback();return;}
       dialog(title,'Player mpv indisponível. Na imagem Linux KTV OS o mpv já vem instalado. Para testar no Windows, instale o mpv e reinicie o KTV OS.');
       return;
     }
+    payload.quality=el('quality-profile').value;
     post('/api/player/play',payload,function(err){
       if(err){dialog(title,'Não foi possível iniciar o player: '+err.message);return;}
       nativeActive=true;
+      refreshQuality();
+      if(!qualityTimer)qualityTimer=setInterval(refreshQuality,2500);
       dialog(title,'Reproduzindo pelo mpv nativo em tela cheia.\nUse Q para fechar a janela do mpv e voltar à interface do KTV OS.');
     });
   }
