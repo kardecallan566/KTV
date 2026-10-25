@@ -12,7 +12,8 @@ import threading
 from urllib.parse import urlsplit
 import uuid
 
-LIMIT = 100
+LIMIT = 250
+MAX_IMPORT_M3U = 96 * 1024
 FORMAT = 'ktv-os-channels-v1'
 BACKUP_NAME = 'KTVOS-channels-backup.json'
 ID_PATTERN = re.compile(r'^[0-9a-f]{32}$')
@@ -61,7 +62,7 @@ def validate_channel(value, require_id=False):
 
 def validate_collection(channels):
     if not isinstance(channels, list) or len(channels) > LIMIT:
-        raise ChannelError('Limite de 100 canais')
+        raise ChannelError('Limite de 250 canais')
     result, seen = [], set()
     for value in channels:
         channel = validate_channel(value)
@@ -90,6 +91,50 @@ def atomic_write(path, value):
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+
+
+def parse_m3u(text):
+    """Parse user-provided authorized M3U (not HLS segment/master playlists).
+
+    Ignore unknown options, non-HTTP sources and unsupported extensions.
+    Never fetch URLs or execute EXTVLCOPT/Kodi plugin directives.
+    """
+    if not isinstance(text, str) or len(text.encode('utf-8')) > MAX_IMPORT_M3U:
+        raise ChannelError('Lista M3U maior que 96 KB ou invalida')
+    if not text.lstrip('\ufeff').lstrip().startswith('#EXTM3U'):
+        raise ChannelError('Insira uma playlist M3U iniciada por #EXTM3U')
+    pending = None
+    entries, seen = [], set()
+    ignored = 0
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith('#EXTINF:'):
+            header, _, display_name = line.partition(',')
+            name = display_name.strip()
+            group_match = re.search(r'group-title="([^"]{1,50})"', header)
+            group = group_match.group(1) if group_match else 'Importado'
+            pending = (name, group)
+        elif not line or line.startswith('#'):
+            continue
+        else:
+            if pending:
+                name, group = pending
+                try:
+                    entry = validate_channel({'name': name, 'url': line,
+                                              'category': group})
+                    if entry['url'] in seen:
+                        ignored += 1
+                    elif len(entries) < LIMIT:
+                        entries.append(entry)
+                        seen.add(entry['url'])
+                    else:
+                        ignored += 1
+                except ChannelError:
+                    ignored += 1
+            pending = None
+    if not entries:
+        raise ChannelError('Nenhum canal HTTP(S) .m3u8 ou .mp4 valido na playlist')
+    return entries, ignored
 
 
 class ChannelStore:
@@ -140,7 +185,7 @@ class ChannelStore:
             current = self.load()
             if action == 'add':
                 if len(current) >= LIMIT:
-                    raise ChannelError('Limite de 100 canais')
+                    raise ChannelError('Limite de 250 canais')
                 item = validate_channel({
                     'name': data.get('name'), 'url': data.get('url'),
                     'category': data.get('category', ''), 'favorite': False,
@@ -200,3 +245,25 @@ class ChannelStore:
                 raise ChannelError('Formato do backup USB incompativel')
             restored = validate_collection(value.get('channels'))
             return self.save(restored)
+
+    def import_m3u(self, content):
+        """Append deduplicated streams in an atomic transaction."""
+        new, ignored = parse_m3u(content)
+        with self.lock:
+            current = self.load()
+            seen = {entry['url'] for entry in current}
+            added = 0
+            for entry in new:
+                if entry['url'] in seen:
+                    ignored += 1
+                    continue
+                if len(current) >= LIMIT:
+                    ignored += 1
+                    continue
+                # Preserve existing user favorites and channel order.
+                current.append(entry)
+                seen.add(entry['url'])
+                added += 1
+            if added:
+                current = self.save(current)
+            return {'channels': current, 'added': added, 'ignored': ignored}
