@@ -6,12 +6,14 @@
   <meta name="theme-color" content="#081524">
   <title>KTV OS — Experiência para TV</title>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/osk.css">
   <script src="/app.js" defer></script>
+  <script src="/osk.js" defer></script>
 </head>
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.12</span></div></div>
+      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.13</span></div></div>
       <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><span id="gamepad-status" class="gamepad-status" aria-live="polite"></span><button class="icon-button focusable power-button" id="poweroff-button" title="Desligar o computador KTV OS" aria-label="Desligar o KTV OS">⏻ Desligar</button></div>
     </header>
     <div class="layout">
@@ -58,6 +60,21 @@
           <p class="small-note" id="public-filter-hint">As categorias indicam tipos de programas da emissora, não um canal dedicado ao assunto 24 horas por dia.</p>
           <div id="public-channels" class="content-grid"></div>
 
+          <div class="community-section">
+            <h2 class="section-title">Mais canais gratuitos • GitHub</h2>
+            <p class="small-note">Catálogo de transmissões livres com procedência identificada (Public IPTV e Free-TV). A integração usa apenas links HTTPS de servidores revisados; alguns canais podem ser regionais ou ficar indisponíveis. Não garantimos licenciamento de cada conteúdo.</p>
+            <div class="channel-actions pluto-toolbar">
+              <label for="community-category">Categoria</label>
+              <select id="community-category" class="focusable"><option value="all">Todas</option></select>
+              <label for="community-search">Buscar</label>
+              <input id="community-search" class="focusable" type="search" maxlength="90" placeholder="Educação, notícias, esporte...">
+              <button class="ghost focusable" id="community-refresh" type="button">Atualizar catálogo</button>
+              <span id="community-count" class="chip">Aguardando</span>
+            </div>
+            <p class="small-note" id="community-status" role="status">Abra Canais para carregar as fontes selecionadas.</p>
+            <div id="community-channels" class="content-grid"></div>
+            <button class="ghost focusable" id="community-more" type="button" hidden>Mostrar mais canais</button>
+          </div>
           <div class="pluto-section">
             <h2 class="section-title">Pluto TV — canais ao vivo</h2>
             <p class="small-note">Catálogo comunitário de canais gratuitos da Pluto TV (BuddyChewChew/pluto), não oficial. Links temporários são atualizados sob demanda; acesso e reprodução dependem de disponibilidade, anúncios e condições do provedor.</p>
@@ -104,7 +121,13 @@
         <section class="screen" data-screen="navegador">
           <div class="eyebrow">ACESSO À INTERNET</div><h1>Navegador <span class="gradient-text">web.</span></h1>
           <p class="lead">Pesquise na internet pelo Chromium já instalado no KTV OS. A pesquisa abre uma nova janela com barra de endereços, abas e navegação completa.</p>
-          <div class="panel browser-panel">
+          <div class="panel browser-panel browser-panel-green">
+            <div class="browser-brand">KTV <strong>Verde</strong></div>
+            <p>Seu ponto de partida verde, com busca em destaque e atalhos amplos.</p>
+            <button id="browser-open-green" class="primary focusable" type="button">Abrir navegador KTV Verde</button>
+            <p class="small-note">A página inicial e os controles KTV terão visual verde. Os sites externos mantêm seus próprios estilos e as abas do Chromium.</p>
+            <button id="browser-system-keyboard" class="ghost focusable" type="button">⌨ Teclado virtual para sites externos</button>
+            <p id="browser-keyboard-status" class="small-note" role="status"></p>
             <h2>Pesquisar na web</h2>
             <form id="browser-search-form">
               <label for="browser-search-input">O que deseja pesquisar?</label>

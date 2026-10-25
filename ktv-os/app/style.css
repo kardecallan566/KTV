@@ -70,3 +70,14 @@
 .browser-panel input:focus-visible,#m3u-import-text:focus-visible{outline:3px solid #7af1d9}
 #channels-more{margin:16px 0 30px}
 #player-compatible[hidden]{display:none}
+
+/* KTV 0.13: green browser launch panel and public GitHub TV catalog */
+.community-section{margin:26px 0 36px;padding:18px 0 10px;border-top:1px solid #43745a}
+.community-section h2{color:#91ffc0}
+.community-section .info-card{border-color:#397b59;background:linear-gradient(155deg,#163c2b,#11293b)}
+#community-more{margin:18px 0}
+.browser-panel-green{border:1px solid #2bc773;background:linear-gradient(125deg,#083b27,#112e2b);padding:28px}
+.browser-panel-green .browser-brand{font-size:35px;font-weight:900;color:#e8fff2;letter-spacing:-1px}
+.browser-panel-green .browser-brand strong{color:#73ffa1}
+.browser-panel-green .primary{background:linear-gradient(100deg,#54ed82,#a0ffa1);color:#07381b;margin:10px 12px 15px 0}
+#browser-system-keyboard{border-color:#6bba82;color:#e6ffee}

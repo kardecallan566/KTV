@@ -1,0 +1,7 @@
+#ktv-osk-toggle{position:fixed;right:16px;bottom:16px;z-index:60;background:#17683f;color:#effff1;border:2px solid #a8ffb8;border-radius:16px;padding:13px 18px;font-weight:800;box-shadow:0 8px 28px #0009;cursor:pointer}
+#ktv-osk{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);width:min(1000px,96vw);padding:12px;background:#082c1c;color:#ebfff1;border:2px solid #72f39d;border-radius:16px;z-index:59;box-shadow:0 20px 60px #000d}
+#ktv-osk[hidden]{display:none}
+.osk-head{display:flex;justify-content:space-between;align-items:center;margin:1px 0 9px}.osk-close{background:#234c36;color:#f3fff6;border:1px solid #65bc7e;border-radius:8px;padding:8px}.osk-keys{display:grid;gap:5px}
+.osk-row{display:flex;gap:4px;justify-content:center}
+.osk-key{min-width:0;flex:1;min-height:46px;border-radius:8px;border:1px solid #4e9369;background:#145536;color:#effff2;font-size:17px;font-weight:700;cursor:pointer}
+.osk-key.wide{flex:2;background:#277647}.osk-key:hover,.osk-key:focus-visible{background:#35915b;outline:2px solid #cbff8e}@media(max-width:650px){.osk-key{font-size:13px;min-height:36px}#ktv-osk{padding:7px}.osk-row{gap:2px}}

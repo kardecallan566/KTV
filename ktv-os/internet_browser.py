@@ -6,7 +6,7 @@ Only a locally initiated search; Chromium provides navigation/address bar.
 import os
 import shutil
 import subprocess
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 MAX_SEARCH = 180
 
@@ -24,6 +24,31 @@ class InternetBrowser:
 
     def status(self):
         return {'available': bool(self.executable)}
+
+    def open_home(self, address):
+        """Open the local green portal in a full Chromium window."""
+        try:
+            parts = urlsplit(address)
+            if (parts.scheme != 'http' or parts.hostname != '127.0.0.1'
+                    or parts.username is not None or parts.password is not None
+                    or parts.path != '/browser.html' or parts.query or parts.fragment
+                    or parts.port is None):
+                raise BrowserError('Endereco do navegador invalido')
+        except ValueError as exc:
+            raise BrowserError('Endereco do navegador invalido') from exc
+        if not self.executable:
+            raise RuntimeError('Chromium indisponivel neste dispositivo')
+        args = [self.executable, '--no-first-run', '--new-window',
+                '--start-fullscreen', address]
+        if self.safe:
+            args[4:4] = ['--disable-gpu', '--disable-gpu-compositing']
+        try:
+            self.popen(args, stdin=subprocess.DEVNULL,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       start_new_session=True)
+        except OSError as exc:
+            raise RuntimeError('Falha ao iniciar o navegador verde') from exc
+        return {'opened': True}
 
     def open_search(self, query):
         if (not isinstance(query, str) or not 1 <= len(query.strip()) <= MAX_SEARCH

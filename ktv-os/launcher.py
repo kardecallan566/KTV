@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 from player import NativePlayer, safe_media_path
 from internet_browser import InternetBrowser, BrowserError
+from input_support import InputController
+from community_catalog import CommunityCatalog, CommunityCatalogError
 from channel_store import ChannelStore, ChannelError
 from persistence import PersistenceManager, PersistenceError
 from hardware import HardwareManager, HardwareError
@@ -32,7 +34,7 @@ from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.12.0'
+VERSION = '0.13.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -44,6 +46,11 @@ STATIC = {
     '/index.html': ('index.html', 'text/html; charset=utf-8'),
     '/style.css': ('style.css', 'text/css; charset=utf-8'),
     '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+    '/browser.html': ('browser.html', 'text/html; charset=utf-8'),
+    '/browser-green.css': ('browser-green.css', 'text/css; charset=utf-8'),
+    '/browser-green.js': ('browser-green.js', 'text/javascript; charset=utf-8'),
+    '/osk.js': ('osk.js', 'text/javascript; charset=utf-8'),
+    '/osk.css': ('osk.css', 'text/css; charset=utf-8'),
 }
 
 def usb_mounts():
@@ -118,9 +125,11 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None, community=None, input_controller=None):
         self.pluto = pluto if pluto is not None else PlutoCatalog()
         self.browser = browser if browser is not None else InternetBrowser()
+        self.community = community if community is not None else CommunityCatalog()
+        self.input_controller = input_controller if input_controller is not None else InputController()
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.pluto_favorites = PlutoFavorites(self.state_dir)
         self.state_dir.mkdir(parents=True, exist_ok=True)
@@ -152,7 +161,7 @@ class KTVOSServer(ThreadingHTTPServer):
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.12'
+    server_version = 'KTV-OS/0.13'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -189,6 +198,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             try:
                 return self.send_json(self.server.network.scan())
             except NetworkError as exc:
+                return self.send_json({'error': str(exc)}, 503)
+        if path == '/api/input/status':
+            return self.send_json({'input': self.server.input_controller.status()})
+        if path == '/api/community/channels':
+            try:
+                return self.send_json(self.server.community.listing())
+            except CommunityCatalogError as exc:
                 return self.send_json({'error': str(exc)}, 503)
         if path == '/api/browser/status':
             return self.send_json({'browser': self.server.browser.status()})
@@ -248,7 +264,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ('/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
+        if path not in ('/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
@@ -335,6 +351,19 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             except (PersistenceError, ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 400)
 
+        if path == '/api/input/virtual-toggle':
+            try:
+                return self.send_json({'ok': True, 'input': self.server.input_controller.toggle()})
+            except RuntimeError as exc:
+                return self.send_json({'error': str(exc)}, 503)
+
+        if path == '/api/browser/home':
+            try:
+                address = 'http://127.0.0.1:{}/browser.html'.format(self.server.server_address[1])
+                return self.send_json({'ok': True, 'browser': self.server.browser.open_home(address)})
+            except RuntimeError as exc:
+                return self.send_json({'error': str(exc)}, 503)
+
         if path == '/api/browser/search':
             try:
                 result = self.server.browser.open_search(payload.get('query'))
@@ -398,6 +427,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 if entry is None:
                     raise ValueError('Canal publico nao reconhecido')
                 source, title = entry['url'], entry['name']
+            elif kind == 'community':
+                source, title = self.server.community.play_url(payload.get('id'))
             elif kind == 'pluto':
                 source, title = self.server.pluto.play_url(payload.get('id'))
             elif kind == 'channel':
