@@ -28,14 +28,26 @@ class BrowserError(ValueError):
 
 
 class InternetBrowser:
-    def __init__(self, executable=None, popen=None, safe=None):
+    def __init__(self, executable=None, popen=None, safe=None, official_executable=None):
         self.executable = (executable if executable is not None else
                            shutil.which('chromium') or shutil.which('chromium-browser'))
+        # Chrome is optional: never download proprietary components or Widevine.
+        # On Debian Live the existing Chromium remains a safe fallback.
+        self.official_executable = (official_executable if official_executable is not None
+                                    else shutil.which('google-chrome-stable')
+                                    or shutil.which('google-chrome')
+                                    or self.executable)
         self.popen = popen or subprocess.Popen
         self.safe = (os.environ.get('KTV_OS_BROWSER_SAFE') == '1') if safe is None else bool(safe)
 
     def status(self):
-        return {'available': bool(self.executable)}
+        return {'available': bool(self.executable),
+                'official_available': bool(self.official_executable),
+                'official_browser': ('Chrome' if self.official_executable and
+                                     'chrome' in os.path.basename(self.official_executable) and
+                                     'chromium' not in os.path.basename(self.official_executable)
+                                     else 'Chromium' if self.official_executable else None),
+                'drm_verified': False}
 
     def open_home(self, address):
         """Open the local green portal in a full Chromium window."""
@@ -61,6 +73,26 @@ class InternetBrowser:
         except OSError as exc:
             raise RuntimeError('Falha ao iniciar o navegador verde') from exc
         return {'opened': True}
+
+    def open_official(self, destination):
+        """Open a single allowlisted HTTPS provider site: never user URLs."""
+        from smart_player import OFFICIAL_DESTINATIONS
+        if type(destination) is not str or destination not in OFFICIAL_DESTINATIONS:
+            raise BrowserError('Destino oficial nao reconhecido')
+        if not self.official_executable:
+            raise RuntimeError('Navegador compativel nao instalado')
+        args=[self.official_executable, '--no-first-run', '--new-window', '--start-fullscreen']
+        if self.safe:
+            args.extend(('--disable-gpu', '--disable-gpu-compositing'))
+        args.append(OFFICIAL_DESTINATIONS[destination]['url'])
+        try:
+            self.popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, start_new_session=True)
+        except OSError as exc:
+            raise RuntimeError('Nao foi possivel abrir o site oficial') from exc
+        return {'opened': True, 'name': OFFICIAL_DESTINATIONS[destination]['name'],
+                'browser': self.status()['official_browser'],
+                'drm_verified': False}
 
     def open_broadcaster(self, ident):
         if not isinstance(ident,str) or ident not in BROADCASTERS:
