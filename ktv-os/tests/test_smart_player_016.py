@@ -37,7 +37,7 @@ class SmartPlayerTests(unittest.TestCase):
         self.assertEqual(destination_for('public','tv-cultura'),'tv-cultura')
         self.assertIsNone(destination_for('community','abc123'))
         self.assertIsNone(destination_for('channel','0'))
-        for ident in ('../../etc/passwd','https://evil.test',None,'a'*24):
+        for ident in ('../../etc/passwd','https://evil.test',None,'g'*24):
             with self.assertRaises(SmartPlayerError):
                 destination_for('pluto',ident)
         for ident in ('not-in-catalog','tv-brasil/../../etc/passwd'):
