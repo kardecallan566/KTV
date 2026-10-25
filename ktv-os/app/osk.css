@@ -5,3 +5,7 @@
 .osk-row{display:flex;gap:4px;justify-content:center}
 .osk-key{min-width:0;flex:1;min-height:46px;border-radius:8px;border:1px solid #4e9369;background:#145536;color:#effff2;font-size:17px;font-weight:700;cursor:pointer}
 .osk-key.wide{flex:2;background:#277647}.osk-key:hover,.osk-key:focus-visible{background:#35915b;outline:2px solid #cbff8e}@media(max-width:650px){.osk-key{font-size:13px;min-height:36px}#ktv-osk{padding:7px}.osk-row{gap:2px}}
+
+/* Alpha 0.14: manual-only keyboard toggle, no automatic focus popup. */
+#ktv-osk-toggle[aria-pressed="true"]{background:#ffc66b;color:#193123;border-color:#fff1a1}
+#ktv-osk-toggle{min-width:165px;min-height:48px}

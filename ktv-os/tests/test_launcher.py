@@ -62,7 +62,8 @@ class KTVOSSmokeTests(unittest.TestCase):
     def test_channels_are_local_and_filtered(self):
         self.state.mkdir(parents=True, exist_ok=True)
         (self.state / 'channels.json').write_text(json.dumps({'channels': [
-            {'name':'Canal proprio', 'url':'http://localhost/live.m3u8', 'category':'teste'},
+            {'name':'Canal proprio', 'url':'https://example.org/live.m3u8', 'category':'teste'},
+            {'name':'Rede local bloqueada', 'url':'http://localhost/live.m3u8'},
             {'name':'Inseguro', 'url':'javascript:alert(1)'},
             {'name':'Site HTML', 'url':'http://example.com/embed'},
         ]}), encoding='utf-8')

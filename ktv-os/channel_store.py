@@ -11,6 +11,7 @@ import tempfile
 import threading
 from urllib.parse import urlsplit
 import uuid
+from stream_urls import validate_stream_url, StreamURLError
 
 LIMIT = 250
 MAX_IMPORT_M3U = 96 * 1024
@@ -31,18 +32,10 @@ def validate_channel(value, require_id=False):
     url = value.get('url')
     if not isinstance(name, str) or not 1 <= len(name.strip()) <= 80 or any(ord(c) < 32 for c in name):
         raise ChannelError('Nome deve conter entre 1 e 80 caracteres')
-    if not isinstance(url, str) or len(url) > 1800 or any(c.isspace() or ord(c) < 32 for c in url):
-        raise ChannelError('URL invalida')
     try:
-        parsed = urlsplit(url)
-        if (parsed.scheme not in ('http', 'https') or not parsed.hostname or
-                parsed.username is not None or parsed.password is not None or
-                not parsed.path.lower().endswith(('.mp4', '.m3u8'))):
-            raise ChannelError('Use um endereco HTTP(S) direto para .mp4 ou .m3u8')
-        if parsed.port is not None and not 1 <= parsed.port <= 65535:
-            raise ChannelError('Porta invalida')
-    except ValueError:
-        raise ChannelError('URL invalida')
+        validate_stream_url(url)
+    except StreamURLError as exc:
+        raise ChannelError(str(exc)) from exc
     category = value.get('category', '')
     if not isinstance(category, str) or len(category) > 50 or any(ord(c) < 32 for c in category):
         raise ChannelError('Categoria invalida')
@@ -133,7 +126,7 @@ def parse_m3u(text):
                     ignored += 1
             pending = None
     if not entries:
-        raise ChannelError('Nenhum canal HTTP(S) .m3u8 ou .mp4 valido na playlist')
+        raise ChannelError('Nenhum canal de transmissao HTTP(S) direta valido na playlist')
     return entries, ignored
 
 

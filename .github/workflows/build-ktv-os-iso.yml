@@ -8,6 +8,7 @@ on:
       - "ktv-os/linux-live/**"
       - "ktv-os/launcher.py"
       - "ktv-os/player.py"
+      - "ktv-os/stream_urls.py"
       - "ktv-os/internet_browser.py"
       - "ktv-os/input_support.py"
       - "ktv-os/community_catalog.py"

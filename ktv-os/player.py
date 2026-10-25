@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 import threading
 from urllib.parse import urlsplit
+from stream_urls import validate_stream_url, StreamURLError
 
 QUALITY_PROFILES = {
     'economy': {'hls_bitrate': 'min', 'forward': '12MiB', 'back': '4MiB'},
@@ -170,6 +171,15 @@ class NativePlayer:
             raise RuntimeError('mpv nao instalado. Disponivel na imagem KTV OS Linux Live.')
         if not isinstance(source, str) or not source or source.startswith('-') or '\0' in source:
             raise ValueError('Fonte de video invalida')
+        # Reject network protocols beyond direct HTTP(S), and unsafe local
+        # destinations even when another caller forgets to validate streams.
+        if source.startswith(('http://', 'https://')):
+            try:
+                validate_stream_url(source)
+            except StreamURLError as exc:
+                raise ValueError(str(exc)) from exc
+        elif '://' in source or source.startswith(('data:', 'edl:', 'lavf:', 'ytdl:', 'mpv:')):
+            raise ValueError('Protocolo de video nao autorizado')
         if type(quality) is not str or quality not in QUALITY_PROFILES:
             raise ValueError('Perfil de qualidade invalido')
         if type(decode) is not str or decode not in ('default', 'compatible'):

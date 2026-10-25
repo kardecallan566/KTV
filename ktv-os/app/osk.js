@@ -14,7 +14,8 @@ var holder=document.createElement('div');holder.className='osk-keys';panel.appen
 var toggle=document.createElement('button');toggle.id='ktv-osk-toggle';toggle.type='button';toggle.textContent='⌨ Teclado';
 toggle.setAttribute('aria-label','Abrir ou fechar teclado virtual');
 toggle.setAttribute('aria-expanded','false');
-var target=null, automatic=false, shift=false;
+toggle.setAttribute('aria-pressed','false');
+var target=null, shift=false; // Manual only: never open just because an input receives focus.
 function suitable(el){
   if(!el||el.disabled||el.readOnly)return false;
   if(el.tagName==='TEXTAREA')return true;
@@ -24,6 +25,8 @@ function suitable(el){
 function open(state){
   panel.hidden=!state;
   toggle.setAttribute('aria-expanded',state?'true':'false');
+  toggle.setAttribute('aria-pressed',state?'true':'false');
+  toggle.textContent=state?'✕ Fechar teclado':'⌨ Abrir teclado';
 }
 function setText(text){
   if(!target||!suitable(target))return;
@@ -80,17 +83,9 @@ toggle.addEventListener('click',function(){
   if(target)target.focus();
 });
 document.addEventListener('focusin',function(ev){
-  if(suitable(ev.target)){
-    target=ev.target;
-    if(automatic)open(true);
-  }
+  if(suitable(ev.target))target=ev.target; // Focus alone never opens the keyboard.
 });
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!panel.hidden)open(false);});
 build();document.body.appendChild(panel);document.body.appendChild(toggle);
-fetch('/api/input/status',{cache:'no-store'})
-  .then(function(r){if(!r.ok)throw Error('no input status');return r.json();})
-  .then(function(data){
-    automatic=data.input && data.input.keyboard_detected===false;
-    if(automatic && suitable(document.activeElement)){target=document.activeElement;open(true);}
-  }).catch(function(){/* Manual keyboard still accessible without system API. */});
+toggle.textContent='⌨ Abrir teclado'; // The button is always visible, with or without hardware keyboard.
 })();
