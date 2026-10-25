@@ -10,6 +10,7 @@ import subprocess
 import threading
 import secrets
 import time
+import display_layout
 
 MODE_RE = re.compile(r'^(\d{3,5})x(\d{3,5})$')
 OUTPUT_RE = re.compile(r'^([A-Za-z0-9_.-]+)\s+connected(?:\s|$)')
@@ -108,8 +109,15 @@ class HardwareManager:
                          'volume': None, 'muted': None}
                 audio_error = str(exc)
             remaining = max(0, int(self.pending['deadline'] - time.monotonic())) if self.pending else 0
+            layout = []
+            if not display_error:
+                try:
+                    layout = display_layout.outputs(self._exec(['xrandr', '--query']))
+                except HardwareError:
+                    pass
             return {
                 'display': {'available': not bool(display_error), 'outputs': screens,
+                            'layout': layout,
                             'error': display_error,
                             'pending': bool(self.pending), 'remaining': remaining},
                 'audio': dict(audio, error=audio_error)
@@ -140,6 +148,28 @@ class HardwareManager:
             return {'pending': True, 'token': token, 'seconds': TIMEOUT_SECONDS,
                     'message': 'Confirme a imagem antes de o temporizador encerrar'}
 
+    def preview_layout(self, output, kind):
+        with self.lock:
+            if self.pending:
+                raise HardwareError('Confirme ou cancele o ajuste de imagem anterior')
+            if not isinstance(output, str) or not isinstance(kind, str):
+                raise HardwareError('Seleção de HDMI inválida')
+            current = display_layout.outputs(self._exec(['xrandr', '--query']))
+            try:
+                args = display_layout.layout_command(current, output, kind)
+                restore = display_layout.restore_command(current)
+            except ValueError as exc:
+                raise HardwareError(str(exc))
+            self._exec(args)
+            token = secrets.token_hex(12)
+            self.pending = {'token': token, 'restore': restore,
+                            'deadline': time.monotonic() + TIMEOUT_SECONDS}
+            self.timer = self.timer_factory(TIMEOUT_SECONDS, self._rollback)
+            self.timer.daemon = True
+            self.timer.start()
+            return {'pending': True, 'token': token, 'seconds': TIMEOUT_SECONDS,
+                    'message': 'Confirme o ajuste HDMI para mantê-lo nesta sessão'}
+
     def _rollback(self):
         with self.lock:
             previous = self.pending
@@ -147,8 +177,11 @@ class HardwareManager:
             self.timer = None
             if previous:
                 try:
-                    self._exec(['xrandr', '--output', previous['output'],
-                                '--mode', previous['previous']])
+                    if 'restore' in previous:
+                        self._exec(previous['restore'])
+                    else:
+                        self._exec(['xrandr', '--output', previous['output'],
+                                    '--mode', previous['previous']])
                 except HardwareError:
                     pass
 

@@ -11,7 +11,7 @@ ISO_NAME="KTV-OS-Alpha-0.8-amd64.iso"
 die() { printf 'KTV OS: %s\n' "$*" >&2; exit 1; }
 
 check_sources() {
-  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/persistence.py" "$PROJECT_DIR/ktv-os/hardware.py" "$PROJECT_DIR/ktv-os/cec_bridge.py" "$PROJECT_DIR/ktv-os/network.py" "$PROJECT_DIR/ktv-os/display_layout.py" "$PROJECT_DIR/ktv-os/public_channels.py" "$PROJECT_DIR/ktv-os/app/index.html" \
+  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/persistence.py" "$PROJECT_DIR/ktv-os/hardware.py" "$PROJECT_DIR/ktv-os/cec_bridge.py" "$PROJECT_DIR/ktv-os/network.py" "$PROJECT_DIR/ktv-os/display_layout.py" "$PROJECT_DIR/ktv-os/system_actions.py" "$PROJECT_DIR/ktv-os/public_channels.py" "$PROJECT_DIR/ktv-os/app/index.html" \
     "$PROJECT_DIR/ktv-os/app/app.js" "$SCRIPT_DIR/packages.list.chroot" \
     "$SCRIPT_DIR/overlay/etc/lightdm/lightdm.conf.d/50-ktv-os.conf" \
     "$SCRIPT_DIR/overlay/etc/xdg/openbox/autostart" \
@@ -81,6 +81,7 @@ cp "$PROJECT_DIR/ktv-os/hardware.py" config/includes.chroot/opt/ktv-os/hardware.
 cp "$PROJECT_DIR/ktv-os/cec_bridge.py" config/includes.chroot/opt/ktv-os/cec_bridge.py
 cp "$PROJECT_DIR/ktv-os/network.py" config/includes.chroot/opt/ktv-os/network.py
 cp "$PROJECT_DIR/ktv-os/display_layout.py" config/includes.chroot/opt/ktv-os/display_layout.py
+cp "$PROJECT_DIR/ktv-os/system_actions.py" config/includes.chroot/opt/ktv-os/system_actions.py
 cp "$PROJECT_DIR/ktv-os/public_channels.py" config/includes.chroot/opt/ktv-os/public_channels.py
 cp -a "$PROJECT_DIR/ktv-os/app" config/includes.chroot/opt/ktv-os/app
 

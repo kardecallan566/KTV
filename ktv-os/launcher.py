@@ -25,6 +25,7 @@ from hardware import HardwareManager, HardwareError
 from cec_bridge import CECBridge, CECError
 from network import NetworkManager, NetworkError
 from public_channels import validated_catalog, public_channel
+from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
@@ -114,7 +115,7 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None):
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.media_dir = Path(media_dir).resolve(strict=True) if media_dir else None
@@ -124,6 +125,7 @@ class KTVOSServer(ThreadingHTTPServer):
         self.hardware = hardware if hardware is not None else HardwareManager()
         self.cec = cec if cec is not None else CECBridge()
         self.network = network if network is not None else NetworkManager()
+        self.system_actions = system_actions if system_actions is not None else SystemActions()
         self.channels = ChannelStore(self.state_dir)
         self.persistence = PersistenceManager(self.channels)
         self._persistence_stop = Event()
@@ -173,6 +175,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_json({'version': VERSION, 'host': self.server.server_address[0],
                                    'usb_direct_tv': False, 'player': self.server.player.status(),
                                    'persistence': self.server.persistence.status(usb_mounts())})
+        if path == '/api/system/status':
+            return self.send_json({'system': self.server.system_actions.status()})
         if path == '/api/network/status':
             return self.send_json({'network': self.server.network.status()})
         if path == '/api/network/wifi':
@@ -227,10 +231,11 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path not in ('/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
-                        '/api/hardware/video/cancel', '/api/hardware/audio/output',
+                        '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
                         '/api/cec/enable', '/api/cec/disable',
-                        '/api/network/connect', '/api/network/wifi-radio'):
+                        '/api/network/connect', '/api/network/wifi-radio',
+                        '/api/system/poweroff'):
             return self.send_json({'error': 'Rota nao encontrada'}, 404)
 
         # Only this machine may write to the playback controller.
@@ -251,6 +256,18 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
             return self.send_json({'error': 'JSON invalido'}, 400)
 
+        if path == '/api/system/poweroff':
+            # Unprivileged logind/systemctl policy enforcement. A custom header
+            # prevents simple cross-site HTML form submission, and the app shows
+            # a separate explicit confirmation before sending this action.
+            if self.headers.get('X-KTV-System-Action') != 'confirmed':
+                return self.send_json({'error': 'Confirmação explícita obrigatória'}, 403)
+            try:
+                result = self.server.system_actions.poweroff()
+                return self.send_json({'ok': True, 'result': result})
+            except SystemActionError as exc:
+                return self.send_json({'error': str(exc)}, 403)
+
         if path in ('/api/network/connect', '/api/network/wifi-radio'):
             try:
                 if path.endswith('connect'):
@@ -270,7 +287,9 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         if path.startswith('/api/hardware/'):
             try:
                 hw = self.server.hardware
-                if path.endswith('/video/preview'):
+                if path.endswith('/video/layout-preview'):
+                    result = hw.preview_layout(payload.get('output'), payload.get('layout'))
+                elif path.endswith('/video/preview'):
                     result = hw.preview(payload.get('output'), payload.get('mode'))
                 elif path.endswith('/video/confirm'):
                     result = hw.confirm(payload.get('token'))

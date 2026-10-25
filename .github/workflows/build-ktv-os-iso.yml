@@ -14,6 +14,7 @@ on:
       - "ktv-os/cec_bridge.py"
       - "ktv-os/network.py"
       - "ktv-os/display_layout.py"
+      - "ktv-os/system_actions.py"
       - "ktv-os/public_channels.py"
       - "ktv-os/app/**"
       - ".github/workflows/build-ktv-os-iso.yml"

@@ -4,6 +4,7 @@ live-boot
 live-config
 live-config-systemd
 systemd-sysv
+polkitd
 lightdm
 xorg
 xserver-xorg-input-libinput

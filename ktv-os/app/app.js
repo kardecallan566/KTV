@@ -9,6 +9,16 @@
   var nativeAvailable = false;
   var nativeActive = false;
   var pendingVideoToken = null;
+  el('poweroff-button').addEventListener('click',function(){
+    if(!window.confirm('Desligar o computador que está executando o KTV OS? A Samsung continuará ligada. Salve suas alterações antes de prosseguir.'))return;
+    fetch('/api/system/poweroff',{method:'POST',headers:{
+      'Content-Type':'application/json','X-KTV-System-Action':'confirmed'
+    },body:'{}',cache:'no-store'}).then(function(r){return r.json().then(function(data){
+      if(!r.ok)throw new Error(data.error||('HTTP '+r.status));return data;
+    });}).then(function(){
+      dialog('Desligamento solicitado','O Linux recebeu a solicitação de desligamento. Se a tela permanecer ligada, pode haver uma restrição de permissão do sistema. A TV Samsung não será desligada.');
+    }).catch(function(e){dialog('Falha ao desligar','Não foi possível solicitar o desligamento: '+e.message);});
+  });
   var pendingVideoTimer = null;
   var discoveredDisplays = [];
   function el(id) { return document.getElementById(id); }
@@ -54,10 +64,6 @@
       dialog('Entradas HDMI', 'As portas HDMI pertencem à Samsung. Para alternar, use SOURCE no controle da televisão.\n\nO HDMI-CEC experimental recebe botões quando existe um adaptador CEC compatível, mas ainda não alterna as entradas da Samsung.');
     } else if (a === 'refresh-usb') {
       loadUSB();
-    } else if (a === 'fullscreen') {
-      var fn = document.documentElement.requestFullscreen;
-      if (!document.fullscreenElement && fn) fn.call(document.documentElement).catch(function () { dialog('Tela cheia', 'Pressione F11 no navegador para colocar o KTV OS em tela cheia.'); });
-      else if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
     }
   }
   document.addEventListener('click', function (e) {
@@ -77,9 +83,6 @@
       if (!overlay.hidden) { e.preventDefault(); closeDialog(); }
       else if (currentRoute !== 'inicio') { e.preventDefault(); route('inicio'); }
       return;
-    }
-    if (e.key.toLowerCase() === 'f' && overlay.hidden) {
-      e.preventDefault(); activate(document.querySelector('[data-action="fullscreen"]')); return;
     }
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) === -1) return;
     var all = focusables(); if (!all.length) return;
@@ -453,6 +456,11 @@
       options('display-output',discoveredDisplays,'name','name');
       refreshModes();
       el('display-apply').disabled=!display.available||!discoveredDisplays.length||display.pending;
+      el('display-layout-apply').disabled=!display.available||!discoveredDisplays.length||display.pending;
+      var connected=(display.layout||[]).filter(function(o){return !!o.mode;});
+      el('display-layout-state').textContent=connected.length?
+        ('Telas ativas: '+connected.map(function(o){return o.name+' '+o.mode+' ('+o.x+','+o.y+')';}).join(' • ')+'. Se os monitores estiverem lado a lado, escolha um modo HDMI acima.'):
+        'Nenhuma saída de vídeo ativa identificada; confira o cabo, xrandr e o driver gráfico.';
       el('display-status').textContent=display.available?
         (discoveredDisplays.length?'Saídas HDMI/DisplayPort detectadas no computador.':'Nenhuma saída HDMI ou DisplayPort ativa. Confira o cabo e o driver Linux.'):
         ('Configuração de vídeo indisponível: '+display.error);
@@ -485,32 +493,38 @@
       refreshHardware();
     });
   }
+  function handleVideoPreview(err,data){
+    if(err){videoFeedback('Não foi possível alterar as telas: '+err.message);return;}
+    if(!data.result.pending){videoFeedback(data.result.message);return;}
+    pendingVideoToken=data.result.token;
+    var left=data.result.seconds;
+    dialog('Confirmar imagem HDMI','Se a imagem está correta na televisão, selecione “Manter esta resolução”. O Linux tentará restaurar as telas depois de 20 segundos.');
+    el('video-confirm').hidden=false;
+    el('video-confirm').focus();
+    function redraw(){
+      el('dialog-message').textContent='A imagem está correta na TV? Confirme somente se você está vendo a interface.\n\nReversão automática em '+left+' segundo(s).';
+    }
+    redraw();
+    pendingVideoTimer=window.setInterval(function(){
+      left--;
+      if(left<=0){
+        pendingVideoToken=null;
+        clearVideoTimer();
+        closeDialog();
+        videoFeedback('Prazo encerrado. O Linux tentou restaurar a configuração anterior das telas.');
+        refreshHardware();
+      }else redraw();
+    },1000);
+  }
   el('display-apply').addEventListener('click',function(){
     var output=el('display-output').value,mode=el('display-mode').value;
-    if(!output||!mode){videoFeedback('Selecione uma saída HDMI e uma resolução disponível.');return;}
-    post('/api/hardware/video/preview',{output:output,mode:mode},function(err,data){
-      if(err){videoFeedback('Não foi possível alterar resolução: '+err.message);return;}
-      if(!data.result.pending){videoFeedback(data.result.message);return;}
-      pendingVideoToken=data.result.token;
-      var left=data.result.seconds;
-      dialog('Confirmar nova resolução','Se a imagem está correta, selecione “Manter esta resolução”.\n\nA resolução anterior volta automaticamente após 20 segundos.');
-      el('video-confirm').hidden=false;
-      el('video-confirm').focus();
-      function redraw(){
-        el('dialog-message').textContent='Confirme somente se a imagem está correta.\n\nRetorno automático em '+left+' segundo(s).';
-      }
-      redraw();
-      pendingVideoTimer=window.setInterval(function(){
-        left--;
-        if(left<=0){
-          pendingVideoToken=null;
-          clearVideoTimer();
-          closeDialog();
-          videoFeedback('Tempo encerrado. O Linux restaurou a resolução anterior.');
-          refreshHardware();
-        }else redraw();
-      },1000);
-    });
+    if(!output||!mode){videoFeedback('Selecione a saída e a resolução.');return;}
+    post('/api/hardware/video/preview',{output:output,mode:mode},handleVideoPreview);
+  });
+  el('display-layout-apply').addEventListener('click',function(){
+    var output=el('display-output').value,layout=el('display-layout').value;
+    if(!output){videoFeedback('Selecione uma saída HDMI ativa para testar.');return;}
+    post('/api/hardware/video/layout-preview',{output:output,layout:layout},handleVideoPreview);
   });
   el('video-confirm').addEventListener('click',function(){
     var token=pendingVideoToken;

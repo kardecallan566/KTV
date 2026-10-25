@@ -14,6 +14,7 @@ fi
 exec >> "$SESSION_LOG" 2>&1
 printf '=== KTV OS 0.8 - sessao iniciada: %s ===\n' "$(date -Is)"
 cd /opt/ktv-os || exit 1
+export KTV_OS_LIVE=1
 # Align laptop and HDMI to one mirrored desktop before launching Chromium.
 # Failure is non-fatal: keep the current screen for troubleshooting.
 sleep 2

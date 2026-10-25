@@ -12,7 +12,7 @@
   <div class="shell">
     <header class="topbar">
       <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.8</span></div></div>
-      <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><span id="gamepad-status" class="gamepad-status" aria-live="polite"></span><button class="icon-button focusable" data-action="fullscreen" title="Tela cheia" aria-label="Tela cheia">⛶</button></div>
+      <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><span id="gamepad-status" class="gamepad-status" aria-live="polite"></span><button class="icon-button focusable power-button" id="poweroff-button" title="Desligar o computador KTV OS" aria-label="Desligar o KTV OS">⏻ Desligar</button></div>
     </header>
     <div class="layout">
       <nav class="sidebar" aria-label="Menu principal">
@@ -83,10 +83,17 @@
               <label for="display-output">Saída HDMI / DisplayPort</label><select class="focusable" id="display-output"></select>
               <label for="display-mode">Resolução disponível</label><select class="focusable" id="display-mode"></select>
               <button class="primary focusable" id="display-apply" type="button">Testar resolução por 20 segundos</button>
+              <label for="display-layout">Organização das telas</label>
+              <select class="focusable" id="display-layout">
+                <option value="mirror">Espelhar notebook e TV (mesma imagem)</option>
+                <option value="hdmi_only">Usar somente a TV HDMI</option>
+              </select>
+              <button class="primary focusable" id="display-layout-apply" type="button">Testar modo HDMI por 20 segundos</button>
               <button class="ghost focusable" id="hardware-refresh" type="button">Atualizar dispositivos</button>
             </div>
             <p class="hardware-feedback" id="video-feedback" role="status"></p>
-            <p class="small-note">A tela preta pode indicar limitação do driver, da conexão ou do modo escolhido. O KTV OS tenta restaurar a resolução anterior após 20 segundos sem confirmação. O ajuste só vale para a sessão Linux atual.</p>
+            <p class="small-note" id="display-layout-state">A configuração atual dos monitores será identificada pelo Linux.</p>
+            <p class="small-note">Se a alteração deixar a TV sem imagem, não confirme; o Linux tentará restaurar as telas automaticamente após 20 segundos. Use o teclado ou tela do notebook como alternativa. A tela preta também pode indicar limitação do driver, da conexão ou do modo escolhido. O KTV OS tenta restaurar a resolução anterior após 20 segundos sem confirmação. O ajuste só vale para a sessão Linux atual.</p>
           </div>
           <div class="panel">
             <h2><span class="card-icon">♪</span> Saída de áudio</h2>
@@ -103,7 +110,7 @@
             <p class="small-note">A saída HDMI pode aparecer como um dispositivo de áudio distinto. O volume da Samsung também pode precisar de ajuste no controle da TV.</p>
           </div>
         </section>
-        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Modo tela cheia</strong><p>Ideal para testes na Samsung por HDMI.</p></div><button class="ghost focusable" data-action="fullscreen">Ativar (F)</button></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Cadastre e organize os canais pela própria interface. Use USB para salvar/restaurar seu backup. Os canais públicos disponíveis aparecem na seção Canais, além das listas que você cadastrar.</p></div></div><div class="panel"><h2>Persistência de canais (opcional)</h2>
+        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Encerrar sessão KTV OS</strong><p>Use o botão Desligar no canto superior para desligar o computador com confirmação. A televisão Samsung continuará ligada.</p></div></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Cadastre e organize os canais pela própria interface. Use USB para salvar/restaurar seu backup. Os canais públicos disponíveis aparecem na seção Canais, além das listas que você cadastrar.</p></div></div><div class="panel"><h2>Persistência de canais (opcional)</h2>
           <p>Use um segundo pendrive de dados conectado ao computador. A ativação copia sua lista para esse dispositivo e permite restaurá-la automaticamente ao iniciar o Linux com o mesmo pendrive. O KTV OS não formata unidades.</p>
           <div class="backup-controls">
             <button class="primary focusable" id="persistence-enable">Ativar neste pendrive</button>
@@ -123,7 +130,7 @@
           </div>
           <p class="form-result" id="cec-result" role="status"></p>
           <p class="small-note">Controles: setas, OK/Enter, Voltar e Início. Sem dispositivo CEC compatível, continue usando teclado ou joystick. O software libCEC pode registrar o KTV OS como dispositivo de reprodução na rede HDMI.</p>
-        </div><div class="panel settings"><div><strong>Controle</strong><p>Setas/controle D-pad para navegar; Enter/A para selecionar; Esc/B para voltar; F para tela cheia. Gamepads conectados ao computador também são detectados quando suportados pelo navegador. Use teclado para URLs.</p></div></div></section>
+        </div><div class="panel settings"><div><strong>Controle</strong><p>Setas/controle D-pad para navegar; Enter/A para selecionar; Esc/B para voltar. Gamepads conectados ao computador também são detectados quando suportados pelo navegador. Use teclado para URLs.</p></div></div></section>
       </main>
     </div>
     <footer> KTV OS • Protótipo de interface • PC → HDMI → TV <span id="footer-help">← ↑ ↓ → navegar · Enter selecionar · Esc voltar</span></footer>
