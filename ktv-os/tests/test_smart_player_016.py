@@ -136,7 +136,6 @@ class SmartPlayerTests(unittest.TestCase):
         self.assertIn("id=\"player-official\"",html)
         self.assertIn("function updateSmartOptions()",js)
         self.assertIn("function openSmartOfficial(",js)
-        self.assertIn("'audio'",js) if False else None
         self.assertIn("noVideoPolls>=3",js)
         self.assertIn('smart_player.py',iso)
         self.assertIn('ALPHA 0.16',html)
