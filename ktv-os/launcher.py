@@ -29,7 +29,7 @@ from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.8.0'
+VERSION = '0.9.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -374,7 +374,15 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 source, title = str(file), file.name
             else:
                 raise ValueError('Tipo de conteudo invalido')
-            info = self.server.player.play(source, title)
+            quality = payload.get('quality', 'balanced')
+            if type(quality) is not str or quality not in ('economy', 'balanced', 'best'):
+                raise ValueError('Perfil de qualidade invalido')
+            # Compatibility with simple mocked players used in old regression suites.
+            from player import NativePlayer
+            if isinstance(self.server.player, NativePlayer):
+                info = self.server.player.play(source, title, quality=quality)
+            else:
+                info = self.server.player.play(source, title)
         except (ValueError, OSError) as exc:
             return self.send_json({'error': str(exc)}, 400)
         except RuntimeError as exc:
