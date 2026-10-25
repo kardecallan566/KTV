@@ -25,6 +25,7 @@ from hardware import HardwareManager, HardwareError
 from cec_bridge import CECBridge, CECError
 from network import NetworkManager, NetworkError
 from public_channels import validated_catalog, public_channel
+from pluto_catalog import PlutoCatalog, PlutoError
 from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
@@ -115,7 +116,8 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None):
+        self.pluto = pluto if pluto is not None else PlutoCatalog()
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.media_dir = Path(media_dir).resolve(strict=True) if media_dir else None
@@ -186,6 +188,12 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error': str(exc)}, 503)
         if path == '/api/public-channels':
             return self.send_json({'channels': validated_catalog()})
+        if path == '/api/pluto/channels':
+            try:
+                return self.send_json({'channels': self.server.pluto.listing(),
+                                       'source': 'BuddyChewChew/pluto (nao oficial)'})
+            except PlutoError as exc:
+                return self.send_json({'error': str(exc)}, 503)
         if path == '/api/devices':
             return self.send_json({'devices': detect_removable()})
         if path == '/api/channels':
@@ -355,6 +363,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 if entry is None:
                     raise ValueError('Canal publico nao reconhecido')
                 source, title = entry['url'], entry['name']
+            elif kind == 'pluto':
+                source, title = self.server.pluto.play_url(payload.get('id'))
             elif kind == 'channel':
                 idx = payload.get('index')
                 channels = self.server.channels.load()
