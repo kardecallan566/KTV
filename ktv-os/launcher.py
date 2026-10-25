@@ -176,6 +176,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Cache-Control', 'no-store')
         self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
+        if mime.startswith('text/html'):
+            # Limit frames to broadcaster-published players; no arbitrary sites.
+            self.send_header('Content-Security-Policy',
+                "frame-src https://aovivo.ebc.com.br https://culturaplay.tvcultura.com.br; "
+                "object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
+            self.send_header('X-Frame-Options', 'DENY')
         self.end_headers()
         try:
             self.wfile.write(body)
