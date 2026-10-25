@@ -86,3 +86,9 @@
 .tv-aberta-panel{margin:22px 0;padding:24px;background:linear-gradient(130deg,#0b2b20,#11283b);border:1px solid #348a61}
 .tv-aberta-panel h2{color:#baffc5}
 #tv-aberta-sites .info-card{border:1px solid #2e8b62;background:#123728}
+
+/* Alpha 0.16: Smart Player, accessible from mouse and remote. */
+#player-official:not([hidden]){background:linear-gradient(105deg,#208e57,#55d78d);color:#eafff1;border:1px solid #78fba9}
+#player-official[hidden]{display:none}
+#smart-player-status:empty{display:none}
+#smart-player-status{border-left:3px solid #7df3a1;padding:8px 14px;background:#103e2a;color:#caffdc;margin:16px 0;font-size:14px}
