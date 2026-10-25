@@ -19,7 +19,7 @@ SOURCES = {
 }
 MAX_DOWNLOAD = 4 * 1024 * 1024
 MAX_XML = 28 * 1024 * 1024
-CACHE_SECONDS = 3600
+CACHE_SECONDS = 300
 MAX_PROGRAMS = 70000
 
 
@@ -131,6 +131,14 @@ class EPGGuide:
         self.utcnow = utcnow or (lambda:datetime.now(timezone.utc))
         self.lock=threading.RLock()
         self.cache={}
+
+    def listing(self, kind):
+        if kind not in SOURCES:raise ValueError('Guia invalido')
+        # Triggers a single bounded download on the first request.
+        self.now_next(kind)
+        with self.lock:
+            entries=self.cache[kind][1]
+            return {'source':kind,'programmes':dict(list(entries.items())[:800])}
 
     def now_next(self, kind, ident=None, name=None):
         if kind not in SOURCES:
