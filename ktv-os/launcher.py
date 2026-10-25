@@ -23,6 +23,7 @@ from internet_browser import InternetBrowser, BrowserError, BROADCASTERS
 from input_support import InputController
 from epg_guide import EPGGuide, EPGError
 from stream_check import StreamCheck
+from smart_player import destination_for, options_for, SmartPlayerError
 from community_catalog import CommunityCatalog, CommunityCatalogError
 from channel_store import ChannelStore, ChannelError
 from persistence import PersistenceManager, PersistenceError
@@ -36,7 +37,7 @@ from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.15.0'
+VERSION = '0.16.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -165,7 +166,7 @@ class KTVOSServer(ThreadingHTTPServer):
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.15'
+    server_version = 'KTV-OS/0.16'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -212,6 +213,16 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error': str(exc)}, 503)
         if path == '/api/browser/status':
             return self.send_json({'browser': self.server.browser.status()})
+        if path == '/api/smart-player/options':
+            args=parse_qs(url.query)
+            kind=args.get('kind',[''])[0]
+            ident=args.get('id',[''])[0]
+            try:
+                available=self.server.browser.status().get('official_available',
+                           self.server.browser.status().get('available',False))
+                return self.send_json(options_for(kind,ident,available))
+            except SmartPlayerError as exc:
+                return self.send_json({'error':str(exc)},400)
         if path == '/api/tv-aberta':
             return self.send_json({'channels': [
                 {'id': key, 'name': item['name'], 'type':'site_oficial'}
@@ -312,7 +323,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ('/api/tv-aberta/open', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
+        if path not in ('/api/smart-player/open', '/api/tv-aberta/open', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
@@ -405,6 +416,17 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             except RuntimeError as exc:
                 return self.send_json({'error': str(exc)}, 503)
 
+        if path == '/api/smart-player/open':
+            try:
+                destination=destination_for(payload.get('kind'),payload.get('id'))
+                if destination is None:
+                    raise SmartPlayerError('Nao existe destino oficial verificado para este canal')
+                result=self.server.browser.open_official(destination)
+                return self.send_json({'ok':True,'browser':result})
+            except (SmartPlayerError,BrowserError) as exc:
+                return self.send_json({'error':str(exc)},400)
+            except RuntimeError as exc:
+                return self.send_json({'error':str(exc)},503)
         if path == '/api/tv-aberta/open':
             try:
                 return self.send_json({'ok':True,
