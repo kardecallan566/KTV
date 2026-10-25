@@ -23,6 +23,7 @@ from internet_browser import InternetBrowser, BrowserError
 from input_support import InputController
 from epg_guide import EPGGuide, EPGError
 from stream_check import StreamCheck
+from antenna_tv import AntennaTV, AntennaError
 from smart_player import options_for, live_tv_listing, SmartPlayerError
 from community_catalog import CommunityCatalog, CommunityCatalogError
 from channel_store import ChannelStore, ChannelError
@@ -37,7 +38,7 @@ from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.17.0'
+VERSION = '0.18.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -128,7 +129,7 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None, community=None, input_controller=None, epg=None, stream_check=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None, system_actions=None, pluto=None, browser=None, community=None, input_controller=None, epg=None, stream_check=None, antenna=None):
         self.pluto = pluto if pluto is not None else PlutoCatalog()
         self.browser = browser if browser is not None else InternetBrowser()
         self.community = community if community is not None else CommunityCatalog()
@@ -138,6 +139,7 @@ class KTVOSServer(ThreadingHTTPServer):
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.pluto_favorites = PlutoFavorites(self.state_dir)
         self.state_dir.mkdir(parents=True, exist_ok=True)
+        self.antenna = antenna if antenna is not None else AntennaTV(self.state_dir)
         self.media_dir = Path(media_dir).resolve(strict=True) if media_dir else None
         if self.media_dir and not self.media_dir.is_dir():
             raise ValueError('--media-dir deve ser uma pasta existente')
@@ -161,12 +163,13 @@ class KTVOSServer(ThreadingHTTPServer):
 
     def server_close(self):
         self._persistence_stop.set()
+        self.antenna.close()
         self.hardware.close()
         self.cec.close()
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.17'
+    server_version = 'KTV-OS/0.18'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -200,7 +203,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_data(200, (APP / filename).read_bytes(), mime)
         if path == '/api/status':
             return self.send_json({'version': VERSION, 'host': self.server.server_address[0],
-                                   'usb_direct_tv': False, 'player': self.server.player.status(),
+                                   'usb_direct_tv': self.server.antenna.available(), 'player': self.server.player.status(),
                                    'persistence': self.server.persistence.status(usb_mounts())})
         if path == '/api/system/status':
             return self.send_json({'system': self.server.system_actions.status()})
@@ -228,6 +231,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json(options_for(kind,ident))
             except SmartPlayerError as exc:
                 return self.send_json({'error':str(exc)},400)
+        if path == '/api/tv/antenna':
+            return self.send_json({'antenna':self.server.antenna.status()})
         if path == '/api/tv-aberta':
             # Only direct playable public channels; no links to external websites.
             return self.send_json({'channels': live_tv_listing()})
@@ -326,7 +331,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ('/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
+        if path not in ('/api/tv/antenna/scan', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
@@ -479,11 +484,29 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'ok': True, 'ids': ids, 'persistence': persistence})
             except (PlutoFavoritesError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 400)
+        if path == '/api/tv/antenna/scan':
+            try:
+                return self.send_json({'ok':True,'antenna':self.server.antenna.start_scan()},202)
+            except AntennaError as exc:
+                return self.send_json({'error':str(exc)},400)
         if path == '/api/player/stop':
             self.server.player.stop()
-            return self.send_json({'ok': True, 'player': self.server.player.status()})
+            self.server.antenna.stop()
+            return self.send_json({'ok':True,'player':self.server.player.status()})
         kind = payload.get('kind')
         try:
+            if kind == 'antenna':
+                self.server.player.stop()
+                quality=payload.get('quality','balanced')
+                decode=payload.get('decode','default')
+                if quality not in ('economy','balanced','best') or type(quality) is not str:
+                    raise ValueError('Perfil invalido')
+                if decode not in ('default','compatible') or type(decode) is not str:
+                    raise ValueError('Modo de video invalido')
+                info=self.server.antenna.play(payload.get('index'),self.server.player,
+                                               quality=quality,decode=decode)
+                return self.send_json({'ok':True,'player':info})
+            self.server.antenna.stop()
             if kind == 'public':
                 entry = public_channel(payload.get('id'))
                 if entry is None:
