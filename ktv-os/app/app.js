@@ -7,6 +7,9 @@
   var image = document.getElementById('image-player');
   var playerStop = document.getElementById('player-stop');
   var compatibleButton = document.getElementById('player-compatible');
+  var officialButton = document.getElementById('player-official');
+  var smartNotice = document.getElementById('smart-player-status');
+  var noVideoPolls=0;
   var lastNativeRequest = null;
   var nativeAvailable = false;
   var nativeActive = false;
@@ -34,6 +37,8 @@
     overlay.hidden = false;
     playerStop.hidden = !nativeActive;
     compatibleButton.hidden = !lastNativeRequest || lastNativeRequest.decode === 'compatible';
+    smartNotice.textContent='';
+    updateSmartOptions();
     dialogClose.focus();
   }
   function closeDialog() {
@@ -44,6 +49,7 @@
     if (nativeActive) stopNative();
     playerStop.hidden = true;
     compatibleButton.hidden = true;
+    officialButton.hidden = true;
     lastNativeRequest = null;
     var active = document.querySelector('.nav-link.active');
     if (active) active.focus();
@@ -137,6 +143,39 @@
     post('/api/player/stop', {}, function(){});
     compatibleButton.hidden = true;
   }
+  function updateSmartOptions(){
+    officialButton.hidden=true;
+    var chosen=lastNativeRequest;
+    if(!chosen || !chosen.payload ||
+       ['pluto','public'].indexOf(chosen.payload.kind)===-1)return;
+    var url='/api/smart-player/options?kind='+encodeURIComponent(chosen.payload.kind)+
+            '&id='+encodeURIComponent(chosen.payload.id);
+    get(url,function(err,data){
+      if(overlay.hidden||lastNativeRequest!==chosen)return;
+      if(err || !data || !data.official_available){
+        smartNotice.textContent='Não há navegador oficial disponível para este canal. A compatibilidade DRM não foi verificada.';
+        return;
+      }
+      officialButton.hidden=false;
+      officialButton.textContent='🌐 Abrir '+data.official_name+' (site oficial)';
+      smartNotice.textContent='Alternativa oficial: '+data.official_reason;
+    });
+  }
+  function openSmartOfficial(kind,id,title){
+    post('/api/smart-player/open',{kind:kind,id:id},function(err,data){
+      if(err){dialog(title,'Não foi possível abrir o site oficial: '+err.message);return;}
+      if(nativeActive)stopNative();
+      lastNativeRequest=null;
+      dialog(title,(data.browser.name||title)+' aberto no '+(data.browser.browser||'navegador')+
+        '. O serviço oficial controla login, DRM e região; não há garantia de reprodução. Alt+Tab volta ao KTV OS.');
+      officialButton.hidden=true;
+    });
+  }
+  officialButton.addEventListener('click',function(){
+    if(!lastNativeRequest)return;
+    var chosen=lastNativeRequest;
+    openSmartOfficial(chosen.payload.kind,chosen.payload.id,chosen.title);
+  });
   playerStop.addEventListener('click', function(){stopNative();el('dialog-message').textContent='Reprodução encerrada. Pressione Voltar.';});
   var qualityTimer = null;
   function refreshQuality(){
@@ -147,6 +186,7 @@
           playerStop.hidden=true;
           if(!overlay.hidden)el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code?' (código '+data.player.exit_code+')':'')+'. O stream pode ter terminado, travado ou exigido um codec/DRM indisponível. Experimente Tentar modo compatível ou outro canal.';
           if(lastNativeRequest && lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
+          if(!overlay.hidden && lastNativeRequest)updateSmartOptions();
         }
         el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
         if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
@@ -162,6 +202,13 @@
       if(v.buffer_seconds!==null && v.buffer_seconds!==undefined)parts.push('Buffer: '+v.buffer_seconds+' s');
       if(v.hardware_decoder)parts.push('Decoder: '+v.hardware_decoder);
       if(v.video_track && v.audio_track && v.video_rendered===false)parts.push('Vídeo ainda não renderizado — tente modo compatível se persistir');
+      if(v.audio_track && (v.video_rendered===false || v.video_track===false)){
+        noVideoPolls++;
+        if(noVideoPolls>=3 && !overlay.hidden && lastNativeRequest){
+          if(lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
+          smartNotice.textContent='Áudio identificado sem saída de vídeo confirmada. Tente modo compatível ou site oficial. Isto não prova presença de DRM.';
+        }
+      }else noVideoPolls=0;
       el('quality-telemetry').textContent=parts.length?parts.join(' · '):'Reproduzindo; o mpv ainda não informou métricas.';
     });
   }
@@ -170,15 +217,16 @@
     el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
   }
   function nativePlay(payload,title,fallback,decode) {
+    decode=decode||'default';
+    lastNativeRequest={payload:Object.assign({},payload),title:title,decode:decode};
+    noVideoPolls=0;
     if (!nativeAvailable) {
       if(fallback){fallback();return;}
       dialog(title,'Player mpv indisponível. Na imagem Linux KTV OS o mpv já vem instalado. Para testar no Windows, instale o mpv e reinicie o KTV OS.');
       return;
     }
     stopQualityPolling();
-    decode=decode||'default';
     // Only validated references (kind/id/index), never signed Pluto URLs.
-    lastNativeRequest={payload:Object.assign({},payload),title:title,decode:decode};
     payload.quality=el('quality-profile').value;
     payload.decode=decode;
     // Preliminary metadata check; never promise playback without decoding.
@@ -454,6 +502,9 @@
           dialog(c.name,'Este canal usa HLS. Instale e utilize o KTV OS Linux Live com mpv para reproduzir. O link pode estar indisponível.');
         });
       },true));
+      controls.appendChild(miniButton('🌐 Site oficial',function(){
+        openSmartOfficial('public',c.id,c.name);
+      }));
       controls.appendChild(miniButton('Adicionar aos meus canais',function(){
         post('/api/channels/change',{action:'add',name:c.name,url:c.url,category:c.category},function(fault,response){
           statusMsg('channel-result',fault?'Falha ao adicionar: '+fault.message:'Canal adicionado à sua lista pessoal.');
@@ -580,6 +631,9 @@
           dialog(c.name,'Estes canais HLS exigem o mpv nativo. O endereço temporário também pode expirar.');
         });
       },true));
+      controls.appendChild(miniButton('🌐 Pluto oficial',function(){
+        openSmartOfficial('pluto',c.id,c.name);
+      }));
       var favored=plutoFavorites.indexOf(c.id)!==-1;
       controls.appendChild(miniButton(favored?'★ Favorito':'☆ Favoritar',function(){
         post('/api/pluto/favorites/toggle',{id:c.id},function(err,data){
