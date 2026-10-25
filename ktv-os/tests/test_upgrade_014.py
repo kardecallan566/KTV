@@ -107,7 +107,7 @@ class StreamTests(unittest.TestCase):
     def test_toggle_is_explicit_not_automatically_focused(self):
         source=(ROOT/'app'/'osk.js').read_text(encoding='utf-8')
         self.assertIn("toggle.textContent=show?'✕ Fechar teclado':'⌨ Abrir teclado'", source)
-        self.assertIn("toggle.setAttribute('aria-pressed',state?'true':'false')", source)
+        self.assertIn("toggle.setAttribute('aria-pressed',show?'true':'false')", source)
         self.assertNotIn('automatic=false',source)
         self.assertNotIn('if(automatic)',source)
         self.assertNotIn("fetch(\u0027/api/input/status\u0027",source)
