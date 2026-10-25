@@ -109,3 +109,9 @@
 #antenna-channels .channel-card{border-color:#4c9973;background:linear-gradient(135deg,#103524,#142d3e)}
 .section-divider{border:0;border-top:1px solid #33765b;margin:28px 0}
 #antenna-message{color:#b7eccb;line-height:1.6}
+
+/* Alpha 0.20: source-labelled programme metadata, never imported embeds */
+.reidos-guide-panel{margin:24px 0;border:1px solid #408a64;background:linear-gradient(145deg,#0b2a20,#102e31);padding:22px}
+.reidos-guide-panel h2{color:#b8ffd0}
+#reidos-guide-channels .channel-card{border-color:#346e52;background:#102c25}
+#reidos-guide-channels .channel-epg{margin:12px 0 10px}
