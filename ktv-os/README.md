@@ -157,3 +157,16 @@ Esta Alpha inclui código e testes simulados para análise de mensagens CEC; nã
 2. Selecionar **Espelhar notebook e TV**, testar e confirmar **somente se a imagem estiver visível**.
 3. Se ainda existir área estendida, tentar **Usar somente a TV HDMI**, confirmar apenas depois de verificar a imagem. Sem confirmação, a configuração anterior deverá retornar em cerca de 20 segundos.
 4. Se a tela ficar preta persistentemente, recuperar no console `Ctrl+Alt+F2` e coletar `xrandr --query`, `systemctl status lightdm` e `ktv-os-diagnostics` antes de repetir.
+
+
+## Catálogo de canais por assunto (Alpha 0.8, expansão experimental)
+
+Além de **TV Brasil, Canal Gov e TV Câmara**, a lista fixa de emissoras públicas agora inclui **Canal Educação** (EBC), **TV Cultura** (Fundação Padre Anchieta) e **SescTV** (arte, documentários e cinema).
+
+- Filtros de programação: **Filmes, Documentários, Futebol, Desenhos, Animes, Cultura, Notícias, Educação e Outros**. São categorias sobre a **grade das emissoras**, não garantia de conteúdo 24 horas/dia.
+- Para **animes** e futebol dedicado, ainda não existe link direto adicional validado no catálogo. A UI informa a pendência, sem inventar canais nem copiar IPTV não autorizada.
+- O stream SescTV utiliza um endpoint HTTPS de CDN citado em uma lista comunitária, que **não foi comprovado contra o player embutido no site da emissora**. É experimental e precisa de teste físico/autorização de uso no contexto de distribuição do KTV OS.
+- O stream da TV Cultura usa o domínio de distribuição UOL ligado à emissora, e o Canal Educação usa o domínio EBC. São fontes de identificação plausível, mas disponibilidade, resolução, autorização para redistribuição e restrições geográficas podem mudar.
+- A API reproduz apenas IDs presentes na lista fixa; ela **não recebe uma URL remota arbitrária** nesse caminho. Não há downloads automáticos, tokens de serviços pagos ou listas comerciais.
+
+**Vídeo para Raspberry Pi:** veja [Plano de qualidade e Raspberry Pi ARM64](docs/VIDEO_QUALITY_RPI_PLAN.md). A ISO atual é AMD64 e não inicializa em placas ARM. IA para super-resolução fica somente planejada; a primeira prioridade é obter streams HD quando disponíveis e aproveitar escalonamento/decodificação de hardware.
