@@ -59,7 +59,7 @@
     if (name === 'usb') loadUSB();
     if (name === 'rede') refreshNetwork();
     if (name === 'navegador') el('browser-search-input').focus();
-    if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();}
+    if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();loadCommunityChannels();}
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
   }
@@ -403,6 +403,74 @@
   el('public-channel-filter').addEventListener('change',renderPublicChannels);
 
   // User-supplied Pluto TV catalog is fetched only on demand. Never expose signed URLs.
+  // Additional public GitHub indexes, strictly checked by server allowlist.
+  var communityChannels=[],communityLoaded=false,communityBusy=false,communityVisible=36;
+  function renderCommunityChannels(){
+    var filter=el('community-category').value;
+    var query=el('community-search').value.toLocaleLowerCase('pt-BR').trim();
+    var results=communityChannels.filter(function(c){
+      return (filter==='all'||c.category===filter) &&
+        (!query||(c.name+' '+c.category+' '+c.provider).toLocaleLowerCase('pt-BR').indexOf(query)!==-1);
+    });
+    el('community-count').textContent=results.length+' de '+communityChannels.length+' canais';
+    var container=el('community-channels');container.textContent='';
+    if(!results.length)message(container,communityLoaded?'Nenhum canal encontrado.':'Carregue o catálogo para explorar.');
+    results.slice(0,communityVisible).forEach(function(c){
+      var card=document.createElement('div');card.className='info-card channel-card';
+      var icon=document.createElement('span');icon.className='card-icon';icon.textContent='◎';
+      var name=document.createElement('strong');name.textContent=c.name;
+      var subtitle=document.createElement('small');subtitle.textContent=c.category+' · '+c.provider;
+      var controls=document.createElement('div');controls.className='channel-buttons';
+      controls.appendChild(miniButton('▶ Assistir',function(){
+        nativePlay({kind:'community',id:c.id},c.name,function(){
+          dialog(c.name,'O player nativo mpv é necessário para esta transmissão HLS.');
+        });
+      },true));
+      card.appendChild(icon);card.appendChild(name);card.appendChild(subtitle);
+      card.appendChild(controls);container.appendChild(card);
+    });
+    el('community-more').hidden=communityVisible>=results.length;
+  }
+  function loadCommunityChannels(force){
+    if(communityBusy||(communityLoaded&&!force))return;
+    communityBusy=true;
+    el('community-status').textContent='Atualizando listas públicas do GitHub...';
+    get('/api/community/channels',function(err,data){
+      communityBusy=false;
+      if(err){el('community-status').textContent='Listas temporariamente indisponíveis. Verifique a internet ou tente novamente.';return;}
+      communityChannels=data.channels||[];
+      communityLoaded=true;
+      communityVisible=36;
+      var options=el('community-category'),prior=options.value,categories=[];
+      options.textContent='';
+      var all=document.createElement('option');all.value='all';all.textContent='Todas';options.appendChild(all);
+      communityChannels.forEach(function(c){if(categories.indexOf(c.category)===-1)categories.push(c.category);});
+      categories.sort(function(a,b){return a.localeCompare(b,'pt-BR');});
+      categories.forEach(function(cat){var option=document.createElement('option');option.value=cat;option.textContent=cat;options.appendChild(option);});
+      if(categories.indexOf(prior)!==-1)options.value=prior;
+      el('community-status').textContent=(data.partial?'Fonte parcialmente disponível. ':'')+
+        communityChannels.length+' canais aprovados pelo filtro técnico de origem; disponibilidade não garantida.';
+      renderCommunityChannels();
+    });
+  }
+  el('community-category').addEventListener('change',function(){communityVisible=36;renderCommunityChannels();});
+  el('community-search').addEventListener('input',function(){communityVisible=36;renderCommunityChannels();});
+  el('community-refresh').addEventListener('click',function(){loadCommunityChannels(true);});
+  el('community-more').addEventListener('click',function(){communityVisible+=36;renderCommunityChannels();});
+
+  el('browser-open-green').addEventListener('click',function(){
+    post('/api/browser/home',{},function(err){
+      el('browser-search-result').textContent=err?'Falha: '+err.message:
+        'Navegador KTV Verde aberto. Use Alt+Tab para alternar entre as janelas.';
+    });
+  });
+  el('browser-system-keyboard').addEventListener('click',function(){
+    post('/api/input/virtual-toggle',{},function(err,data){
+      el('browser-keyboard-status').textContent=err?'Não foi possível abrir: '+err.message:
+        (data.input.virtual_open?'Teclado de sistema aberto.':'Teclado de sistema fechado.');
+    });
+  });
+
   var plutoChannels = [];
   var plutoFavorites = [];
   function loadPlutoFavorites(){
