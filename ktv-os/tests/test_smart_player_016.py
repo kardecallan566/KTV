@@ -110,7 +110,7 @@ class IntegratedPlayerTests(unittest.TestCase):
         self.assertNotIn("'/api/smart-player/open'",js)
         self.assertNotIn('Site oficial',js)
         self.assertIn('smart_player.py',iso)
-        self.assertIn('ALPHA 0.19',html)
+        self.assertIn('ALPHA 0.20',html)
 
 
 if __name__=='__main__':
