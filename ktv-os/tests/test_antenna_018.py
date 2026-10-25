@@ -169,7 +169,7 @@ class AntennaTests(unittest.TestCase):
         self.assertIn("'/api/tv/antenna'",ui)
         self.assertIn("kind:'antenna'",ui)
         self.assertIn('id="antenna-scan"',page)
-        self.assertIn('ALPHA 0.18',page)
+        self.assertIn('ALPHA 0.19',page)
 
 
 if __name__=='__main__':
