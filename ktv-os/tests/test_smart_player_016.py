@@ -1,144 +1,116 @@
-"""Alpha 0.16 Smart Player: official fallback, no untrusted URLs or DRM bypass."""
+"""Integrated KTV player regression tests: direct channels and authorized widgets."""
 import json
 from pathlib import Path
 import sys
 import tempfile
 import threading
 import unittest
-from urllib.request import Request,urlopen
 from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
-from internet_browser import InternetBrowser, BrowserError
-from smart_player import (SmartPlayerError, OFFICIAL_DESTINATIONS,
-                          destination_for, options_for)
+from smart_player import (SmartPlayerError, EMBED_PLAYERS, EMBED_URLS,
+                          embed_for, options_for, live_tv_listing)
 from launcher import KTVOSServer
 
 PLUTO_ID='5f120e94a5714d00074576a1'
 
 
-class MockProcess:
-    def __init__(self):self.open=True
-    def poll(self):return None if self.open else 0
-    def terminate(self):self.open=False
-
-
 class FakePlayer:
-    def status(self):return {'available':False,'playing':False}
+    def status(self):return {'available':True,'playing':False}
     def close(self):pass
     def stop(self):return False
 
 
-class SmartPlayerTests(unittest.TestCase):
-    def test_destinations_are_fixed_and_allowlisted(self):
-        self.assertEqual(destination_for('pluto',PLUTO_ID),'pluto')
-        self.assertEqual(destination_for('public','tv-brasil'),'tv-brasil')
-        self.assertEqual(destination_for('public','tv-cultura'),'tv-cultura')
-        self.assertIsNone(destination_for('community','abc123'))
-        self.assertIsNone(destination_for('channel','0'))
-        for ident in ('../../etc/passwd','https://evil.test',None,'g'*24):
-            with self.assertRaises(SmartPlayerError):
-                destination_for('pluto',ident)
-        for ident in ('not-in-catalog','tv-brasil/../../etc/passwd'):
-            with self.assertRaises(SmartPlayerError):
-                destination_for('public',ident)
-        for item in OFFICIAL_DESTINATIONS.values():
-            self.assertTrue(item['url'].startswith('https://'))
-            self.assertNotIn('jwt=',item['url'])
-        self.assertFalse(options_for('pluto',PLUTO_ID,False)['official_available'])
-        opts=options_for('pluto',PLUTO_ID,True)
-        self.assertTrue(opts['official_available'])
-        self.assertFalse(opts['drm_detected'])
-        self.assertIsNone(opts.get('url'))  # no external link supplied to browser
-        self.assertFalse(options_for('community','abc123',True)['official_available'])
+class IntegratedPlayerTests(unittest.TestCase):
+    def test_embeds_are_explicit_official_widgets_only(self):
+        self.assertEqual(embed_for('public','tv-brasil')['url'],
+                         'https://aovivo.ebc.com.br/embed-tvbrasil.html')
+        self.assertEqual(embed_for('public','tv-cultura')['url'],
+                         'https://culturaplay.tvcultura.com.br/channels/14/embed')
+        self.assertIsNone(embed_for('pluto',PLUTO_ID))
+        self.assertIsNone(embed_for('public','tv-camara'))
+        self.assertIsNone(embed_for('community','test'))
+        self.assertIsNone(embed_for('channel','0'))
+        for value in ('../../etc/passwd','https://evil.example',None,'g'*24):
+            with self.assertRaises(SmartPlayerError):embed_for('pluto',value)
+        for value in ('../../etc/passwd','missing','tv-brasil.fake'):
+            with self.assertRaises(SmartPlayerError):embed_for('public',value)
+        with self.assertRaises(SmartPlayerError):embed_for('file','whatever')
+        for value in EMBED_PLAYERS.values():
+            self.assertTrue(value['url'].startswith('https://'))
+            self.assertNotIn('jwt=',value['url'])
+            self.assertNotIn('?',value['url'])
+            self.assertIn(value['url'],EMBED_URLS)
+        self.assertTrue(options_for('public','tv-brasil')['embed_available'])
+        self.assertFalse(options_for('pluto',PLUTO_ID)['embed_available'])
+        self.assertFalse(options_for('public','tv-camara')['embed_available'])
+        self.assertFalse(options_for('public','tv-cultura')['drm_detected'])
 
-    def test_browser_prefers_optional_chrome_without_installs(self):
-        args=[]
-        def spawn(cmd,**kwargs):
-            args.append((cmd,kwargs))
-            return MockProcess()
-        browser=InternetBrowser(executable='chromium',popen=spawn,
-                                official_executable='google-chrome-stable',safe=False)
-        self.assertEqual(browser.status()['official_browser'],'Chrome')
-        self.assertFalse(browser.status()['drm_verified'])
-        info=browser.open_official('pluto')
-        self.assertTrue(info['opened'])
-        self.assertFalse(info['drm_verified'])
-        self.assertEqual(args[-1][0][0],'google-chrome-stable')
-        self.assertEqual(args[-1][0][-1],OFFICIAL_DESTINATIONS['pluto']['url'])
-        self.assertNotIn('shell',args[-1][1])
-        self.assertNotIn('--no-sandbox',args[-1][0])
-        for value in (None, 42, 'https://attacker.test','../../etc/passwd','globoplay'):
-            with self.assertRaises(BrowserError):
-                browser.open_official(value)
-        self.assertEqual(len(args),1)
-        fallback=InternetBrowser(executable='chromium',popen=spawn,
-                                  official_executable='chromium',safe=True)
-        fallback.open_official('tv-brasil')
-        self.assertIn('--disable-gpu',args[-1][0])
-        self.assertEqual(args[-1][0][0],'chromium')
-        self.assertEqual(fallback.status()['official_browser'],'Chromium')
+    def test_open_tv_contains_playable_channels_not_website_cards(self):
+        listings=live_tv_listing()
+        names={c['name'] for c in listings}
+        self.assertIn('TV Brasil',names)
+        self.assertIn('TV Cultura',names)
+        self.assertNotIn('SBT',names)
+        self.assertFalse(any(c.get('url') or c.get('site') for c in listings))
+        self.assertTrue(any(c['embed_available'] for c in listings))
+        self.assertTrue(any(not c['embed_available'] for c in listings))
 
-    def test_local_api_enforces_ids_origin_and_no_raw_urls(self):
-        class FakeBrowser:
-            def __init__(self):self.calls=[]
-            def status(self):return {'available':True,'official_available':True}
-            def open_official(self,destination):
-                self.calls.append(destination)
-                return {'opened':True,'name':'Pluto TV','browser':'Chromium','drm_verified':False}
+    def test_routes_no_external_launch_and_no_client_links(self):
         with tempfile.TemporaryDirectory() as folder:
-            fake=FakeBrowser()
-            server=KTVOSServer(port=0,state_dir=Path(folder),browser=fake,player=FakePlayer())
-            t=threading.Thread(target=server.serve_forever,daemon=True)
-            t.start()
+            server=KTVOSServer(port=0,state_dir=Path(folder),player=FakePlayer())
+            thread=threading.Thread(target=server.serve_forever,daemon=True)
+            thread.start()
             base='http://127.0.0.1:'+str(server.server_address[1])
-            def post(payload, headers=None):
-                return urlopen(Request(base+'/api/smart-player/open',method='POST',
-                    data=json.dumps(payload).encode(),headers={
-                    'Content-Type':'application/json',**(headers or {})}),timeout=4)
+            def post(path,payload, origin=None):
+                headers={'Content-Type':'application/json'}
+                if origin:headers['Origin']=origin
+                return urlopen(Request(base+path,method='POST',
+                    data=json.dumps(payload).encode(),headers=headers),timeout=3)
             try:
-                with urlopen(base+'/api/smart-player/options?kind=pluto&id='+PLUTO_ID,timeout=4) as r:
-                    options=json.load(r)
-                    self.assertTrue(options['official_available'])
-                    self.assertNotIn('url',options)
-                with post({'kind':'pluto','id':PLUTO_ID}) as r:
-                    self.assertTrue(json.load(r)['ok'])
-                self.assertEqual(fake.calls,['pluto'])
-                with post({'kind':'public','id':'tv-brasil'}) as r:
-                    self.assertTrue(json.load(r)['ok'])
-                self.assertEqual(fake.calls,['pluto','tv-brasil'])
-                denied=(
-                    {'kind':'pluto','id':'http://attacker.test'},
-                    {'kind':'public','id':'https://attacker.test'},
-                    {'kind':'community','id':'random'},
-                    {'kind':'channel','id':'0'},
-                    {'kind':'pluto','id':PLUTO_ID,'url':'http://attacker.test'},
-                )
-                for payload in denied[:-1]:
-                    with self.assertRaises(HTTPError) as caught:
-                        post(payload)
-                    self.assertEqual(caught.exception.code,400)
-                with self.assertRaises(HTTPError) as caught:
-                    post({'kind':'pluto','id':PLUTO_ID},
-                         {'Origin':'https://attacker.test'})
-                self.assertEqual(caught.exception.code,403)
-                with post(denied[-1]) as r:
-                    self.assertTrue(json.load(r)['ok'])
-                self.assertEqual(fake.calls[-1],'pluto')  # ignored untrusted URL field
+                with urlopen(base+'/api/smart-player/options?kind=public&id=tv-brasil',timeout=3) as r:
+                    data=json.load(r)
+                self.assertEqual(data['embed_url'],EMBED_PLAYERS['tv-brasil']['url'])
+                self.assertTrue(data['embed_available'])
+                with urlopen(base+'/api/smart-player/options?kind=pluto&id='+PLUTO_ID,timeout=3) as r:
+                    self.assertFalse(json.load(r)['embed_available'])
+                with urlopen(base+'/api/tv-aberta',timeout=3) as r:
+                    channels=json.load(r)['channels']
+                    self.assertNotIn('SBT',[x['name'] for x in channels])
+                with urlopen(base+'/',timeout=3) as r:
+                    policy=r.headers.get('Content-Security-Policy','')
+                    self.assertIn('frame-src https://aovivo.ebc.com.br',policy)
+                    self.assertIn('https://culturaplay.tvcultura.com.br',policy)
+                    self.assertIn("object-src 'none'",policy)
+                    self.assertEqual(r.headers.get('X-Frame-Options'),'DENY')
+                for path in ('/api/smart-player/open','/api/tv-aberta/open'):
+                    with self.assertRaises(HTTPError) as exc:
+                        post(path,{'kind':'public','id':'tv-brasil','url':'https://evil.example'})
+                    self.assertEqual(exc.exception.code,404)
+                for path in ('/api/smart-player/options?kind=public&id=https://evil.example',
+                             '/api/smart-player/options?kind=file&id=any'):
+                    with self.assertRaises(HTTPError) as exc:urlopen(base+path,timeout=3)
+                    self.assertEqual(exc.exception.code,400)
             finally:
-                server.shutdown();server.server_close();t.join(timeout=3)
+                server.shutdown();server.server_close();thread.join(timeout=3)
 
-    def test_ui_includes_official_fallback_and_iso_manifest(self):
-        js=(ROOT/'app/app.js').read_text(encoding='utf-8')
-        html=(ROOT/'app/index.html').read_text(encoding='utf-8')
-        iso=(ROOT/'linux-live/build-iso.sh').read_text(encoding='utf-8')
-        self.assertIn("id=\"player-official\"",html)
-        self.assertIn("function updateSmartOptions()",js)
-        self.assertIn("function openSmartOfficial(",js)
-        self.assertIn("noVideoPolls>=3",js)
+    def test_ui_is_sandboxed_and_no_general_website_fallback(self):
+        html=(ROOT/'app/index.html').read_text()
+        js=(ROOT/'app/app.js').read_text()
+        iso=(ROOT/'linux-live/build-iso.sh').read_text()
+        self.assertIn('id="tv-embed"',html)
+        self.assertIn('sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"',html)
+        self.assertIn('referrerpolicy="strict-origin-when-cross-origin"',html)
+        self.assertIn('id="player-embed"',html)
+        self.assertIn('function openSmartEmbed(',js)
+        self.assertIn("embedFrame.removeAttribute('src')",js)
+        self.assertNotIn('function openSmartOfficial(',js)
+        self.assertNotIn("'/api/smart-player/open'",js)
+        self.assertNotIn('Site oficial',js)
         self.assertIn('smart_player.py',iso)
-        self.assertIn('ALPHA 0.16',html)
+        self.assertIn('ALPHA 0.17',html)
 
 
 if __name__=='__main__':
