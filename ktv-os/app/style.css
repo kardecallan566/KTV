@@ -48,3 +48,7 @@
 .power-button{width:auto;min-width:100px;padding:9px 12px;font-size:14px;border:1px solid #d47777;color:#ffc6c6}
 .power-button:hover,.power-button:focus-visible{background:#532b38;outline:2px solid #ffb4a2}
 #display-layout{max-width:330px}
+
+/* Public TV category filter — Alpha 0.8 */
+#public-channel-filter{max-width:340px;min-height:46px;border-radius:10px;border:1px solid #3a6b85;background:#0b2339;color:#f3faff;padding:8px 12px}
+#public-filter-hint{margin-top:6px;margin-bottom:15px}
