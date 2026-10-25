@@ -217,6 +217,14 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 {'id': key, 'name': item['name'], 'type':'site_oficial'}
                 for key, item in BROADCASTERS.items()
             ]})
+        if path == '/api/epg/list':
+            kind=parse_qs(url.query).get('kind',[''])[0]
+            try:
+                return self.send_json(self.server.epg.listing(kind))
+            except ValueError as exc:
+                return self.send_json({'error':str(exc)},400)
+            except EPGError as exc:
+                return self.send_json({'error':str(exc)},503)
         if path == '/api/epg/now-next':
             q=parse_qs(url.query)
             kind=q.get('kind',[''])[0]
