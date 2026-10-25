@@ -16,6 +16,7 @@ on:
       - "ktv-os/display_layout.py"
       - "ktv-os/system_actions.py"
       - "ktv-os/public_channels.py"
+      - "ktv-os/pluto_catalog.py"
       - "ktv-os/app/**"
       - ".github/workflows/build-ktv-os-iso.yml"
 
@@ -28,6 +29,13 @@ jobs:
     timeout-minutes: 100
     steps:
       - uses: actions/checkout@v6
+      - name: Identificar versao do aplicativo
+        id: version
+        shell: bash
+        run: |
+          version="$(sed -nE "s/^VERSION = '([0-9]+\.[0-9]+)\.[0-9]+'$/\1/p" ktv-os/launcher.py)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Compilar no Debian 13 (mesma distribuicao-alvo)
         run: |
           docker run --rm --privileged \
@@ -46,16 +54,15 @@ jobs:
       - name: Conferir integridade da ISO gerada
         run: |
           cd ktv-os/linux-live/dist
-          shopt -s nullglob
-          isos=(KTV-OS-Alpha-*.iso)
-          test "${#isos[@]}" -eq 1
-          test -s "${isos[0]}"
-          sha256sum -c "${isos[0]}.sha256"
-          echo "ISO conferida: ${isos[0]}"
+          expected="KTV-OS-Alpha-${{ steps.version.outputs.version }}-amd64.iso"
+          test -s "$expected"
+          test -s "$expected.sha256"
+          sha256sum -c "$expected.sha256"
+          echo "ISO conferida: $expected"
       - name: Disponibilizar ISO inicializavel
         uses: actions/upload-artifact@v6
         with:
-          name: KTV-OS-Alpha-0.8-amd64
+          name: KTV-OS-Alpha-${{ steps.version.outputs.version }}-amd64
           path: |
             ktv-os/linux-live/dist/KTV-OS-Alpha-*.iso
             ktv-os/linux-live/dist/KTV-OS-Alpha-*.iso.sha256

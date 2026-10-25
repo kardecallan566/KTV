@@ -6,12 +6,14 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 BUILD_DIR="${KTV_OS_BUILD_DIR:-$SCRIPT_DIR/.build}"
 OUTPUT_DIR="${KTV_OS_OUTPUT_DIR:-$SCRIPT_DIR/dist}"
-ISO_NAME="KTV-OS-Alpha-0.8-amd64.iso"
-
 die() { printf 'KTV OS: %s\n' "$*" >&2; exit 1; }
+# Derive ISO filename from the application version (single source of truth).
+APP_VERSION="$(sed -nE "s/^VERSION = '([0-9]+\.[0-9]+)\.[0-9]+'$/\1/p" "$PROJECT_DIR/ktv-os/launcher.py")"
+[[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+$ ]] || die "Versao invalida em ktv-os/launcher.py"
+ISO_NAME="KTV-OS-Alpha-${APP_VERSION}-amd64.iso"
 
 check_sources() {
-  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/persistence.py" "$PROJECT_DIR/ktv-os/hardware.py" "$PROJECT_DIR/ktv-os/cec_bridge.py" "$PROJECT_DIR/ktv-os/network.py" "$PROJECT_DIR/ktv-os/display_layout.py" "$PROJECT_DIR/ktv-os/system_actions.py" "$PROJECT_DIR/ktv-os/public_channels.py" "$PROJECT_DIR/ktv-os/app/index.html" \
+  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/persistence.py" "$PROJECT_DIR/ktv-os/hardware.py" "$PROJECT_DIR/ktv-os/cec_bridge.py" "$PROJECT_DIR/ktv-os/network.py" "$PROJECT_DIR/ktv-os/display_layout.py" "$PROJECT_DIR/ktv-os/system_actions.py" "$PROJECT_DIR/ktv-os/public_channels.py" "$PROJECT_DIR/ktv-os/pluto_catalog.py" "$PROJECT_DIR/ktv-os/app/index.html" \
     "$PROJECT_DIR/ktv-os/app/app.js" "$SCRIPT_DIR/packages.list.chroot" \
     "$SCRIPT_DIR/overlay/etc/lightdm/lightdm.conf.d/50-ktv-os.conf" \
     "$SCRIPT_DIR/overlay/etc/xdg/openbox/autostart" \
@@ -83,6 +85,7 @@ cp "$PROJECT_DIR/ktv-os/network.py" config/includes.chroot/opt/ktv-os/network.py
 cp "$PROJECT_DIR/ktv-os/display_layout.py" config/includes.chroot/opt/ktv-os/display_layout.py
 cp "$PROJECT_DIR/ktv-os/system_actions.py" config/includes.chroot/opt/ktv-os/system_actions.py
 cp "$PROJECT_DIR/ktv-os/public_channels.py" config/includes.chroot/opt/ktv-os/public_channels.py
+cp "$PROJECT_DIR/ktv-os/pluto_catalog.py" config/includes.chroot/opt/ktv-os/pluto_catalog.py
 cp -a "$PROJECT_DIR/ktv-os/app" config/includes.chroot/opt/ktv-os/app
 
 # The process runs under the unprivileged default Live user via LightDM/Openbox.

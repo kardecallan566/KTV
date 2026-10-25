@@ -120,3 +120,14 @@ A construção da imagem passa a incluir `cec_bridge.py` e usar o nome `KTV-OS-A
 2. Selecionar **Espelhar notebook e TV**, testar e confirmar **somente se a imagem estiver visível**.
 3. Se ainda existir área estendida, tentar **Usar somente a TV HDMI**, confirmar apenas depois de verificar a imagem. Sem confirmação, a configuração anterior deverá retornar em cerca de 20 segundos.
 4. Se a tela ficar preta persistentemente, recuperar no console `Ctrl+Alt+F2` e coletar `xrandr --query`, `systemctl status lightdm` e `ktv-os-diagnostics` antes de repetir.
+
+
+## Alpha 0.9 — correção de empacotamento e identificação da ISO
+
+A versão é obtida automaticamente de `ktv-os/launcher.py` e determina o nome de arquivo `KTV-OS-Alpha-0.9-amd64.iso`. O artefato do GitHub Actions usa o mesmo número de versão e publica também um arquivo `.sha256` para conferência.
+
+O `build-iso.sh` agora inclui `pluto_catalog.py` dentro de `/opt/ktv-os/`, além dos demais módulos Python. Esse arquivo é indispensável para carregar os canais Pluto TV e iniciar o servidor da Alpha 0.9; a etapa `--check` e os testes de regressão verificam sua inclusão.
+
+**Não use para testar Pluto TV o artefato anteriormente chamado `KTV-OS-Alpha-0.8-amd64` da compilação do merge Alpha 0.9.** Ele foi montado com um empacotador antigo, sem `pluto_catalog.py`. Utilize a nova compilação da `main` após esta correção.
+
+Os links assinados da Pluto TV não são gravados na ISO: a playlist é carregada em tempo de execução. Os streams ainda dependem da disponibilidade, autenticação, região e compatibilidade do provedor.
