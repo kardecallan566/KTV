@@ -36,6 +36,7 @@ class LinuxLiveProfileTests(unittest.TestCase):
         session = (LINUX / 'overlay/usr/local/bin/ktv-os-session').read_text()
         self.assertIn('python3 launcher.py --port 8787', session)
         self.assertIn('--kiosk --app=http://127.0.0.1:8787/', session)
+        self.assertIn('python3 display_layout.py', session)
         self.assertNotIn('--disable-web-security', session)
 
     def test_local_user_state_and_iso_hybrid(self):
@@ -50,6 +51,12 @@ class LinuxLiveProfileTests(unittest.TestCase):
         self.assertIn('ktv-os/persistence.py', builder)
         self.assertIn('ktv-os/hardware.py', builder)
         self.assertIn('ktv-os/cec_bridge.py', builder)
+        self.assertIn('ktv-os/network.py', builder)
+        self.assertIn('ktv-os/display_layout.py', builder)
+        self.assertIn('ktv-os/public_channels.py', builder)
+        self.assertIn('timeout 30', builder)
+        self.assertIn('set timeout=3', builder)
+        self.assertIn('config/hooks/live', builder)
         self.assertIn('ktv-os-diagnostics', builder)
         self.assertIn('lb build', builder)
 

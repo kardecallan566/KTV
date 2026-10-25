@@ -6,17 +6,17 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 BUILD_DIR="${KTV_OS_BUILD_DIR:-$SCRIPT_DIR/.build}"
 OUTPUT_DIR="${KTV_OS_OUTPUT_DIR:-$SCRIPT_DIR/dist}"
-ISO_NAME="KTV-OS-Alpha-0.7-amd64.iso"
+ISO_NAME="KTV-OS-Alpha-0.8-amd64.iso"
 
 die() { printf 'KTV OS: %s\n' "$*" >&2; exit 1; }
 
 check_sources() {
-  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/persistence.py" "$PROJECT_DIR/ktv-os/hardware.py" "$PROJECT_DIR/ktv-os/cec_bridge.py" "$PROJECT_DIR/ktv-os/app/index.html" \
+  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/persistence.py" "$PROJECT_DIR/ktv-os/hardware.py" "$PROJECT_DIR/ktv-os/cec_bridge.py" "$PROJECT_DIR/ktv-os/network.py" "$PROJECT_DIR/ktv-os/display_layout.py" "$PROJECT_DIR/ktv-os/public_channels.py" "$PROJECT_DIR/ktv-os/app/index.html" \
     "$PROJECT_DIR/ktv-os/app/app.js" "$SCRIPT_DIR/packages.list.chroot" \
     "$SCRIPT_DIR/overlay/etc/lightdm/lightdm.conf.d/50-ktv-os.conf" \
     "$SCRIPT_DIR/overlay/etc/xdg/openbox/autostart" \
     "$SCRIPT_DIR/overlay/usr/local/bin/ktv-os-session" \
-    "$SCRIPT_DIR/overlay/usr/local/bin/ktv-os-diagnostics"; do
+    "$SCRIPT_DIR/overlay/usr/local/bin/ktv-os-diagnostics" "$SCRIPT_DIR/hooks/0099-ktv-graphical.hook.chroot"; do
     [[ -f "$file" ]] || die "Arquivo obrigatorio ausente: $file"
   done
 }
@@ -54,6 +54,17 @@ lb config \
   --mirror-binary-security "http://security.debian.org/debian-security" \
   --bootappend-live "boot=live components locales=pt_BR.UTF-8 keyboard-layouts=br"
 
+# Configure both BIOS/Syslinux and UEFI/GRUB to start the Live session
+# automatically in 3 seconds; users can interrupt for recovery.
+mkdir -p config/bootloaders
+cp -a /usr/share/live/build/bootloaders/. config/bootloaders/
+printf 'include menu.cfg\ndefault vesamenu.c32\nprompt 0\ntimeout 30\n' > config/bootloaders/isolinux/isolinux.cfg
+printf 'include menu.cfg\ndefault vesamenu.c32\nprompt 0\ntimeout 30\n' > config/bootloaders/syslinux/syslinux.cfg
+printf '\nset default=0\nset timeout=3\n' >> config/bootloaders/grub-pc/config.cfg
+
+mkdir -p config/hooks/live
+cp "$SCRIPT_DIR/hooks/0099-ktv-graphical.hook.chroot" config/hooks/live/
+
 mkdir -p config/package-lists
 cp "$SCRIPT_DIR/packages.list.chroot" config/package-lists/ktv-os.list.chroot
 
@@ -68,6 +79,9 @@ cp "$PROJECT_DIR/ktv-os/channel_store.py" config/includes.chroot/opt/ktv-os/chan
 cp "$PROJECT_DIR/ktv-os/persistence.py" config/includes.chroot/opt/ktv-os/persistence.py
 cp "$PROJECT_DIR/ktv-os/hardware.py" config/includes.chroot/opt/ktv-os/hardware.py
 cp "$PROJECT_DIR/ktv-os/cec_bridge.py" config/includes.chroot/opt/ktv-os/cec_bridge.py
+cp "$PROJECT_DIR/ktv-os/network.py" config/includes.chroot/opt/ktv-os/network.py
+cp "$PROJECT_DIR/ktv-os/display_layout.py" config/includes.chroot/opt/ktv-os/display_layout.py
+cp "$PROJECT_DIR/ktv-os/public_channels.py" config/includes.chroot/opt/ktv-os/public_channels.py
 cp -a "$PROJECT_DIR/ktv-os/app" config/includes.chroot/opt/ktv-os/app
 
 # The process runs under the unprivileged default Live user via LightDM/Openbox.

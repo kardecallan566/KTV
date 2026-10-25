@@ -23,10 +23,12 @@ from channel_store import ChannelStore, ChannelError
 from persistence import PersistenceManager, PersistenceError
 from hardware import HardwareManager, HardwareError
 from cec_bridge import CECBridge, CECError
+from network import NetworkManager, NetworkError
+from public_channels import validated_catalog, public_channel
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
-VERSION = '0.7.0'
+VERSION = '0.8.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -112,7 +114,7 @@ class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None):
+    def __init__(self, host='127.0.0.1', port=8787, media_dir=None, state_dir=None, player=None, hardware=None, cec=None, network=None):
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.media_dir = Path(media_dir).resolve(strict=True) if media_dir else None
@@ -121,6 +123,7 @@ class KTVOSServer(ThreadingHTTPServer):
         self.player = player if player is not None else NativePlayer()
         self.hardware = hardware if hardware is not None else HardwareManager()
         self.cec = cec if cec is not None else CECBridge()
+        self.network = network if network is not None else NetworkManager()
         self.channels = ChannelStore(self.state_dir)
         self.persistence = PersistenceManager(self.channels)
         self._persistence_stop = Event()
@@ -141,7 +144,7 @@ class KTVOSServer(ThreadingHTTPServer):
         super().server_close()
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.7'
+    server_version = 'KTV-OS/0.8'
     def log_message(self, fmt, *args):
         print('[KTV OS] ' + fmt % args, flush=True)
 
@@ -170,6 +173,15 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_json({'version': VERSION, 'host': self.server.server_address[0],
                                    'usb_direct_tv': False, 'player': self.server.player.status(),
                                    'persistence': self.server.persistence.status(usb_mounts())})
+        if path == '/api/network/status':
+            return self.send_json({'network': self.server.network.status()})
+        if path == '/api/network/wifi':
+            try:
+                return self.send_json(self.server.network.scan())
+            except NetworkError as exc:
+                return self.send_json({'error': str(exc)}, 503)
+        if path == '/api/public-channels':
+            return self.send_json({'channels': validated_catalog()})
         if path == '/api/devices':
             return self.send_json({'devices': detect_removable()})
         if path == '/api/channels':
@@ -217,7 +229,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
-                        '/api/cec/enable', '/api/cec/disable'):
+                        '/api/cec/enable', '/api/cec/disable',
+                        '/api/network/connect', '/api/network/wifi-radio'):
             return self.send_json({'error': 'Rota nao encontrada'}, 404)
 
         # Only this machine may write to the playback controller.
@@ -238,6 +251,15 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
             return self.send_json({'error': 'JSON invalido'}, 400)
 
+        if path in ('/api/network/connect', '/api/network/wifi-radio'):
+            try:
+                if path.endswith('connect'):
+                    response = self.server.network.connect(payload.get('ssid'), payload.get('password', ''))
+                else:
+                    response = self.server.network.set_wifi(payload.get('enabled'))
+                return self.send_json({'ok': True, 'result': response})
+            except NetworkError as exc:
+                return self.send_json({'error': str(exc)}, 400)
         if path in ('/api/cec/enable', '/api/cec/disable'):
             try:
                 state = self.server.cec.enable() if path.endswith('enable') else self.server.cec.disable()
@@ -309,7 +331,12 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_json({'ok': True, 'player': self.server.player.status()})
         kind = payload.get('kind')
         try:
-            if kind == 'channel':
+            if kind == 'public':
+                entry = public_channel(payload.get('id'))
+                if entry is None:
+                    raise ValueError('Canal publico nao reconhecido')
+                source, title = entry['url'], entry['name']
+            elif kind == 'channel':
                 idx = payload.get('index')
                 channels = self.server.channels.load()
                 if type(idx) is not int or idx < 0 or idx >= len(channels):
@@ -399,7 +426,7 @@ def main():
     args = parser.parse_args()
     server = KTVOSServer(port=args.port, media_dir=args.media_dir)
     url = 'http://127.0.0.1:{}'.format(server.server_address[1])
-    print('=== KTV OS ALPHA 0.7 ===')
+    print('=== KTV OS ALPHA 0.8 ===')
     print('Tela:', url)
     print('Pasta de midias:', server.media_dir or '(nenhuma: use --media-dir)')
     print('Canais:', server.state_dir / 'channels.json')

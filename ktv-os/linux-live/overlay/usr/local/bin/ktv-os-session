@@ -12,8 +12,12 @@ if [[ -f "$SESSION_LOG" ]]; then
 fi
 : > "$SESSION_LOG"
 exec >> "$SESSION_LOG" 2>&1
-printf '=== KTV OS 0.5 - sessao iniciada: %s ===\n' "$(date -Is)"
+printf '=== KTV OS 0.8 - sessao iniciada: %s ===\n' "$(date -Is)"
 cd /opt/ktv-os || exit 1
+# Align laptop and HDMI to one mirrored desktop before launching Chromium.
+# Failure is non-fatal: keep the current screen for troubleshooting.
+sleep 2
+python3 display_layout.py || true
 SERVER_PID=''
 cleanup() {
   if [[ -n "$SERVER_PID" ]]; then

@@ -11,13 +11,14 @@
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.7</span></div></div>
+      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.8</span></div></div>
       <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><span id="gamepad-status" class="gamepad-status" aria-live="polite"></span><button class="icon-button focusable" data-action="fullscreen" title="Tela cheia" aria-label="Tela cheia">⛶</button></div>
     </header>
     <div class="layout">
       <nav class="sidebar" aria-label="Menu principal">
         <button class="nav-link active focusable" data-route="inicio"><span class="nav-icon">⌂</span><span>Início</span></button>
         <button class="nav-link focusable" data-route="canais"><span class="nav-icon">▣</span><span>Canais</span></button>
+        <button class="nav-link focusable" data-route="rede"><span class="nav-icon">◉</span><span>Internet e Wi-Fi</span></button>
         <button class="nav-link focusable" data-route="usb"><span class="nav-icon">◫</span><span>USB e mídias</span></button>
         <button class="nav-link focusable" data-route="entradas"><span class="nav-icon">⇄</span><span>Entradas</span></button>
         <button class="nav-link focusable" data-route="hardware"><span class="nav-icon">▣</span><span>Imagem e som</span></button>
@@ -39,7 +40,8 @@
           </div>
         </section>
         <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de streams HLS/MP4 pelo mpv nativo quando disponível. Cadastre apenas fontes próprias ou autorizadas.</p><div class="channel-actions"><button class="primary focusable" id="channel-create">+ Adicionar canal</button><span class="chip" id="channel-count">0 canais</span></div>
-          <div id="channels" class="content-grid"></div>
+          <h2 class="section-title">Canais públicos</h2><p class="small-note">Transmissões públicas em servidores institucionais. A disponibilidade dos streams é experimental; a reprodução pode falhar ou sofrer restrições de acesso.</p><div id="public-channels" class="content-grid"></div>
+          <h2 class="section-title">Meus canais</h2><div id="channels" class="content-grid"></div>
           <div class="panel channel-editor" id="channel-editor" hidden>
             <h2 id="channel-editor-title">Novo canal</h2>
             <p>Adicione somente transmissões próprias ou autorizadas. URLs diretas .m3u8 ou .mp4.</p>
@@ -56,6 +58,18 @@
           </div>
           <p class="form-result" id="channel-result" role="status"></p>
           </section>
+        <section class="screen" data-screen="rede">
+          <div class="eyebrow">CONECTIVIDADE</div><h1>Internet e <span class="gradient-text">Wi-Fi.</span></h1>
+          <p class="lead">Conecte o computador à rede para assistir aos canais online. Cabo Ethernet usa a configuração automática do Linux; escolha abaixo uma rede Wi-Fi para conectar.</p>
+          <div class="panel"><h2>Estado da conexão</h2><p class="hardware-message" id="network-status">Consultando dispositivos…</p><div id="network-devices" class="content-grid"></div>
+            <div class="hero-actions"><button class="ghost focusable" id="network-refresh">Atualizar rede</button><button class="ghost focusable" id="wifi-enable">Ativar Wi-Fi</button></div></div>
+          <div class="panel"><h2>Redes Wi-Fi disponíveis</h2><p class="small-note">Selecione a rede. Para redes protegidas, digite a senha no campo abaixo.</p>
+            <div class="hardware-form"><label for="wifi-ssid">Rede selecionada</label><select id="wifi-ssid" class="focusable"><option value="">Buscar redes…</option></select>
+              <label for="wifi-password">Senha da rede</label><input id="wifi-password" type="password" maxlength="128" autocomplete="off" placeholder="Senha Wi-Fi, se necessária" class="focusable"/>
+              <button class="primary focusable" id="wifi-connect">Conectar</button><button class="ghost focusable" id="wifi-scan">Buscar redes novamente</button>
+            </div><p class="hardware-feedback" id="wifi-feedback" role="status"></p><p class="small-note">A senha não é enviada em argumentos de processo nem registrada nos logs do KTV OS. Por ser um Linux Live, a conexão Wi-Fi pode precisar ser refeita após reiniciar; a Ethernet é detectada novamente automaticamente.</p>
+          </div>
+        </section>
         <section class="screen" data-screen="usb"><div class="eyebrow">BIBLIOTECA LOCAL</div><h1>USB e <span class="gradient-text">mídias.</span></h1><p class="lead">Acessa arquivos do computador que executa o KTV OS. Pendrives ligados diretamente à Samsung não são visíveis neste sistema externo.</p><div class="panel"><h2>Dispositivos detectados no computador</h2><div id="devices"></div><button class="ghost focusable" data-action="refresh-usb">Atualizar USB</button></div><h2 class="section-title" id="media-heading">Minha biblioteca</h2><div id="media" class="content-grid"></div></section>
         <section class="screen" data-screen="entradas"><div class="eyebrow">FONTES DE VÍDEO</div><h1>Escolha sua <span class="gradient-text">entrada.</span></h1><p class="lead">As entradas HDMI e a antena pertencem ao hardware original da Samsung. O KTV OS não consegue trocar essas fontes sozinho nesta fase.</p><div class="content-grid"><button class="info-card focusable" data-action="tv-aberta"><span class="card-icon">◉</span><strong>Antena / TV aberta</strong><small>Pressione SOURCE no controle Samsung e selecione TV.</small></button><button class="info-card focusable" data-action="sources"><span class="card-icon">▣</span><strong>HDMI 1</strong><small>Entrada do KTV OS (computador) ou outro aparelho.</small></button><button class="info-card focusable" data-action="sources"><span class="card-icon">▣</span><strong>HDMI 2</strong><small>Console, notebook ou outro dispositivo conectado.</small></button></div></section>
         <section class="screen" data-screen="hardware">
@@ -89,7 +103,7 @@
             <p class="small-note">A saída HDMI pode aparecer como um dispositivo de áudio distinto. O volume da Samsung também pode precisar de ajuste no controle da TV.</p>
           </div>
         </section>
-        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Modo tela cheia</strong><p>Ideal para testes na Samsung por HDMI.</p></div><button class="ghost focusable" data-action="fullscreen">Ativar (F)</button></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Cadastre e organize os canais pela própria interface. Use USB para salvar/restaurar seu backup. Sem fontes comerciais predefinidas.</p></div></div><div class="panel"><h2>Persistência de canais (opcional)</h2>
+        <section class="screen" data-screen="config"><div class="eyebrow">PREFERÊNCIAS</div><h1>Seu sistema, <span class="gradient-text">simples.</span></h1><div class="panel settings"><div><strong>Modo tela cheia</strong><p>Ideal para testes na Samsung por HDMI.</p></div><button class="ghost focusable" data-action="fullscreen">Ativar (F)</button></div><div class="panel settings"><div><strong>Servidor local</strong><p id="server-detail">127.0.0.1 — sem exposição à rede.</p></div><span class="chip">LOOPBACK</span></div><div class="panel settings"><div><strong>Configuração de canais</strong><p>Cadastre e organize os canais pela própria interface. Use USB para salvar/restaurar seu backup. Os canais públicos disponíveis aparecem na seção Canais, além das listas que você cadastrar.</p></div></div><div class="panel"><h2>Persistência de canais (opcional)</h2>
           <p>Use um segundo pendrive de dados conectado ao computador. A ativação copia sua lista para esse dispositivo e permite restaurá-la automaticamente ao iniciar o Linux com o mesmo pendrive. O KTV OS não formata unidades.</p>
           <div class="backup-controls">
             <button class="primary focusable" id="persistence-enable">Ativar neste pendrive</button>
