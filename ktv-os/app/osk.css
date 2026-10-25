@@ -9,3 +9,13 @@
 /* Alpha 0.14: manual-only keyboard toggle, no automatic focus popup. */
 #ktv-osk-toggle[aria-pressed="true"]{background:#ffc66b;color:#193123;border-color:#fff1a1}
 #ktv-osk-toggle{min-width:165px;min-height:48px}
+
+/* Alpha 0.15: handle touch/mouse drag while keeping the keyboard in viewport. */
+#ktv-osk{max-height:calc(100vh - 92px);overflow-y:auto;overscroll-behavior:contain}
+#ktv-osk .osk-head{touch-action:none;cursor:grab;user-select:none;padding:8px 6px;border-radius:7px;background:#174b30}
+#ktv-osk .osk-head:active{cursor:grabbing}
+#ktv-osk .osk-modes{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+#ktv-osk .osk-mode{flex:1;border-radius:8px;border:1px solid #65bc7e;color:#ddffdf;background:#204a34;padding:10px;font-weight:700}
+#ktv-osk .osk-mode.selected{color:#0b3a1d;background:#b2ffb4}
+#ktv-osk-toggle{z-index:61}
+@media(max-height:550px){#ktv-osk{max-height:calc(100vh - 65px);bottom:55px}.osk-key{min-height:30px}}

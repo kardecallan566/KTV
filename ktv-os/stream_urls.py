@@ -52,3 +52,25 @@ def validate_stream_url(url):
             raise
         raise StreamURLError('Endereco de transmissao invalido') from exc
     return url
+
+
+def validate_pluto_url(url):
+    """Permit long signed Pluto URLs only on the exact official CDN endpoint."""
+    if (not isinstance(url,str) or not 50 <= len(url) <= 6000 or
+            any(ord(c) <= 32 or ord(c) == 127 for c in url)):
+        raise StreamURLError('Link Pluto TV invalido')
+    try:
+        parts=urlsplit(url)
+        if (parts.scheme != 'https' or parts.hostname != 'ipv4.pluto.tv' or
+                parts.username is not None or parts.password is not None or
+                parts.port not in (None,443) or parts.fragment or
+                not re.fullmatch(
+                    r'/api/tn/video/playout/v2/stitch/hls/channel/[a-f0-9]{24}/master[.]m3u8',
+                    parts.path) or
+                not re.search(r'(?:^|&)jwt=[^&]+',parts.query)):
+            raise StreamURLError('Formato de link Pluto TV invalido')
+    except ValueError as exc:
+        if isinstance(exc,StreamURLError):
+            raise
+        raise StreamURLError('Link Pluto TV invalido') from exc
+    return url

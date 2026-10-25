@@ -59,7 +59,7 @@
     if (name === 'usb') loadUSB();
     if (name === 'rede') refreshNetwork();
     if (name === 'navegador') el('browser-search-input').focus();
-    if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();loadCommunityChannels();}
+    if (name === 'canais') {loadChannels();loadPublicChannels();loadPlutoFavorites();loadPlutoChannels();loadCommunityChannels();loadOpenTV();}
     if (name === 'config') {loadBackupDevices();loadPersistenceStatus();refreshCEC();}
     if (name === 'hardware') refreshHardware();
   }
@@ -181,13 +181,28 @@
     lastNativeRequest={payload:Object.assign({},payload),title:title,decode:decode};
     payload.quality=el('quality-profile').value;
     payload.decode=decode;
-    post('/api/player/play',payload,function(err){
-      if(err){dialog(title,'Não foi possível iniciar o player: '+err.message+'. Tente outro canal ou modo compatível.');return;}
-      nativeActive=true;
-      refreshQuality();
-      if(!qualityTimer)qualityTimer=setInterval(refreshQuality,2500);
-      dialog(title,'Reproduzindo pelo mpv nativo ('+(decode==='compatible'?'modo compatível — mais CPU':'modo normal')+').\nSe houver apenas áudio, vídeo preto ou travamento, pressione Q para fechar o mpv e selecione Tentar modo compatível.');
+    // Preliminary metadata check; never promise playback without decoding.
+    function doPlay(){
+      post('/api/player/play',payload,function(err){
+        if(err){dialog(title,'Não foi possível iniciar o player: '+err.message+'. Tente atualizar a lista ou usar o modo compatível.');return;}
+        nativeActive=true;
+        refreshQuality();
+        if(!qualityTimer)qualityTimer=setInterval(refreshQuality,2500);
+        dialog(title,'Reproduzindo pelo mpv nativo ('+(decode==='compatible'?'modo compatível — mais CPU':'modo normal')+').\nSe houver áudio sem vídeo, pressione Q para fechar o mpv e selecione Tentar modo compatível.');
+      });
+    }
+    if(['public','pluto','community'].indexOf(payload.kind)<0){doPlay();return;}
+    el('quality-telemetry').textContent='Verificando a disponibilidade do canal…';
+    get('/api/channels/check?kind='+encodeURIComponent(payload.kind)+'&id='+encodeURIComponent(payload.id),function(checkError,check){
+      if(!checkError&&check.status==='unavailable'){
+        dialog(title,'Este canal respondeu como indisponível na verificação prévia. Atualize a lista e tente outro canal.');
+        return;
+      }
+      // HEAD checks can fail on streams that play normally: don't block unknown.
+      doPlay();
     });
+
+
   }
   compatibleButton.addEventListener('click',function(){
     if(!lastNativeRequest)return;
@@ -356,6 +371,61 @@
   }
   el('channels-more').addEventListener('click',function(){channelVisible+=36;renderChannels();});
 
+  // One XMLTV fetch per source, not one fetch per channel/card.
+  var epgData={},epgBusy={};
+  function guideKey(text){
+    return (text||'').toLocaleLowerCase('pt-BR').normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'').slice(0,110);
+  }
+  function guideText(program,prefix){
+    if(!program||!program.title)return prefix+': sem informação';
+    var time=new Date(program.start);
+    var clock=isNaN(time.getTime())?'':time.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return prefix+': '+(clock?clock+' · ':'')+program.title;
+  }
+  function renderGuides(kind){
+    document.querySelectorAll('[data-guide-kind="'+kind+'"]').forEach(function(node){
+      var source=epgData[kind],item=source &&
+        (source[guideKey(node.getAttribute('data-guide-id'))]||
+         source[guideKey(node.getAttribute('data-guide-name'))]);
+      node.textContent=item?
+        guideText(item.now,'Agora')+' | '+guideText(item.next,'A seguir'):
+        'Agora / A seguir: programação não fornecida para este canal.';
+    });
+  }
+  function ensureGuide(kind){
+    if(epgBusy[kind]||epgData[kind]){if(epgData[kind])renderGuides(kind);return;}
+    epgBusy[kind]=true;
+    get('/api/epg/list?kind='+encodeURIComponent(kind),function(err,response){
+      epgBusy[kind]=false;
+      epgData[kind]=err?{}:(response.programmes||{});
+      renderGuides(kind);
+    });
+  }
+  function attachGuide(card,kind,id,name){
+    var status=document.createElement('small');
+    status.className='channel-epg';status.setAttribute('data-guide-kind',kind);
+    status.setAttribute('data-guide-id',id||'');status.setAttribute('data-guide-name',name||'');
+    status.textContent='Agora / A seguir: consultando guia…';
+    card.appendChild(status);
+    ensureGuide(kind);
+  }
+  function loadOpenTV(){
+    get('/api/tv-aberta',function(err,data){
+      var container=el('tv-aberta-sites');container.textContent='';
+      if(err){message(container,'Sites oficiais indisponíveis.');return;}
+      (data.channels||[]).forEach(function(c){
+        var card=makeCard(c.name,'Abrir transmissão no site oficial',function(){
+          post('/api/tv-aberta/open',{id:c.id},function(error){
+            el('tv-aberta-message').textContent=error?'Falha: '+error.message:
+              'Site oficial aberto no Chromium. Login, região e DRM são controlados pela emissora.';
+          });
+        });
+        container.appendChild(card);
+      });
+    });
+  }
+
   // Curated public institutions only; no untrusted third-party IPTV aggregator.
   var publicChannelCache=[];
   function renderPublicChannels(){
@@ -390,7 +460,8 @@
           if(!fault){channelCache=response.channels;renderChannels();}
         });
       }));
-      card.appendChild(icon);card.appendChild(title);card.appendChild(label);card.appendChild(info);card.appendChild(controls);container.appendChild(card);
+      card.appendChild(icon);card.appendChild(title);card.appendChild(label);card.appendChild(info);card.appendChild(controls);
+      attachGuide(card,'br',c.id,c.name);container.appendChild(card);
     });
   }
   function loadPublicChannels(){
@@ -427,7 +498,7 @@
         });
       },true));
       card.appendChild(icon);card.appendChild(name);card.appendChild(subtitle);
-      card.appendChild(controls);container.appendChild(card);
+      card.appendChild(controls);attachGuide(card,'br',c.id,c.name);container.appendChild(card);
     });
     el('community-more').hidden=communityVisible>=results.length;
   }
@@ -519,7 +590,7 @@
         });
       }));
       card.appendChild(icon);card.appendChild(name);card.appendChild(category);
-      card.appendChild(controls);container.appendChild(card);
+      card.appendChild(controls);attachGuide(card,'pluto',c.id,c.name);container.appendChild(card);
     });
     el('pluto-more').hidden=plutoVisible>=selected.length;
   }

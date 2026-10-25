@@ -81,3 +81,8 @@
 .browser-panel-green .browser-brand strong{color:#73ffa1}
 .browser-panel-green .primary{background:linear-gradient(100deg,#54ed82,#a0ffa1);color:#07381b;margin:10px 12px 15px 0}
 #browser-system-keyboard{border-color:#6bba82;color:#e6ffee}
+
+.channel-epg{display:block;border-top:1px solid #335a4f;padding:9px 0 0;margin-top:10px;color:#baf3cd;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.tv-aberta-panel{margin:22px 0;padding:24px;background:linear-gradient(130deg,#0b2b20,#11283b);border:1px solid #348a61}
+.tv-aberta-panel h2{color:#baffc5}
+#tv-aberta-sites .info-card{border:1px solid #2e8b62;background:#123728}

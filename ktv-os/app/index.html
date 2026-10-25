@@ -13,7 +13,7 @@
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.14</span></div></div>
+      <div class="brand"><div class="brand-mark">K<span>TV</span></div><div class="brand-sub">OS <span class="alpha">ALPHA 0.15</span></div></div>
       <div class="top-right"><span class="connection" id="connection">Verificando sistema…</span><span class="clock" id="clock"></span><span id="gamepad-status" class="gamepad-status" aria-live="polite"></span><button class="icon-button focusable power-button" id="poweroff-button" title="Desligar o computador KTV OS" aria-label="Desligar o KTV OS">⏻ Desligar</button></div>
     </header>
     <div class="layout">
@@ -42,8 +42,14 @@
             <button class="tile amber focusable" data-route="navegador"><div class="tile-art">◎</div><span class="tile-kicker">PESQUISAR</span><strong>Internet</strong><small>Pesquisar no Chromium sem sair do sistema</small><span class="tile-arrow">↗</span></button>
           </div>
         </section>
-        <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de streams HLS/MP4 pelo mpv nativo quando disponível. Cadastre apenas fontes próprias ou autorizadas.</p><div class="channel-actions"><button class="primary focusable" id="channel-create">+ Adicionar canal</button><span class="chip" id="channel-count">0 canais</span></div>
-          <div class="panel quality-panel"><h2>Qualidade de reprodução · Alpha 0.12</h2><p class="small-note">Seleção inicial de variante HLS, sem transcodificação ou IA. O modo equilibrado tenta limitar a variante a aproximadamente 4 Mb/s, quando a playlist oferecer opções.</p><label for="quality-profile">Perfil de reprodução</label> <select class="focusable" id="quality-profile"><option value="balanced">Equilibrado (padrão)</option><option value="economy">Econômico (menor variante)</option><option value="best">Melhor disponível</option></select><p id="quality-telemetry" class="small-note" role="status">Inicie um canal para consultar resolução, codec, FPS e buffer (quando informados pelo mpv).</p></div>
+        <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de HLS, DASH e vídeos diretos pelo mpv nativo quando disponível. Antes de abrir, o sistema faz uma verificação preliminar dos links públicos. Cadastre apenas fontes próprias ou autorizadas.</p><div class="channel-actions"><button class="primary focusable" id="channel-create">+ Adicionar canal</button><span class="chip" id="channel-count">0 canais</span></div>
+          <div class="panel quality-panel"><h2>Qualidade de reprodução · Alpha 0.15</h2><p class="small-note">Seleção inicial de variante HLS, sem transcodificação ou IA. O modo equilibrado tenta limitar a variante a aproximadamente 4 Mb/s, quando a playlist oferecer opções.</p><label for="quality-profile">Perfil de reprodução</label> <select class="focusable" id="quality-profile"><option value="balanced">Equilibrado (padrão)</option><option value="economy">Econômico (menor variante)</option><option value="best">Melhor disponível</option></select><p id="quality-telemetry" class="small-note" role="status">Inicie um canal para consultar resolução, codec, FPS e buffer (quando informados pelo mpv).</p></div>
+          <div class="panel tv-aberta-panel">
+            <h2>TV aberta — sites oficiais</h2>
+            <p class="small-note">Globo, SBT, Record, Band, TV Cultura, TV Brasil e Rede Vida. Estes atalhos abrem o site oficial no navegador KTV, sem copiar streams privados, DRM ou conteúdos pagos. A disponibilidade pode depender de cadastro e região. Para antena digital, use o sintonizador da Samsung.</p>
+            <div id="tv-aberta-sites" class="content-grid"></div>
+            <p id="tv-aberta-message" class="small-note" role="status"></p>
+          </div>
           <h2 class="section-title">Canais públicos</h2><p class="small-note">Transmissões públicas em servidores institucionais. A disponibilidade dos streams é experimental; a reprodução pode falhar ou sofrer restrições de acesso.</p><div class="channel-actions"><label for="public-channel-filter">Explorar por assunto</label>
             <select id="public-channel-filter" class="focusable" aria-label="Filtrar canais por assunto">
               <option value="all">Todos os canais públicos</option>
@@ -77,7 +83,7 @@
           </div>
           <div class="pluto-section">
             <h2 class="section-title">Pluto TV — canais ao vivo</h2>
-            <p class="small-note">Catálogo comunitário de canais gratuitos da Pluto TV (BuddyChewChew/pluto), não oficial. Links temporários são atualizados sob demanda; acesso e reprodução dependem de disponibilidade, anúncios e condições do provedor.</p>
+            <p class="small-note">Catálogo comunitário de canais gratuitos da Pluto TV (BuddyChewChew/pluto), não oficial. Links temporários são atualizados sob demanda. A reprodução poderá falhar por expiração do token, região, autenticação, DRM ou anúncios.</p>
             <div class="channel-actions pluto-toolbar">
               <label for="pluto-category">Categoria</label>
               <select id="pluto-category" class="focusable"><option value="all">Todas as categorias</option><option value="favorites">★ Meus favoritos</option></select>

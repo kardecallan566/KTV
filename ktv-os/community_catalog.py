@@ -15,6 +15,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 SOURCES = (
     ('Public IPTV', 'https://raw.githubusercontent.com/freecasthub/public-iptv/main/playlist.m3u'),
     ('Free-TV', 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8'),
+    ('IPTV-org Brasil', 'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br.m3u'),
 )
 ALLOWED_HOSTS = frozenset((
     "vs-cmaf-pushb-ww-live.akamaized.net",
@@ -66,6 +67,9 @@ ALLOWED_HOSTS = frozenset((
     "cdn4.skygo.mn",
     "shd-gcp-live.edgenextcdn.net",
     "tvbrasil-stream.ebc.com.br",
+    "canalgov-stream.ebc.com.br",
+    "player-tvcultura.stream.uol.com.br",
+    "dai.google.com",
 ))
 # DASH manifests from a reviewed broadcaster CDN; other hosts stay HLS-only.
 DASH_HOSTS = frozenset(('vs-cmaf-pushb-ww-live.akamaized.net',))
@@ -90,7 +94,7 @@ def download(url):
     if url not in (source for _, source in SOURCES):
         raise CommunityCatalogError('Fonte nao permitida')
     opener = build_opener(_NoRedirect())
-    request = Request(url, headers={'User-Agent': 'KTV-OS/0.14 (Free-TV catalog)',
+    request = Request(url, headers={'User-Agent': 'KTV-OS/0.15 (Free-TV catalog)',
                                      'Accept': 'text/plain'})
     try:
         with opener.open(request, timeout=8) as response:

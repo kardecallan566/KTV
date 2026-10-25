@@ -11,6 +11,18 @@ from urllib.parse import quote, urlsplit
 MAX_SEARCH = 180
 
 
+# Official access pages. Provider controls login, ads, DRM and regional rights.
+BROADCASTERS = {
+    'sbt': {'name':'SBT', 'url':'https://sbt.com.br/ao-vivo'},
+    'globo': {'name':'TV Globo (Globoplay)', 'url':'https://globoplay.globo.com/agora-na-tv/'},
+    'record': {'name':'Record (RecordPlus)', 'url':'https://www.playplus.com/'},
+    'band': {'name':'Band', 'url':'https://www.band.com.br/ao-vivo'},
+    'cultura': {'name':'TV Cultura', 'url':'https://cultura.uol.com.br/aovivo/'},
+    'tvbrasil': {'name':'TV Brasil', 'url':'https://tvbrasil.ebc.com.br/'},
+    'redevida': {'name':'Rede Vida', 'url':'https://redevida.com.br/ao-vivo/'},
+}
+
+
 class BrowserError(ValueError):
     pass
 
@@ -49,6 +61,22 @@ class InternetBrowser:
         except OSError as exc:
             raise RuntimeError('Falha ao iniciar o navegador verde') from exc
         return {'opened': True}
+
+    def open_broadcaster(self, ident):
+        if not isinstance(ident,str) or ident not in BROADCASTERS:
+            raise BrowserError('Emissora desconhecida')
+        if not self.executable:
+            raise RuntimeError('Chromium indisponivel neste dispositivo')
+        args=[self.executable,'--no-first-run','--new-window','--start-fullscreen']
+        if self.safe:
+            args.extend(('--disable-gpu','--disable-gpu-compositing'))
+        args.append(BROADCASTERS[ident]['url'])
+        try:
+            self.popen(args,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL,start_new_session=True)
+        except OSError as exc:
+            raise RuntimeError('Falha ao abrir site oficial') from exc
+        return {'opened':True,'name':BROADCASTERS[ident]['name']}
 
     def open_search(self, query):
         if (not isinstance(query, str) or not 1 <= len(query.strip()) <= MAX_SEARCH
