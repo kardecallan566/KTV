@@ -46,6 +46,11 @@ STATIC = {
     '/index.html': ('index.html', 'text/html; charset=utf-8'),
     '/style.css': ('style.css', 'text/css; charset=utf-8'),
     '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+    '/browser.html': ('browser.html', 'text/html; charset=utf-8'),
+    '/browser-green.css': ('browser-green.css', 'text/css; charset=utf-8'),
+    '/browser-green.js': ('browser-green.js', 'text/javascript; charset=utf-8'),
+    '/osk.js': ('osk.js', 'text/javascript; charset=utf-8'),
+    '/osk.css': ('osk.css', 'text/css; charset=utf-8'),
 }
 
 def usb_mounts():
