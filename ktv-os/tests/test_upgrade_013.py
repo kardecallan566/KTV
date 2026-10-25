@@ -54,17 +54,17 @@ class Tests013(unittest.TestCase):
         self.assertEqual(calls,[])  # Boot does not fetch
         listing=catalog.listing()
         self.assertEqual(len(listing['channels']),2)
-        self.assertEqual(len(calls),2)
+        self.assertEqual(len(calls),len(SOURCES))
         self.assertNotIn('_url',json.dumps(listing))
         self.assertNotIn('https:',json.dumps(listing))
         ident=listing['channels'][0]['id']
         self.assertEqual(catalog.play_url(ident)[0],LIVE)
         clock[0]+=1700
         catalog.listing()
-        self.assertEqual(len(calls),2)
+        self.assertEqual(len(calls),len(SOURCES))
         clock[0]+=150
         catalog.listing()
-        self.assertEqual(len(calls),4)
+        self.assertEqual(len(calls),len(SOURCES)*2)
         with self.assertRaises(ValueError):
             catalog.play_url('file:///etc/passwd')
 
