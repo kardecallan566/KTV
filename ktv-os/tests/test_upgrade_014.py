@@ -110,8 +110,8 @@ class StreamTests(unittest.TestCase):
         self.assertIn("toggle.setAttribute('aria-pressed',state?'true':'false')", source)
         self.assertNotIn('automatic=false',source)
         self.assertNotIn('if(automatic)',source)
-        self.assertNotIn('fetch(\\'/api/input/status\\'',source)
-        self.assertIn('toggle.addEventListener(\\'click\\'',source)
+        self.assertNotIn("fetch(\u0027/api/input/status\u0027",source)
+        self.assertIn("toggle.addEventListener(\u0027click\u0027",source)
 
     def test_local_api_rejects_private_targets_and_accepts_dash(self):
         class FakePlayer:
