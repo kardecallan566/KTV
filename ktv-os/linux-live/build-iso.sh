@@ -13,7 +13,7 @@ APP_VERSION="$(sed -nE "s/^VERSION = '([0-9]+\.[0-9]+)\.[0-9]+'$/\1/p" "$PROJECT
 ISO_NAME="KTV-OS-Alpha-${APP_VERSION}-amd64.iso"
 
 check_sources() {
-  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/persistence.py" "$PROJECT_DIR/ktv-os/hardware.py" "$PROJECT_DIR/ktv-os/cec_bridge.py" "$PROJECT_DIR/ktv-os/network.py" "$PROJECT_DIR/ktv-os/display_layout.py" "$PROJECT_DIR/ktv-os/system_actions.py" "$PROJECT_DIR/ktv-os/public_channels.py" "$PROJECT_DIR/ktv-os/pluto_catalog.py" "$PROJECT_DIR/ktv-os/pluto_favorites.py" "$PROJECT_DIR/ktv-os/internet_browser.py" "$PROJECT_DIR/ktv-os/app/index.html" \
+  for file in "$PROJECT_DIR/ktv-os/launcher.py" "$PROJECT_DIR/ktv-os/player.py" "$PROJECT_DIR/ktv-os/channel_store.py" "$PROJECT_DIR/ktv-os/persistence.py" "$PROJECT_DIR/ktv-os/hardware.py" "$PROJECT_DIR/ktv-os/cec_bridge.py" "$PROJECT_DIR/ktv-os/network.py" "$PROJECT_DIR/ktv-os/display_layout.py" "$PROJECT_DIR/ktv-os/system_actions.py" "$PROJECT_DIR/ktv-os/public_channels.py" "$PROJECT_DIR/ktv-os/pluto_catalog.py" "$PROJECT_DIR/ktv-os/pluto_favorites.py" "$PROJECT_DIR/ktv-os/internet_browser.py" "$PROJECT_DIR/ktv-os/input_support.py" "$PROJECT_DIR/ktv-os/community_catalog.py" "$PROJECT_DIR/ktv-os/app/index.html" \
     "$PROJECT_DIR/ktv-os/app/app.js" "$SCRIPT_DIR/packages.list.chroot" \
     "$SCRIPT_DIR/overlay/etc/lightdm/lightdm.conf.d/50-ktv-os.conf" \
     "$SCRIPT_DIR/overlay/etc/xdg/openbox/autostart" \
@@ -88,6 +88,8 @@ cp "$PROJECT_DIR/ktv-os/public_channels.py" config/includes.chroot/opt/ktv-os/pu
 cp "$PROJECT_DIR/ktv-os/pluto_catalog.py" config/includes.chroot/opt/ktv-os/pluto_catalog.py
 cp "$PROJECT_DIR/ktv-os/pluto_favorites.py" config/includes.chroot/opt/ktv-os/pluto_favorites.py
 cp "$PROJECT_DIR/ktv-os/internet_browser.py" config/includes.chroot/opt/ktv-os/internet_browser.py
+cp "$PROJECT_DIR/ktv-os/input_support.py" config/includes.chroot/opt/ktv-os/input_support.py
+cp "$PROJECT_DIR/ktv-os/community_catalog.py" config/includes.chroot/opt/ktv-os/community_catalog.py
 cp -a "$PROJECT_DIR/ktv-os/app" config/includes.chroot/opt/ktv-os/app
 
 # The process runs under the unprivileged default Live user via LightDM/Openbox.
