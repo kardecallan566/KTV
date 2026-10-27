@@ -4,6 +4,10 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 
 **Status:** código e testes locais concluídos; **instalação e reprodução ainda não foram confirmadas na TV física**. Não substitui o sistema Samsung. Não utiliza Cloudflare ou GitHub Pages nesta fase.
 
+## Estado atual do projeto
+
+Para consultar o inventário completo do que está implementado, limitações, testes e próximos passos, veja o [Estado e roadmap consolidado do KTV](docs/ESTADO_E_ROADMAP_DO_PROJETO.md). O repositório contém duas linhas separadas: o protótipo Samsung Legacy/Orsay e o KTV OS via PC/HDMI.
+
 ## Comece por aqui (Windows)
 
 1. Instale Python 3.10+ e mantenha o PC e a TV na mesma rede Wi-Fi/cabo.
