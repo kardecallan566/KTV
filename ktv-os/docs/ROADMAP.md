@@ -1,5 +1,7 @@
 # Plano do KTV OS
 
+> **Estado atual:** este documento registra o planejamento/histórico das primeiras versões. Para o inventário atualizado da Alpha 0.20, limites conhecidos e roadmap priorizado, consulte o [Estado e roadmap consolidado do projeto](../../docs/ESTADO_E_ROADMAP_DO_PROJETO.md).
+
 ## Princípios
 - A Samsung UN43J5200AG permanece com firmware original e atua como tela, alto-falantes e sintonizador próprio.
 - O computador atual, ligado por HDMI, fornece CPU/GPU, rede, mídia e interface.
