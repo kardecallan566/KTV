@@ -17,7 +17,7 @@ O repositório contém **dois projetos relacionados, mas diferentes**:
 | Área | Estado atual |
 | --- | --- |
 | KTV OS Alpha 0.21 | Fallback automático de decodificação compatível implementado; validação física pendente |
-| Testes automatizados | Aprovados no GitHub Actions para o commit funcional acima |
+| Testes automatizados | Aprovados para a Alpha 0.21 no [workflow de regressão](https://github.com/kardecallan566/KTV/actions/runs/40762109653) |
 | ISO Linux Live AMD64 | Build da Alpha 0.21 concluído; artefato `KTV-OS-Alpha-0.21-amd64` disponível no workflow |
 | Reprodução de canais | Implementada; a disponibilidade varia por fonte, rede, codec e autorização |
 | Pluto TV | Catálogo dinâmico, favoritos e mecanismo de recuperação automática implementados; teste físico prolongado ainda necessário |
