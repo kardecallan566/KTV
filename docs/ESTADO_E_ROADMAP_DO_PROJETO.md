@@ -1,9 +1,9 @@
 # KTV — estado atual do projeto e roadmap consolidado
 
-**Atualizado em:** 27/10/2026  
-**Versão mais recente do KTV OS verificada:** Alpha 0.20 (aplicação 0.20.0)  
+**Atualizado em:** 28/10/2026  
+**Versão mais recente do KTV OS verificada:** Alpha 0.21 (aplicação 0.21.0)  
 **Branch principal:** main  
-**Último commit funcional verificado:** 8ddd591c6eca1d008e63b6dcbe76cc9aafaa518a
+**Commit funcional de referência anterior à Alpha 0.21:** 8ddd591c6eca1d008e63b6dcbe76cc9aafaa518a
 
 Este documento reúne o que existe no repositório, o que já foi implementado, o que é experimental, o que ainda precisa ser validado em equipamento físico e os próximos passos planejados. Ele é um resumo de estado, não uma promessa de que todas as fontes de vídeo funcionarão continuamente.
 
@@ -16,9 +16,9 @@ O repositório contém **dois projetos relacionados, mas diferentes**:
 
 | Área | Estado atual |
 | --- | --- |
-| KTV OS Alpha 0.20 | Código integrado na main |
+| KTV OS Alpha 0.21 | Fallback automático de decodificação compatível implementado; validação física pendente |
 | Testes automatizados | Aprovados no GitHub Actions para o commit funcional acima |
-| ISO Linux Live AMD64 | Build concluído; artefato KTV-OS-Alpha-0.20-amd64 disponível no workflow |
+| ISO Linux Live AMD64 | Última ISO verificada: Alpha 0.20; build da Alpha 0.21 será executado após integração na main |
 | Reprodução de canais | Implementada; a disponibilidade varia por fonte, rede, codec e autorização |
 | Pluto TV | Catálogo dinâmico, favoritos e mecanismo de recuperação automática implementados; teste físico prolongado ainda necessário |
 | Rei dos Canais | Integração somente de metadados/guia; não adiciona 104 transmissões |
@@ -27,7 +27,7 @@ O repositório contém **dois projetos relacionados, mas diferentes**:
 | Canais pagos | Sem integração de assinatura/licença; apenas estudar integração oficial autorizada |
 | Samsung Orsay | Protótipo separado; abertura e reprodução completas no Smart Hub ainda precisam de confirmação conclusiva |
 
-**Importante sobre validação:** a ISO e os testes automatizados confirmam que o código compila e passa pela suíte do projeto. Isso não substitui testes de boot, imagem/áudio, Wi-Fi, canais e estabilidade na TV física. O usuário confirmou bons resultados com a Alpha 0.11; os recursos acrescentados nas Alpha 0.12–0.20 precisam de uma rodada de validação física correspondente.
+**Importante sobre validação:** a ISO e os testes automatizados confirmam que o código compila e passa pela suíte do projeto. Isso não substitui testes de boot, imagem/áudio, Wi-Fi, canais e estabilidade na TV física. O usuário confirmou bons resultados com a Alpha 0.11; os recursos acrescentados nas Alpha 0.12–0.21 precisam de uma rodada de validação física correspondente.
 
 ## 2. Arquitetura atual do KTV OS
 
@@ -88,7 +88,8 @@ O repositório contém **dois projetos relacionados, mas diferentes**:
 - Reprodução nativa pelo mpv para formatos de stream e arquivos que o player/codec suporte, incluindo HLS e formatos diretos compatíveis.
 - Perfis de qualidade: Econômico, Equilibrado e Melhor disponível.
 - Telemetria de resolução, codec, FPS e estado de vídeo quando o mpv fornece esses dados.
-- Modo de decodificação compatível como tentativa de recuperação para casos como áudio sem imagem ou incompatibilidade de codec.
+- Modo de decodificação compatível como tentativa manual de recuperação para áudio sem imagem ou incompatibilidade de codec.
+- Fallback automático de uma única tentativa para canais dos catálogos público, Pluto e comunitário quando a telemetria confirma áudio sem saída de vídeo por vários ciclos (aproximadamente 12–15 segundos). Não é aplicado a canais pessoais/mídia local nem durante pausa; a decodificação por software pode usar mais CPU.
 - Janela/player integrado ao fluxo da interface, com ação de parar e voltar ao KTV OS.
 - Players incorporados somente para destinos oficiais previamente permitidos, atualmente com exemplos da TV Brasil/EBC e TV Cultura.
 - O KTV não elimina anúncios do vídeo original, não extrai chaves e não contorna DRM, autenticação, restrições geográficas ou proteções do provedor.
@@ -165,7 +166,7 @@ O repositório também contém um protótipo voltado a Smart TVs Samsung antigas
 
 - [ ] Imagem bootável própria para Raspberry Pi ARM64; a ISO atual é AMD64 e não deve ser usada como se fosse imagem Pi.
 - [ ] Matriz física de compatibilidade para Raspberry Pi 4/5, RAM, codecs, aceleração gráfica, Wi-Fi, áudio, HDMI e temperatura.
-- [ ] Teste de longa duração da Pluto TV em Alpha 0.20 e confirmação de recuperação após perda de rede/URL.
+- [ ] Teste de longa duração da Pluto TV em Alpha 0.21 e confirmação de recuperação após perda de rede/URL e de fallback automático em streams sem vídeo.
 - [ ] Verificação real da disponibilidade da API externa do Rei dos Canais e consistência do EPG; o conector deve falhar sem quebrar os demais canais.
 - [ ] Mais fontes de vídeo gratuitas/oficiais e autorizadas, com proveniência documentada, diagnóstico e teste periódico.
 - [ ] Melhorar a distinção entre stream indisponível, áudio sem vídeo, vídeo congelado, fim de playlist, DRM e falha de rede, sem prometer diagnósticos impossíveis.
@@ -181,11 +182,11 @@ O repositório também contém um protótipo voltado a Smart TVs Samsung antigas
 
 ## 6. Roadmap recomendado por prioridade
 
-### P0 — Validar a Alpha 0.20 no equipamento real
+### P0 — Validar a Alpha 0.21 no equipamento real
 
 1. Inicializar a ISO em um pendrive conectado ao PC, sem instalar o Linux no disco interno.
 2. Confirmar imagem HDMI, áudio, Wi-Fi/Ethernet, navegação por mouse/teclado e desligamento seguro.
-3. Assistir à mesma transmissão Pluto por 60–120 minutos. Registrar se há travamento, áudio sem vídeo, encerramento ou reconexão.
+3. Assistir à mesma transmissão Pluto por 60–120 minutos. Registrar se há travamento, áudio sem vídeo, encerramento ou reconexão; verificar também a tentativa automática de modo compatível quando aplicável.
 4. Simular uma perda breve de rede e verificar a recuperação; depois testar Q, Parar e troca de canal para garantir que o KTV não reabra uma sessão cancelada.
 5. Testar canais pessoais, catálogo público, importação M3U e arquivos locais.
 6. Testar teclado virtual em busca, endereço e formulários; conferir símbolos, arraste e fechamento/abertura.
@@ -198,7 +199,7 @@ O repositório também contém um protótipo voltado a Smart TVs Samsung antigas
 ### P1 — Estabilidade e qualidade de canais
 
 - Executar testes prolongados e de reconexão da Pluto; corrigir falsos positivos de travamento sem reiniciar vídeo pausado.
-- Melhorar o diagnóstico de vídeo/áudio e o feedback ao usuário quando um canal falha.
+- Validar em hardware o fallback automático de modo compatível da Alpha 0.21 e medir se ele resolve casos de áudio sem vídeo sem causar sobrecarga.
 - Manter o catálogo de fontes autorizadas, com ID estável, origem/proveniência, categoria, EPG e validação.
 - Ampliar a quantidade de canais apenas após validar a fonte e a permissão de reprodução; separar metadados de programação de URLs de vídeo.
 - Unificar o guia XMLTV/EPG quando houver fonte confiável, com tratamento de horários antigos e dados ausentes.
@@ -249,6 +250,8 @@ Requisitos de segurança: nenhuma execução arbitrária de shell, nenhuma senha
 - Fazer revisão de segurança antes de recomendar exposição à rede ou uso permanente.
 
 ## 7. Build, testes e como reproduzir
+
+Notas desta melhoria: [Fallback automático de vídeo — Alpha 0.21](../ktv-os/docs/PLAYBACK_FALLBACK_021.md)
 
 ### Verificação automatizada
 
