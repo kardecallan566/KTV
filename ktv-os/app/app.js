@@ -256,8 +256,12 @@
       if(v.audio_track && (v.video_rendered===false || v.video_track===false)){
         noVideoPolls++;
         if(noVideoPolls>=3 && !overlay.hidden && lastNativeRequest){
-          if(lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
-          smartNotice.textContent='Áudio identificado sem saída de vídeo confirmada. Tente modo compatível ou o player integrado, se disponível. Isto não prova presença de DRM.';
+          if(lastNativeRequest.decode!=='compatible'){
+            compatibleButton.hidden=false;
+            smartNotice.textContent='Áudio identificado sem saída de vídeo confirmada. Tente modo compatível ou o player integrado, se disponível. Isto não prova presença de DRM.';
+          }else{
+            smartNotice.textContent='O modo compatível também não confirmou a saída de vídeo. Tente o player integrado, se disponível. Isto não prova presença de DRM.';
+          }
         }
         if(noVideoPolls>=6 && !autoCompatibleAttempted && nativeActive &&
            v.paused!==true && lastNativeRequest &&
