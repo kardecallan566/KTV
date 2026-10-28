@@ -18,7 +18,7 @@ O repositório contém **dois projetos relacionados, mas diferentes**:
 | --- | --- |
 | KTV OS Alpha 0.21 | Fallback automático de decodificação compatível implementado; validação física pendente |
 | Testes automatizados | Aprovados no GitHub Actions para o commit funcional acima |
-| ISO Linux Live AMD64 | Última ISO verificada: Alpha 0.20; build da Alpha 0.21 será executado após integração na main |
+| ISO Linux Live AMD64 | Build da Alpha 0.21 concluído; artefato `KTV-OS-Alpha-0.21-amd64` disponível no workflow |
 | Reprodução de canais | Implementada; a disponibilidade varia por fonte, rede, codec e autorização |
 | Pluto TV | Catálogo dinâmico, favoritos e mecanismo de recuperação automática implementados; teste físico prolongado ainda necessário |
 | Rei dos Canais | Integração somente de metadados/guia; não adiciona 104 transmissões |
@@ -269,12 +269,13 @@ Comandos locais úteis:
 
 ### Última ISO verificada
 
-- Workflow: https://github.com/kardecallan566/KTV/actions/runs/40247123036
-- Artefato: `KTV-OS-Alpha-0.20-amd64`
+- Workflow: https://github.com/kardecallan566/KTV/actions/runs/40762109771
+- Artefato: `KTV-OS-Alpha-0.21-amd64`
 - Arquitetura: AMD64 para PC Intel/AMD
-- Estado no momento desta atualização: build concluído com sucesso e artefato disponível no GitHub Actions.
+- Estado: build concluído com sucesso; o workflow também conferiu o checksum SHA-256.
+- Retenção informada pelo GitHub: até 04/11/2026, aproximadamente 20:28 UTC.
 
-O artefato do Actions tem retenção limitada e pode expirar. Este link é o build de código Alpha 0.20 verificado antes desta atualização documental; esta mudança de documentação não altera o código do sistema.
+A ISO Alpha 0.21 inclui a tentativa automática e limitada de decodificação compatível para alguns casos de áudio sem vídeo. O artefato tem retenção limitada e pode expirar. O build e a suíte automatizada passaram, mas a validação física com GPU, codecs, streams e TV do usuário continua pendente.
 
 ## 8. Documentos técnicos relacionados
 
