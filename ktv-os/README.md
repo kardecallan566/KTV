@@ -2,7 +2,7 @@
 
 Interface de TV para computador conectado a uma televisão por HDMI. Esta pasta **não é ainda uma distribuição Linux, nem um firmware Samsung**. É um *shell* de TV rodando no navegador do computador. Isolado do KTV Orsay em ../tv-orsay/.
 
-**Estado atual:** esta página mantém instruções e histórico de versões antigas. A versão mais recente do código é a **Alpha 0.21**; o build da ISO e a validação física devem ser conferidos no Actions. Consulte o [documento consolidado de estado e roadmap](../docs/ESTADO_E_ROADMAP_DO_PROJETO.md) antes de seguir instruções antigas; a ISO atual é AMD64 para PC e não é uma imagem Raspberry Pi.
+**Estado atual:** esta página mantém instruções e histórico de versões antigas. A versão mais recente do código é a **Alpha 0.21**, e a [ISO AMD64 foi gerada com sucesso no GitHub Actions](https://github.com/kardecallan566/KTV/actions/runs/40762109771). Baixe o artefato enquanto estiver disponível; a validação física ainda é necessária. Consulte o [documento consolidado de estado e roadmap](../docs/ESTADO_E_ROADMAP_DO_PROJETO.md) antes de seguir instruções antigas; a ISO atual é AMD64 para PC e não é uma imagem Raspberry Pi.
 
 ## Teste imediato no Windows (PC -> HDMI -> Samsung)
 
