@@ -22,6 +22,7 @@
   }
   var smartNotice = document.getElementById('smart-player-status');
   var noVideoPolls=0;
+  var autoCompatibleAttempted=false;
   var lastNativeRequest = null;
   var nativeAvailable = false;
   var nativeActive = false;
@@ -258,6 +259,20 @@
           if(lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
           smartNotice.textContent='Áudio identificado sem saída de vídeo confirmada. Tente modo compatível ou o player integrado, se disponível. Isto não prova presença de DRM.';
         }
+        if(noVideoPolls>=6 && !autoCompatibleAttempted && nativeActive &&
+           v.paused!==true && lastNativeRequest &&
+           lastNativeRequest.decode!=='compatible' &&
+           ['public','pluto','community'].indexOf(lastNativeRequest.payload.kind)>=0){
+          var retry=lastNativeRequest;
+          autoCompatibleAttempted=true;
+          compatibleButton.hidden=true;
+          smartNotice.textContent='Áudio identificado sem vídeo; tentando modo compatível automaticamente.';
+          el('quality-telemetry').textContent='Tentando decodificação por software…';
+          if(!overlay.hidden)el('dialog-message').textContent=
+            'Detectamos áudio sem vídeo por vários segundos. O KTV OS está tentando o modo compatível automaticamente.';
+          nativePlay(Object.assign({},retry.payload),retry.title,null,'compatible',true,retry);
+          return;
+        }
       }else noVideoPolls=0;
       el('quality-telemetry').textContent=parts.length?parts.join(' · '):'Reproduzindo; o mpv ainda não informou métricas.';
     });
@@ -266,12 +281,19 @@
     if(qualityTimer){clearInterval(qualityTimer);qualityTimer=null;}
     el('quality-telemetry').textContent='Nenhum vídeo em reprodução no mpv.';
   }
-  function nativePlay(payload,title,fallback,decode) {
+  function nativePlay(payload,title,fallback,decode,silent,originalRequest) {
     decode=decode||'default';
+    if(!silent)autoCompatibleAttempted=decode==='compatible';
     lastNativeRequest={payload:Object.assign({},payload),title:title,decode:decode};
     noVideoPolls=0;
     if (!nativeAvailable) {
       if(fallback){fallback();return;}
+      if(silent){
+        lastNativeRequest=originalRequest||lastNativeRequest;
+        smartNotice.textContent='Não foi possível iniciar o modo compatível automático; tente a opção manual.';
+        el('quality-telemetry').textContent='Player mpv indisponível para a tentativa automática.';
+        return;
+      }
       dialog(title,'Player mpv indisponível. Na imagem Linux KTV OS o mpv já vem instalado. Para testar no Windows, instale o mpv e reinicie o KTV OS.');
       return;
     }
@@ -282,14 +304,30 @@
     // Preliminary metadata check; never promise playback without decoding.
     function doPlay(){
       post('/api/player/play',payload,function(err){
-        if(err){dialog(title,'Não foi possível iniciar o player: '+err.message+'. Tente atualizar a lista ou usar o modo compatível.');return;}
+        if(err){
+          if(silent){
+            lastNativeRequest=originalRequest||lastNativeRequest;
+            compatibleButton.hidden=!lastNativeRequest||lastNativeRequest.decode==='compatible';
+            smartNotice.textContent='A tentativa automática de modo compatível falhou. Você pode tentar novamente pelo botão.';
+            el('quality-telemetry').textContent='Não foi possível ativar a decodificação compatível automaticamente.';
+            if(!qualityTimer)qualityTimer=setInterval(refreshQuality,2500);
+          }else dialog(title,'Não foi possível iniciar o player: '+err.message+'. Tente atualizar a lista ou usar o modo compatível.');
+          return;
+        }
         nativeActive=true;
         refreshQuality();
         if(!qualityTimer)qualityTimer=setInterval(refreshQuality,2500);
-        dialog(title,'Reproduzindo pelo mpv nativo ('+(decode==='compatible'?'modo compatível — mais CPU':'modo normal')+').\nSe houver áudio sem vídeo, pressione Q para fechar o mpv e selecione Tentar modo compatível.');
+        if(silent){
+          smartNotice.textContent='Modo compatível ativado automaticamente após detectar áudio sem vídeo.';
+          el('quality-telemetry').textContent='Modo compatível ativo; verificando saída de vídeo e estabilidade…';
+          if(!overlay.hidden)el('dialog-message').textContent=
+            'O KTV OS detectou áudio sem vídeo e ativou a decodificação compatível. Este modo pode usar mais CPU.';
+        }else{
+          dialog(title,'Reproduzindo pelo mpv nativo ('+(decode==='compatible'?'modo compatível — mais CPU':'modo normal')+').\nSe houver áudio sem vídeo, pressione Q para fechar o mpv e selecione Tentar modo compatível.');
+        }
       });
     }
-    if(['public','pluto','community'].indexOf(payload.kind)<0){doPlay();return;}
+    if(silent || ['public','pluto','community'].indexOf(payload.kind)<0){doPlay();return;}
     el('quality-telemetry').textContent='Verificando a disponibilidade do canal…';
     get('/api/channels/check?kind='+encodeURIComponent(payload.kind)+'&id='+encodeURIComponent(payload.id),function(checkError,check){
       if(!checkError&&check.status==='unavailable'){
