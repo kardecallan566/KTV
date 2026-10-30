@@ -26,13 +26,13 @@ O repositório contém **dois projetos relacionados, mas diferentes**:
 | Assistente de IA e melhoria de imagem por IA | Planejados, não implementados |
 | Canais pagos | Sem integração de assinatura/licença; apenas estudar integração oficial autorizada |
 | Samsung Orsay | Protótipo separado; abertura e reprodução completas no Smart Hub ainda precisam de confirmação conclusiva |
-| Nova fase multiplataforma | CP01 concluído; CP02 definiu Raspberry Pi 4 como primeiro alvo; CP03 criou contratos e diagnóstico ARM64; runtime ainda não integrado |
+| Nova fase multiplataforma | CP01 concluído; CP02 definiu Raspberry Pi 4 como primeiro alvo; CP03 criou contratos, diagnóstico e primeiro adaptador mpv; runtime ainda não integrado |
 
 **Importante sobre validação:** a ISO e os testes automatizados confirmam que o código compila e passa pela suíte do projeto. Isso não substitui testes de boot, imagem/áudio, Wi-Fi, canais e estabilidade na TV física. O usuário confirmou bons resultados com a Alpha 0.11; os recursos acrescentados nas Alpha 0.12–0.21 precisam de uma rodada de validação física correspondente.
 
 ## 1.1 Nova fase multiplataforma (CP01)
 
-A auditoria CP01 foi concluída e a arquitetura CP02 definiu o Raspberry Pi 4 com Raspberry Pi OS 64-bit como primeiro alvo físico. O CP03 iniciou a fundação de contratos Python v1.0 e um diagnóstico ARM64 somente leitura. Consulte [plano de auditoria](ARM64_ARCHITECTURE_PLAN.md), [arquitetura multiplataforma](MULTIPLATFORM_ARCHITECTURE.md) e [preparação de build/teste ARM64](ARM64_BUILD.md). **Ainda não existe runtime ARM64 integrado, instalador, pacote ou imagem microSD validada.**
+A auditoria CP01 foi concluída e a arquitetura CP02 definiu o Raspberry Pi 4 com Raspberry Pi OS 64-bit como primeiro alvo físico. O CP03 criou contratos Python v1.0, diagnóstico ARM64 somente leitura e o primeiro adaptador mpv com testes simulados. Consulte [plano de auditoria](ARM64_ARCHITECTURE_PLAN.md), [arquitetura multiplataforma](MULTIPLATFORM_ARCHITECTURE.md) e [preparação de build/teste ARM64](ARM64_BUILD.md). **O adaptador ainda não está conectado ao launcher; não existe instalador, pacote ou imagem microSD validada.**
 
 O KTV OS AMD64 e o protótipo Samsung Legacy/Orsay continuam preservados. A plataforma efetiva da Samsung UN43J5200AG permanece pendente de confirmação no próprio aparelho; essa verificação não bloqueia a trilha Raspberry Pi.
 
