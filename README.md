@@ -8,6 +8,10 @@ Protótipo experimental para Samsung **UN43J5200AG (firmware informado: 1080)**.
 
 Para consultar o inventário completo do que está implementado, limitações, testes e próximos passos, veja o [Estado e roadmap consolidado do KTV](docs/ESTADO_E_ROADMAP_DO_PROJETO.md). O repositório contém duas linhas separadas: o protótipo Samsung Legacy/Orsay e o KTV OS via PC/HDMI.
 
+## Nova fase: arquitetura multiplataforma
+
+O **CP01 (auditoria)** da expansão para Samsung Tizen e Linux ARM64 está documentado em [docs/ARM64_ARCHITECTURE_PLAN.md](docs/ARM64_ARCHITECTURE_PLAN.md). A implementação ainda não foi iniciada: o KTV OS atual permanece AMD64, e a linha Samsung existente é Legacy/Orsay. O próximo passo é confirmar a plataforma real da TV e fechar os contratos no CP02.
+
 ## Comece por aqui (Windows)
 
 1. Instale Python 3.10+ e mantenha o PC e a TV na mesma rede Wi-Fi/cabo.
