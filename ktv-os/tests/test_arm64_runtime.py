@@ -55,6 +55,10 @@ class FakeBrowserProcess:
 
 
 class Arm64RuntimeTests(unittest.TestCase):
+    def test_runtime_resolves_ktv_os_project_root(self):
+        self.assertEqual(runtime.PROJECT_ROOT.name, "ktv-os")
+        self.assertTrue((runtime.PROJECT_ROOT / "launcher.py").is_file())
+
     def test_architecture_and_browser_detection(self):
         self.assertTrue(runtime.is_arm64("aarch64"))
         self.assertTrue(runtime.is_arm64("arm64"))
