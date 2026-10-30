@@ -1,8 +1,8 @@
 # KTV OS — preparação de build e teste ARM64
 
-**Checkpoint:** rascunho inicial CP03/CP04  
+**Checkpoint:** CP04 — launcher manual criado; validação física pendente  
 **Primeiro alvo:** Raspberry Pi 4 com sistema operacional 64-bit  
-**Estado:** diagnóstico e contratos disponíveis; ainda não existe instalador ARM64.
+**Estado:** contratos, diagnóstico e runtime manual disponíveis; ainda não existe instalador ARM64.
 
 ## 1. Objetivo
 
@@ -51,13 +51,27 @@ Para compartilhar o diagnóstico, envie o JSON removendo qualquer dado de rede o
 python3 -m unittest discover -s ktv-os/tests -v
 ~~~
 
-A suíte testa contratos e diagnóstico com dados simulados. Ela não prova aceleração gráfica, reprodução real ou compatibilidade de periféricos.
+A suíte testa contratos, diagnóstico e o launcher com dados simulados. Ela não prova aceleração gráfica, reprodução real ou compatibilidade de periféricos.
 
-## 6. Dependências e estado do runtime
+## 6. Iniciar o KTV manualmente
 
-A lista final de pacotes ainda será definida quando o servidor e a UI forem integrados ao ambiente ARM64. O relatório verifica a presença de mpv, Chromium, systemctl e nmcli, mas não instala nada.
+Com o Raspberry Pi OS Desktop aberto e uma sessão gráfica ativa, execute na raiz do repositório:
 
-Não crie manualmente um serviço systemd apontando para launcher.py neste estágio: a integração do processo, do navegador e da recuperação ainda está em desenvolvimento.
+~~~bash
+python3 ktv-os/platforms/linux/arm64/runtime.py
+~~~
+
+O launcher confirma ARM64, localiza Chromium, inicia o servidor KTV em 127.0.0.1 e abre a interface em modo kiosk. Para diagnosticar falhas de composição gráfica do Chromium, use:
+
+~~~bash
+python3 ktv-os/platforms/linux/arm64/runtime.py --safe-browser
+~~~
+
+O modo seguro desativa a composição GPU do Chromium; ele não confirma nem altera o decoder de vídeo do mpv. O padrão mantém a GPU habilitada. Encerre fechando o navegador ou pressionando Ctrl+C no terminal que iniciou o runtime.
+
+O servidor permanece limitado a loopback. Execute o launcher a partir de uma sessão gráfica local; iniciar por SSH sem encaminhamento de display não abre a TV. A lista final de pacotes ainda será definida para o instalador, e o diagnóstico apenas verifica mpv, Chromium, systemctl e nmcli, sem instalar nada.
+
+Ainda não há serviço systemd. Não crie uma unidade apontando diretamente para launcher.py: o launcher manual é o ponto de entrada correto enquanto desenvolvemos a supervisão e a recuperação.
 
 ## 7. O que ainda precisa ser medido na placa
 
