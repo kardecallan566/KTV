@@ -10,7 +10,7 @@ Para consultar o inventário completo do que está implementado, limitações, t
 
 ## Nova fase: arquitetura multiplataforma
 
-O CP01 (auditoria) está documentado em [docs/ARM64_ARCHITECTURE_PLAN.md](docs/ARM64_ARCHITECTURE_PLAN.md). A trilha Linux ARM64 agora prioriza o Raspberry Pi 4: o CP02 definiu a arquitetura de referência e o CP03 iniciou contratos Python, diagnóstico somente leitura e o primeiro adaptador mpv. Consulte [docs/MULTIPLATFORM_ARCHITECTURE.md](docs/MULTIPLATFORM_ARCHITECTURE.md) e [docs/ARM64_BUILD.md](docs/ARM64_BUILD.md). O adaptador ainda não está conectado ao launcher e não existe instalador ou imagem microSD ARM64; a linha AMD64 e o Samsung Legacy/Orsay permanecem preservados. A plataforma exata da Samsung continua pendente de confirmação no aparelho.
+O CP01 (auditoria) está documentado em [docs/ARM64_ARCHITECTURE_PLAN.md](docs/ARM64_ARCHITECTURE_PLAN.md). A trilha Linux ARM64 prioriza o Raspberry Pi 4: o CP02 definiu a arquitetura de referência e o CP03/CP04 criaram contratos Python, diagnóstico somente leitura, adaptador mpv e launcher manual para abrir a UI atual no Chromium. Consulte [docs/MULTIPLATFORM_ARCHITECTURE.md](docs/MULTIPLATFORM_ARCHITECTURE.md) e [docs/ARM64_BUILD.md](docs/ARM64_BUILD.md). A execução no Pi físico, integração do player, serviço systemd, instalador e imagem microSD ainda estão pendentes; a linha AMD64 e o Samsung Legacy/Orsay permanecem preservados.
 
 ## Comece por aqui (Windows)
 
