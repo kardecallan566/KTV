@@ -19,7 +19,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def is_arm64(machine: str | None = None) -> bool:
