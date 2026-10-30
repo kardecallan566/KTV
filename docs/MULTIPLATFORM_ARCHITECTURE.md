@@ -3,7 +3,7 @@
 **Checkpoint:** CP02 concluído para a trilha Linux ARM64; CP03 iniciado  
 **Contrato inicial:** 1.0  
 **Alvo prioritário:** Raspberry Pi 4 (64-bit)  
-**Estado:** contratos, diagnóstico e primeiro adaptador mpv criados; runtime ARM64 ainda não integrado ao launcher.
+**Estado:** contratos, diagnóstico, adaptador mpv e launcher manual criados; validação em Pi 4 ainda pendente.
 
 ## 1. Decisões desta etapa
 
@@ -100,7 +100,7 @@ A primeira instalação de desenvolvimento será feita sobre Raspberry Pi OS 64-
 Ordem de integração:
 
 1. Diagnosticar arquitetura, modelo, RAM, temperatura, DRM/HDMI, dispositivos de entrada e dependências.
-2. Iniciar o servidor KTV e abrir a UI atual no Chromium em modo janela/kiosk.
+2. Usar o launcher manual ARM64 para iniciar o servidor KTV em loopback e abrir a UI atual no Chromium em modo kiosk.
 3. Testar navegação por teclado USB e controle remoto compatível com o hardware disponível.
 4. Conectar o adaptador mpv ao runtime e medir o decoder realmente ativo durante HLS/arquivo de teste. O adaptador já existe, mas ainda não foi conectado ao launcher.
 5. Adaptar rede, áudio, display e energia conforme APIs detectadas no Raspberry Pi OS.
@@ -147,8 +147,8 @@ Critérios permanentes de regressão:
 
 ## 8. Estado honesto da implementação
 
-**Implementado neste checkpoint:** contratos Python v1.0, modelos normalizados, diagnóstico ARM64 somente leitura, primeiro adaptador mpv para o contrato e testes automatizados simulados.
+**Implementado neste checkpoint:** contratos Python v1.0, modelos normalizados, diagnóstico ARM64 somente leitura, primeiro adaptador mpv, launcher manual que abre servidor + Chromium e testes automatizados simulados.
 
-**Ainda não implementado:** integração do adaptador mpv ao launcher, servidor/UI integrado no Raspberry Pi, serviço systemd, pacote .deb, instalador, imagem microSD e aceleração comprovada.
+**Ainda não implementado:** validação em Raspberry Pi físico, integração do adaptador mpv às rotas de reprodução do launcher, serviço systemd, pacote .deb, instalador, imagem microSD e aceleração comprovada.
 
 A placa física continua necessária para confirmar HDMI, áudio, Wi-Fi, controle, codecs, temperatura e estabilidade.
