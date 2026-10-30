@@ -3,7 +3,7 @@
 **Checkpoint:** CP02 concluído para a trilha Linux ARM64; CP03 iniciado  
 **Contrato inicial:** 1.0  
 **Alvo prioritário:** Raspberry Pi 4 (64-bit)  
-**Estado:** fundação de contratos e diagnóstico criada; nenhum runtime ARM64 completo declarado.
+**Estado:** contratos, diagnóstico e primeiro adaptador mpv criados; runtime ARM64 ainda não integrado ao launcher.
 
 ## 1. Decisões desta etapa
 
@@ -57,7 +57,7 @@ Um adaptador converte uma operação semântica em API local ou API do dispositi
 
 ## 4. Contratos v1.0
 
-O módulo inicial está em ktv-os/core/contracts.py. Os modelos e Protocols são Python padrão e não adicionam dependências externas.
+O módulo inicial está em ktv-os/core/contracts.py. Os modelos e Protocols são Python padrão e não adicionam dependências externas. O primeiro adaptador mpv está em ktv-os/platforms/linux/arm64/mpv_adapter.py; ele normaliza o estado do player existente e envia somente comandos fixos pelo socket IPC privado.
 
 | Contrato | Responsabilidade |
 |---|---|
@@ -102,7 +102,7 @@ Ordem de integração:
 1. Diagnosticar arquitetura, modelo, RAM, temperatura, DRM/HDMI, dispositivos de entrada e dependências.
 2. Iniciar o servidor KTV e abrir a UI atual no Chromium em modo janela/kiosk.
 3. Testar navegação por teclado USB e controle remoto compatível com o hardware disponível.
-4. Integrar o player mpv e medir o decoder realmente ativo durante HLS/arquivo de teste.
+4. Conectar o adaptador mpv ao runtime e medir o decoder realmente ativo durante HLS/arquivo de teste. O adaptador já existe, mas ainda não foi conectado ao launcher.
 5. Adaptar rede, áudio, display e energia conforme APIs detectadas no Raspberry Pi OS.
 6. Criar serviço systemd com usuário sem privilégios, recuperação e logs.
 7. Empacotar e documentar instalação/atualização antes de considerar uma imagem microSD.
@@ -147,8 +147,8 @@ Critérios permanentes de regressão:
 
 ## 8. Estado honesto da implementação
 
-**Implementado neste checkpoint:** contratos Python v1.0, modelos normalizados, diagnóstico ARM64 somente leitura e testes automatizados simulados.
+**Implementado neste checkpoint:** contratos Python v1.0, modelos normalizados, diagnóstico ARM64 somente leitura, primeiro adaptador mpv para o contrato e testes automatizados simulados.
 
-**Ainda não implementado:** servidor/UI integrado no Raspberry Pi, adaptador mpv ARM64, serviço systemd, pacote .deb, instalador, imagem microSD e aceleração comprovada.
+**Ainda não implementado:** integração do adaptador mpv ao launcher, servidor/UI integrado no Raspberry Pi, serviço systemd, pacote .deb, instalador, imagem microSD e aceleração comprovada.
 
 A placa física continua necessária para confirmar HDMI, áudio, Wi-Fi, controle, codecs, temperatura e estabilidade.
