@@ -26,15 +26,15 @@ O repositório contém **dois projetos relacionados, mas diferentes**:
 | Assistente de IA e melhoria de imagem por IA | Planejados, não implementados |
 | Canais pagos | Sem integração de assinatura/licença; apenas estudar integração oficial autorizada |
 | Samsung Orsay | Protótipo separado; abertura e reprodução completas no Smart Hub ainda precisam de confirmação conclusiva |
-| Nova fase multiplataforma | CP01 concluído; arquitetura documentada; implementação Tizen/ARM64 ainda não iniciada |
+| Nova fase multiplataforma | CP01 concluído; CP02 definiu Raspberry Pi 4 como primeiro alvo; CP03 criou contratos, diagnóstico e primeiro adaptador mpv; runtime ainda não integrado |
 
 **Importante sobre validação:** a ISO e os testes automatizados confirmam que o código compila e passa pela suíte do projeto. Isso não substitui testes de boot, imagem/áudio, Wi-Fi, canais e estabilidade na TV física. O usuário confirmou bons resultados com a Alpha 0.11; os recursos acrescentados nas Alpha 0.12–0.21 precisam de uma rodada de validação física correspondente.
 
 ## 1.1 Nova fase multiplataforma (CP01)
 
-Foi concluída a auditoria inicial para expandir o KTV com runtimes Linux ARM64 e Samsung Tizen, preservando o runtime AMD64 e o protótipo Legacy/Orsay. O plano registra a estrutura atual, dependências específicas do sistema, contratos propostos, riscos, estratégia de migração e testes. Consulte [docs/ARM64_ARCHITECTURE_PLAN.md](ARM64_ARCHITECTURE_PLAN.md). **Nenhum suporte Tizen ou ARM64 está implementado ou declarado neste checkpoint.**
+A auditoria CP01 foi concluída e a arquitetura CP02 definiu o Raspberry Pi 4 com Raspberry Pi OS 64-bit como primeiro alvo físico. O CP03 criou contratos Python v1.0, diagnóstico ARM64 somente leitura e o primeiro adaptador mpv com testes simulados. Consulte [plano de auditoria](ARM64_ARCHITECTURE_PLAN.md), [arquitetura multiplataforma](MULTIPLATFORM_ARCHITECTURE.md) e [preparação de build/teste ARM64](ARM64_BUILD.md). **O adaptador ainda não está conectado ao launcher; não existe instalador, pacote ou imagem microSD validada.**
 
-O ponto de decisão prioritário é confirmar o runtime efetivo da Samsung UN43J5200AG: o código atual é Orsay/Legacy, enquanto a documentação geral Samsung descreve Tizen 2.3 para a geração de 2015. O modelo/firmware específico precisa ser verificado no aparelho antes de criar o adaptador correto.
+O KTV OS AMD64 e o protótipo Samsung Legacy/Orsay continuam preservados. A plataforma efetiva da Samsung UN43J5200AG permanece pendente de confirmação no próprio aparelho; essa verificação não bloqueia a trilha Raspberry Pi.
 
 ## 2. Arquitetura atual do KTV OS
 
