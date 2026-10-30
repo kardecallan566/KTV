@@ -61,7 +61,7 @@ jobs:
           set -Eeuo pipefail
           IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
           SOURCE_DIR="$GITHUB_WORKSPACE/ktv-os/arm64-image"
-          CONFIG="config/ktv-os-${BOARD}.yaml"
+          CONFIG="$SOURCE_DIR/config/ktv-os-${BOARD}.yaml"
 
           cd "$IMAGEGEN_DIR"
           ./rpi-image-gen build -S "$SOURCE_DIR" -c "$CONFIG"
