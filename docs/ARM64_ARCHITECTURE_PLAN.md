@@ -136,6 +136,8 @@ Os módulos já recebem alguns executores/fábricas por injeção para testes, o
 
 Na auditoria, a execução mais recente consultada da regressão principal estava verde: [GitHub Actions #40764108375](https://github.com/kardecallan566/KTV/actions/runs/40764108375). Isso valida os testes automatizados atuais, não o suporte ARM64/Tizen.
 
+**Pequena inconsistência de metadados observada:** `launcher.py` declara `VERSION = 0.21.0`, mas o cabeçalho HTML ainda exibe `ALPHA 0.20` e o cabeçalho HTTP do servidor informa `KTV-OS/0.20`. Corrigir esses identificadores em um checkpoint de manutenção separado, com teste para evitar divergência futura.
+
 ## 5. Mapa de recursos e dependências de plataforma
 
 | Recurso de produto | Lógica que pode ser compartilhada | Parte que precisa de adaptador |
