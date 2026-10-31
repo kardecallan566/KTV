@@ -1,0 +1,98 @@
+# METABEGIN
+# X-Env-Layer-Name: ktv-os
+# X-Env-Layer-Version: 0.1.0
+# X-Env-Layer-Category: application
+# X-Env-Layer-Desc: Instala o KTV OS existente em uma imagem Raspberry Pi ARM64.
+#
+# X-Env-VarPrefix: ktv
+# X-Env-Var-source_root: ${@SRCROOT}/../..
+# X-Env-Var-source_root-Desc: Raiz do checkout do KTV no host de build.
+# X-Env-Var-source_root-Set: y
+# METAEND
+---
+mmdebstrap:
+  packages:
+    # Sessao grafica semelhante a distribuicao KTV OS Linux Live atual.
+    - xorg
+    - lightdm
+    - openbox
+    - chromium
+    - x11-xserver-utils
+    - dbus
+    - dbus-x11
+
+    # Runtime e player nativo ja utilizados pelo KTV OS.
+    - python3
+    - mpv
+    - curl
+    - ca-certificates
+
+    # Rede, audio, armazenamento removivel e controle remoto.
+    - network-manager
+    - network-manager-gnome
+    - wpasupplicant
+    - rfkill
+    - bluez
+    - bluetooth
+    - pulseaudio
+    - pulseaudio-utils
+    - alsa-utils
+    - pavucontrol
+    - udisks2
+    - udiskie
+    - cec-utils
+    - matchbox-keyboard
+    - zenity
+    - xterm
+
+    # Recursos de TV digital e diagnostico ja presentes na versao Linux.
+    - w-scan
+    - dvb-tools
+    - usbutils
+    - pciutils
+    - mesa-utils
+
+    # Firmware de rede para placas Raspberry Pi e periféricos comuns.
+    - firmware-brcm80211
+    - firmware-realtek
+    - firmware-atheros
+
+    # Idiomas e fontes.
+    - locales
+    - fonts-dejavu-core
+    - fonts-noto-core
+    - fonts-noto-color-emoji
+
+  customize-hooks:
+    - |
+      set -eu
+      rootfs="$1"
+      repo_root="${IGconf_ktv_source_root}"
+      app_source="$repo_root/ktv-os"
+
+      test -f "$app_source/launcher.py"
+      test -f "$app_source/app/index.html"
+      test -f "$app_source/linux-live/overlay/usr/local/bin/ktv-os-session"
+
+      # Instala o codigo original do KTV OS sem reconstruir ou redesenhar a UI.
+      install -d "$rootfs/opt/ktv-os"
+      cp -a "$app_source/." "$rootfs/opt/ktv-os/"
+
+      # Reutiliza a sessao kiosk, autologin e diagnosticos ja usados no Linux Live.
+      cp -a "$app_source/linux-live/overlay/." "$rootfs/"
+
+      # Cria o usuario local sem privilegios usado pela sessao grafica.
+      chroot "$rootfs" /bin/sh -eu -c '
+        id user >/dev/null 2>&1 || useradd --create-home --shell /bin/bash user
+        for group in audio video input render plugdev netdev dialout bluetooth; do
+          if getent group "$group" >/dev/null 2>&1; then
+            usermod -aG "$group" user
+          fi
+        done
+        systemctl enable NetworkManager.service
+        systemctl enable lightdm.service
+        systemctl set-default graphical.target
+      '
+
+      chmod 0755 "$rootfs/usr/local/bin/ktv-os-session"
+      chmod 0755 "$rootfs/etc/xdg/openbox/autostart"

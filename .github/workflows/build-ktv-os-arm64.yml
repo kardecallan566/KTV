@@ -1,0 +1,100 @@
+name: Build KTV OS Raspberry Pi ARM64 images
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ktv-os/**"
+      - ".github/workflows/build-ktv-os-arm64.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ktv-os/**"
+      - ".github/workflows/build-ktv-os-arm64.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-image:
+    name: Build Raspberry Pi ${{ matrix.board }} image
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [pi4, pi5]
+
+    steps:
+      - name: Checkout KTV OS
+        uses: actions/checkout@v6
+
+      - name: Download pinned Raspberry Pi image generator
+        env:
+          RPI_IMAGE_GEN_REF: v2.9.0
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --depth 1 --branch "$RPI_IMAGE_GEN_REF" \
+            https://github.com/raspberrypi/rpi-image-gen.git "$RUNNER_TEMP/rpi-image-gen"
+          cd "$RUNNER_TEMP/rpi-image-gen"
+          sudo ./install_deps.sh
+
+      - name: Lint image configuration
+        env:
+          BOARD: ${{ matrix.board }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
+          SOURCE_DIR="$GITHUB_WORKSPACE/ktv-os/arm64-image"
+          cd "$IMAGEGEN_DIR"
+          ./rpi-image-gen metadata --lint "$SOURCE_DIR/layer/ktv-os.yaml"
+          test -f "$SOURCE_DIR/config/ktv-os-${BOARD}.yaml"
+
+      - name: Build bootable Raspberry Pi image
+        env:
+          BOARD: ${{ matrix.board }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
+          SOURCE_DIR="$GITHUB_WORKSPACE/ktv-os/arm64-image"
+          CONFIG="$SOURCE_DIR/config/ktv-os-${BOARD}.yaml"
+
+          cd "$IMAGEGEN_DIR"
+          ./rpi-image-gen build -S "$SOURCE_DIR" -c "$CONFIG"
+
+      - name: Validate and compress disk image
+        env:
+          BOARD: ${{ matrix.board }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IMAGE_NAME="ktv-os-arm64-${BOARD}"
+          IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
+          OUT_DIR="$GITHUB_WORKSPACE/dist/arm64"
+          IMAGE_PATH="$IMAGEGEN_DIR/work/image-${IMAGE_NAME}/${IMAGE_NAME}.img"
+          mkdir -p "$OUT_DIR"
+
+          test -s "$IMAGE_PATH"
+          file "$IMAGE_PATH"
+          fdisk -l "$IMAGE_PATH"
+
+          OUTPUT="KTV-OS-ARM64-${BOARD}.img.xz"
+          xz -T0 -6 -c "$IMAGE_PATH" > "$OUT_DIR/$OUTPUT"
+          test -s "$OUT_DIR/$OUTPUT"
+          (cd "$OUT_DIR" && sha256sum "$OUTPUT" > "$OUTPUT.sha256")
+          sha256sum -c "$OUT_DIR/$OUTPUT.sha256"
+
+      - name: Upload image for Rufus
+        uses: actions/upload-artifact@v6
+        with:
+          name: KTV-OS-ARM64-${{ matrix.board }}
+          path: |
+            dist/arm64/KTV-OS-ARM64-${{ matrix.board }}.img.xz
+            dist/arm64/KTV-OS-ARM64-${{ matrix.board }}.img.xz.sha256
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
