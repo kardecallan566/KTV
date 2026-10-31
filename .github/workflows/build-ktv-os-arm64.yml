@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        board: [pi4, pi5]
+        board: [pi3, pi4, pi5]
 
     steps:
       - name: Checkout KTV OS
@@ -86,7 +86,7 @@ jobs:
           xz -T0 -6 -c "$IMAGE_PATH" > "$OUT_DIR/$OUTPUT"
           test -s "$OUT_DIR/$OUTPUT"
           (cd "$OUT_DIR" && sha256sum "$OUTPUT" > "$OUTPUT.sha256")
-          sha256sum -c "$OUT_DIR/$OUTPUT.sha256"
+          (cd "$OUT_DIR" && sha256sum -c "$OUTPUT.sha256")
 
       - name: Upload image for Rufus
         uses: actions/upload-artifact@v6
