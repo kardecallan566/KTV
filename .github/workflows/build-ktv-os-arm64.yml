@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        board: [pi4, pi5]
+        board: [pi3, pi4, pi5]
 
     steps:
       - name: Checkout KTV OS
