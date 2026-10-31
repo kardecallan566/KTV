@@ -1,0 +1,17 @@
+include:
+  file: trixie-minbase.yaml
+
+device:
+  layer: rpi3
+
+image:
+  layer: image-rpios
+  boot_part_size: 256M
+  root_part_size: 4G
+  name: ktv-os-arm64-pi3
+
+layer:
+  ktv: ktv-os
+
+ktv:
+  source_root: ${@SRCROOT}/../..
