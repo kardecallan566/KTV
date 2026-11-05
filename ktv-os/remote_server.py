@@ -160,6 +160,11 @@ async def remote_ws(request):
                     engine.emit("REL_WHEEL", max(-10, min(10, int(payload.get("y", 0)))))
                 elif action == "key":
                     engine.key(str(payload.get("key", "")), bool(payload.get("down", True)))
+                elif action == "text":
+                    for char in str(payload.get("text", ""))[:180]:
+                        key = char.lower() if char.isalpha() else char
+                        if key in KEY_MAP:
+                            engine.key(key, True); engine.key(key, False)
                 elif action == "ping":
                     await ws.send_json({"type": "pong"})
                 else:
