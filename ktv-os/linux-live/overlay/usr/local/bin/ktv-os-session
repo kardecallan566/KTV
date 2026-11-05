@@ -32,7 +32,9 @@ else
   timeout 16s python3 display_layout.py || printf 'Aviso: HDMI automatico falhou/expirou; layout nao foi forçado.\n'
 fi
 SERVER_PID=''
+REMOTE_PID=''
 cleanup() {
+  if [[ -n "$REMOTE_PID" ]]; then kill "$REMOTE_PID" 2>/dev/null || true; wait "$REMOTE_PID" 2>/dev/null || true; fi
   if [[ -n "$SERVER_PID" ]]; then
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
@@ -52,6 +54,18 @@ Console Linux: Ctrl+Alt+F2" \
       --ok-label='Tentar novamente' --cancel-label='Sair para diagnostico'
     return $?
   fi
+  return 1
+}
+start_remote() {
+  if [[ -n "$REMOTE_PID" ]] && kill -0 "$REMOTE_PID" 2>/dev/null; then return 0; fi
+  python3 remote_server.py > "$STATE/remote.log" 2>&1 &
+  REMOTE_PID=$!
+  sleep 1
+  if kill -0 "$REMOTE_PID" 2>/dev/null; then
+    printf 'KTV Local Remote iniciado (PID %s; porta 8765). PIN/log: %s/remote.log\n' "$REMOTE_PID" "$STATE"
+    return 0
+  fi
+  printf 'KTV Local Remote nao iniciou; confira %s/remote.log\n' "$STATE"
   return 1
 }
 start_server() {
@@ -78,6 +92,7 @@ while true; do
     fi
     break
   fi
+  start_remote || true
   crashes=0
   browser_safe="$SAFE_BOOT"
   while kill -0 "$SERVER_PID" 2>/dev/null; do
