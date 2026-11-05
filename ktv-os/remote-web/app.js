@@ -9,7 +9,7 @@ if(sessionStorage.ktvToken){token=sessionStorage.ktvToken;$("#pair").hidden=true
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));["mouse","tv","keyboard"].forEach(id=>$("#"+id).hidden=id!==b.dataset.mode)});
 document.querySelectorAll("[data-click]").forEach(b=>b.onclick=()=>send({type:"click",button:b.dataset.click}));
 document.querySelectorAll("[data-key]").forEach(b=>{const k=b.dataset.key;b.onpointerdown=e=>{e.preventDefault();send({type:"key",key:k,down:true});send({type:"key",key:k,down:false})}});
-$("#textForm").onsubmit=e=>{e.preventDefault();const v=$("#textInput").value;for(const ch of v)send({type:"key",key:ch,down:true}),send({type:"key",key:ch,down:false});$("#textInput").value=""};
+$("#textForm").onsubmit=e=>{e.preventDefault();send({type:"text",text:$("#textInput").value});$("#textInput").value=""};
 $("#disconnect").onclick=()=>{sessionStorage.removeItem("ktvToken");token="";ws?.close();$("#controls").hidden=true;$("#pair").hidden=false;status("Desconectado")};
 const pad=$("#pad");let last=null,moved=false;
 pad.onpointerdown=e=>{last={x:e.clientX,y:e.clientY};moved=false;pad.setPointerCapture(e.pointerId)};
