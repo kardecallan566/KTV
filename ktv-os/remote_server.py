@@ -122,7 +122,14 @@ async def pairing_screen(request):
 async def pairing_info(request):
     if request.remote not in ("127.0.0.1", "::1"):
         raise web.HTTPForbidden(text="Somente localhost")
-    return web.json_response({"pin": request.app["config"]["pin"]})
+    route = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        route.connect(("192.0.2.1", 80))
+        lan_ip = route.getsockname()[0]
+    finally:
+        route.close()
+    return web.json_response({"pin": request.app["config"]["pin"],
+                              "url": f"http://{lan_ip}:{PORT}/"})
 
 
 async def pairing_qr(request):
