@@ -26,7 +26,7 @@ KEY_MAP = {
     "Tab": "KEY_TAB", " ": "KEY_SPACE", "ArrowUp": "KEY_UP",
     "ArrowDown": "KEY_DOWN", "ArrowLeft": "KEY_LEFT", "ArrowRight": "KEY_RIGHT",
     "Home": "KEY_HOME", "End": "KEY_END", "PageUp": "KEY_PAGEUP",
-    "PageDown": "KEY_PAGEDOWN", "Delete": "KEY_DELETE",
+    "PageDown": "KEY_PAGEDOWN", "Delete": "KEY_DELETE", "Shift": "KEY_LEFTSHIFT",
 }
 for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
     KEY_MAP[letter.lower()] = "KEY_" + letter
@@ -172,6 +172,9 @@ async def remote_ws(request):
             except (ValueError, TypeError, RuntimeError, OSError) as exc:
                 await ws.send_json({"type": "error", "message": str(exc)[:180]})
     finally:
+        # Release held keys if the browser disconnects unexpectedly.
+        for key in KEY_MAP:
+            engine.key(key, False)
         await ws.close()
     return ws
 
