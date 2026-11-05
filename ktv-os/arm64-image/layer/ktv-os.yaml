@@ -83,6 +83,11 @@ mmdebstrap:
       # Reutiliza a sessao kiosk, autologin e diagnosticos ja usados no Linux Live.
       cp -a "$app_source/linux-live/overlay/." "$rootfs/"
 
+      # Prepara o dispositivo de entrada virtual para mouse/teclado remotos.
+      install -d "$rootfs/etc/modules-load.d" "$rootfs/etc/udev/rules.d"
+      printf "uinput\\n" > "$rootfs/etc/modules-load.d/ktv-uinput.conf"
+      printf 'KERNEL=="uinput", GROUP="input", MODE="0660"\\n' > "$rootfs/etc/udev/rules.d/70-ktv-uinput.rules"
+
       # Cria o usuario local sem privilegios usado pela sessao grafica.
       chroot "$rootfs" /bin/sh -eu -c '
         id user >/dev/null 2>&1 || useradd --create-home --shell /bin/bash user
