@@ -11,9 +11,9 @@ document.querySelectorAll("[data-click]").forEach(b=>b.onclick=()=>send({type:"c
 document.querySelectorAll("[data-key]").forEach(b=>{const k=b.dataset.key;b.onpointerdown=e=>{e.preventDefault();send({type:"key",key:k,down:true});send({type:"key",key:k,down:false})}});
 $("#textForm").onsubmit=e=>{e.preventDefault();send({type:"text",text:$("#textInput").value});$("#textInput").value=""};
 $("#disconnect").onclick=()=>{sessionStorage.removeItem("ktvToken");token="";ws?.close();$("#controls").hidden=true;$("#pair").hidden=false;status("Desconectado")};
-const pad=$("#pad");let last=null,moved=false;
+const pad=$("#pad");let last=null,moved=false;let sensitivity=1.8;$("#sensitivity").oninput=e=>sensitivity=Number(e.target.value);
 pad.onpointerdown=e=>{last={x:e.clientX,y:e.clientY};moved=false;pad.setPointerCapture(e.pointerId)};
-pad.onpointermove=e=>{if(!last)return;const dx=e.clientX-last.x,dy=e.clientY-last.y;last={x:e.clientX,y:e.clientY};if(Math.abs(dx)+Math.abs(dy)>0){moved=true;send({type:"move",x:Math.round(dx*1.8),y:Math.round(dy*1.8)})}};
+pad.onpointermove=e=>{if(!last)return;const dx=e.clientX-last.x,dy=e.clientY-last.y;last={x:e.clientX,y:e.clientY};if(Math.abs(dx)+Math.abs(dy)>0){moved=true;send({type:"move",x:Math.round(dx*sensitivity),y:Math.round(dy*sensitivity)})}};
 pad.onpointerup=e=>{if(last&&!moved)send({type:"click",button:"left"});last=null};
 pad.onpointercancel=()=>last=null;
 pad.oncontextmenu=e=>{e.preventDefault();send({type:"click",button:"right"})};
