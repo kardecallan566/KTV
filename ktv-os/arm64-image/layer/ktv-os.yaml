@@ -23,6 +23,8 @@ mmdebstrap:
 
     # Runtime e player nativo ja utilizados pelo KTV OS.
     - python3
+    - python3-aiohttp
+    - python3-evdev
     - mpv
     - curl
     - ca-certificates
