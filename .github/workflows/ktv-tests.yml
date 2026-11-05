@@ -25,7 +25,7 @@ jobs:
         run: python -m unittest discover -s ktv-os/tests -v
       - name: Verificar JavaScript KTV OS
         run: node --check ktv-os/app/app.js
-      - name: Verificar teclado e navegador KTV Verde
+      - name: Verificar KTV Local Remote (sintaxe)\n        run: |\n          python -m py_compile ktv-os/remote_server.py\n          node --check ktv-os/remote-web/app.js\n      - name: Verificar teclado e navegador KTV Verde
         run: |
           node --check ktv-os/app/osk.js
           node --check ktv-os/app/browser-green.js
