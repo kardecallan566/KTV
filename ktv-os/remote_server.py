@@ -113,6 +113,28 @@ async def static_file(request):
     return web.FileResponse(WEB / name)
 
 
+async def pairing_screen(request):
+    if request.remote not in ("127.0.0.1", "::1"):
+        raise web.HTTPForbidden(text="Tela de pareamento disponível somente na TV")
+    return web.FileResponse(WEB / "pairing.html")
+
+
+async def pairing_info(request):
+    if request.remote not in ("127.0.0.1", "::1"):
+        raise web.HTTPForbidden(text="Somente localhost")
+    return web.json_response({"pin": request.app["config"]["pin"]})
+
+
+async def revoke_pairing(request):
+    if request.remote not in ("127.0.0.1", "::1"):
+        raise web.HTTPForbidden(text="Revogação somente na TV")
+    config = request.app["config"]
+    config["token"] = secrets.token_urlsafe(32)
+    CONFIG.write_text(json.dumps(config), encoding="utf-8")
+    CONFIG.chmod(0o600)
+    return web.json_response({"revoked": True})
+
+
 async def status(request):
     engine = request.app["input"]
     return web.json_response({"service": "KTV Local Remote", "paired": True,
@@ -183,7 +205,7 @@ def create_app():
     app = web.Application(client_max_size=8192)
     app["config"] = load_config()
     app["input"] = VirtualInput()
-    app.router.add_get("/", index)
+    app.router.add_get("/", index)\n    app.router.add_get("/pairing", pairing_screen)\n    app.router.add_get("/api/pairing-info", pairing_info)\n    app.router.add_post("/api/revoke", revoke_pairing)
     app.router.add_get("/{name:app.js|style.css}", static_file)
     app.router.add_get("/api/status", status)
     app.router.add_post("/api/pair", pair)
