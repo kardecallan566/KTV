@@ -125,6 +125,27 @@ async def pairing_info(request):
     return web.json_response({"pin": request.app["config"]["pin"]})
 
 
+async def pairing_qr(request):
+    if request.remote not in ("127.0.0.1", "::1"):
+        raise web.HTTPForbidden(text="QR somente na TV")
+    try:
+        import qrcode
+        import qrcode.image.svg
+        route = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            route.connect(("192.0.2.1", 80))
+            lan_ip = route.getsockname()[0]
+        finally:
+            route.close()
+        url = f"http://{lan_ip}:{PORT}/"
+        qr = qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage)
+        output = __import__("io").BytesIO()
+        qr.save(output)
+        return web.Response(body=output.getvalue(), content_type="image/svg+xml")
+    except Exception as exc:
+        raise web.HTTPServiceUnavailable(text=f"QR indisponível: {exc}")
+
+
 async def revoke_pairing(request):
     if request.remote not in ("127.0.0.1", "::1"):
         raise web.HTTPForbidden(text="Revogação somente na TV")
@@ -205,7 +226,7 @@ def create_app():
     app = web.Application(client_max_size=8192)
     app["config"] = load_config()
     app["input"] = VirtualInput()
-    app.router.add_get("/", index)\n    app.router.add_get("/pairing", pairing_screen)\n    app.router.add_get("/api/pairing-info", pairing_info)\n    app.router.add_post("/api/revoke", revoke_pairing)
+    app.router.add_get("/", index)\n    app.router.add_get("/pairing", pairing_screen)\n    app.router.add_get("/api/pairing-info", pairing_info)\n    app.router.add_get("/api/pairing-qr", pairing_qr)\n    app.router.add_post("/api/revoke", revoke_pairing)
     app.router.add_get("/{name:app.js|style.css}", static_file)
     app.router.add_get("/api/status", status)
     app.router.add_post("/api/pair", pair)
