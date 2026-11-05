@@ -204,10 +204,20 @@ async def remote_ws(request):
                 elif action == "key":
                     engine.key(str(payload.get("key", "")), bool(payload.get("down", True)))
                 elif action == "text":
+                    # Shifted symbols follow the US physical-key layout; accents
+                    # are delegated to the active XKB layout (not Unicode injection).
+                    shifted = {"!":"1", "@":"2", "#":"3", "$":"4", "%":"5",
+                               "^":"6", "&":"7", "*":"8", "(":"9", ")":"0",
+                               "_":"-", "+":"=", "{":"[", "}":"]", "|":"\\",
+                               ":":";", '"':"'", "<":",", ">":".", "?":"/"}
                     for char in str(payload.get("text", ""))[:180]:
-                        key = char.lower() if char.isalpha() else char
-                        if key in KEY_MAP:
-                            engine.key(key, True); engine.key(key, False)
+                        key = shifted.get(char, char.lower() if char.isalpha() else char)
+                        if key not in KEY_MAP:
+                            continue
+                        use_shift = char.isupper() or char in shifted
+                        if use_shift: engine.key("Shift", True)
+                        engine.key(key, True); engine.key(key, False)
+                        if use_shift: engine.key("Shift", False)
                 elif action == "ping":
                     await ws.send_json({"type": "pong"})
                 else:
