@@ -17,4 +17,4 @@ pad.onpointermove=e=>{if(!last)return;const dx=e.clientX-last.x,dy=e.clientY-las
 pad.onpointerup=e=>{if(last&&!moved)send({type:"click",button:"left"});last=null};
 pad.onpointercancel=()=>last=null;
 pad.oncontextmenu=e=>{e.preventDefault();send({type:"click",button:"right"})};
-pad.addEventListener("wheel",e=>{e.preventDefault();send({type:"scroll",y:Math.sign(e.deltaY)*Math.max(1,Math.round(Math.abs(e.deltaY)/80)))},{passive:false});
+pad.addEventListener("wheel",e=>{e.preventDefault();send({type:"scroll",y:Math.sign(e.deltaY)*Math.max(1,Math.round(Math.abs(e.deltaY)/80))})},{passive:false});
