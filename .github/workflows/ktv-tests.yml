@@ -28,7 +28,8 @@ jobs:
       - name: Verificar KTV Local Remote (sintaxe)
         run: |
           python -m py_compile ktv-os/remote_server.py
-          node --check ktv-os/remote-web/app.js\n      - name: Verificar teclado e navegador KTV Verde
+          node --check ktv-os/remote-web/app.js
+      - name: Verificar teclado e navegador KTV Verde
         run: |
           node --check ktv-os/app/osk.js
           node --check ktv-os/app/browser-green.js
