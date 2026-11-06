@@ -77,6 +77,8 @@ class KTVOSSmokeTests(unittest.TestCase):
         catalog = json.loads(raw)
         self.assertEqual(len(catalog['channels']), 155)
         self.assertEqual(catalog['channels'][0]['name'], 'Amazon Prime')
+        self.assertNotIn('url', catalog['channels'][0])
+        self.assertNotIn('user_agent', catalog['channels'][0])
         self.assertIn('direitos', catalog['warning'])
         _, personal_raw, _ = self.fetch('/api/channels')
         self.assertEqual(json.loads(personal_raw)['channels'], [])
