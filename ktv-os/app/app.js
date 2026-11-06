@@ -134,7 +134,7 @@
   });
   function makeCard(title, description, onClick) {
     var b = document.createElement('button'); b.className='info-card focusable'; b.type='button';
-    var icon=document.createElement('span');icon.className='card-icon';icon.textContent='▷';
+    var icon=document.createElement('span');icon.className='card-icon';icon.textContent='▷';\n      if(c.logo){var logo=document.createElement('img');logo.className='iptv-channel-logo';logo.src=c.logo;logo.alt='';logo.loading='lazy';logo.referrerPolicy='no-referrer';icon.textContent='';icon.appendChild(logo);}
     var strong=document.createElement('strong');strong.textContent=title;
     var small=document.createElement('small');small.textContent=description;
     b.appendChild(icon);b.appendChild(strong);b.appendChild(small);
@@ -569,7 +569,7 @@
       var name=document.createElement('strong');name.textContent=channel.name;
       var info=document.createElement('small');info.textContent='TV aberta por antena • sem internet';
       var controls=document.createElement('div');controls.className='channel-buttons';
-      controls.appendChild(miniButton('▶ Assistir',function(){
+      controls.appendChild(miniButton(iptvFreeFavorites.indexOf(c.id)!==-1?'★ Favorito':'☆ Favoritar',function(){\n        post('/api/iptv-free/favorites/toggle',{id:c.id},function(err,data){if(err){dialog('Favoritos',err.message);return;}iptvFreeFavorites=data.ids||[];renderIptvFreeChannels();});\n      },false));\n      controls.appendChild(miniButton('▶ Assistir',function(){
         nativePlay({kind:'antenna',index:channel.id},channel.name,null);
       },true));
       card.appendChild(icon);card.appendChild(name);card.appendChild(info);
@@ -761,13 +761,13 @@
   el('public-channel-filter').addEventListener('change',renderPublicChannels);
 
   // External user-provided IPTV snapshot is separate from personal/public catalogs.
-  var iptvFreeCache=[],iptvFreeVisible=36,iptvFreeLoaded=false;
+  var iptvFreeCache=[],iptvFreeVisible=36,iptvFreeLoaded=false,iptvFreeFavorites=[],iptvFreeFavoritesOnly=false;
   function renderIptvFreeChannels(){
     var container=el('iptv-free-channels'),category=el('iptv-free-category').value;
     var query=el('iptv-free-search').value.trim().toLowerCase();
     container.textContent='';
     var selected=iptvFreeCache.filter(function(c){
-      return (category==='all'||c.category===category)&&(!query||c.name.toLowerCase().indexOf(query)!==-1);
+      return (category==='all'||c.category===category)&&(!query||c.name.toLowerCase().indexOf(query)!==-1)&&(!iptvFreeFavoritesOnly||iptvFreeFavorites.indexOf(c.id)!==-1);
     });
     el('iptv-free-count').textContent=selected.length+' de '+iptvFreeCache.length+' canais';
     if(!selected.length){message(container,'Nenhum canal corresponde ao filtro.');return;}
@@ -790,7 +790,7 @@
   function loadIptvFreeChannels(){
     get('/api/iptv-free/channels',function(err,data){
       if(err){el('iptv-free-status').textContent='Playlist externa indisponível: '+err.message;return;}
-      iptvFreeCache=data.channels||[];
+      iptvFreeCache=data.channels||[];\n      get('/api/iptv-free/favorites',function(favErr,favData){iptvFreeFavorites=favErr?[]:(favData.ids||[]);renderIptvFreeChannels();});
       var select=el('iptv-free-category'),previous=select.value;
       select.textContent='';
       var all=document.createElement('option');all.value='all';all.textContent='Todas as categorias';select.appendChild(all);
@@ -803,7 +803,7 @@
       renderIptvFreeChannels();
     });
   }
-  el('iptv-free-category').addEventListener('change',function(){iptvFreeVisible=36;renderIptvFreeChannels();});
+  el('iptv-free-category').addEventListener('change',function(){iptvFreeVisible=36;renderIptvFreeChannels();});\n  el('iptv-free-favorites').addEventListener('click',function(){iptvFreeFavoritesOnly=!iptvFreeFavoritesOnly;this.textContent=iptvFreeFavoritesOnly?'★ Mostrar todos':'★ Só favoritos';iptvFreeVisible=36;renderIptvFreeChannels();});
   el('iptv-free-search').addEventListener('input',function(){iptvFreeVisible=36;renderIptvFreeChannels();});
   el('iptv-free-refresh').addEventListener('click',loadIptvFreeChannels);
   el('iptv-free-more').addEventListener('click',function(){iptvFreeVisible+=36;renderIptvFreeChannels();});
