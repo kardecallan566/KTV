@@ -22,12 +22,22 @@ class LiveISOBundleTests(unittest.TestCase):
                 if (ROOT / (name + '.py')).is_file():
                     modules.add(name)
         self.assertIn('pluto_catalog', modules)
+        self.assertIn('iptv_free_catalog', modules)
         for name in sorted(modules):
             source = '"$PROJECT_DIR/ktv-os/' + name + '.py"'
             target = 'config/includes.chroot/opt/ktv-os/' + name + '.py'
             self.assertIn(source, builder)
             self.assertIn('cp ' + source + ' ' + target, builder,
                           'ISO missing required module: ' + name)
+
+    def test_external_playlist_snapshot_is_bundled(self):
+        builder = BUILD.read_text(encoding='utf-8')
+        source = '"$PROJECT_DIR/ktv-os/iptv_free_catalog.json"'
+        target = 'config/includes.chroot/opt/ktv-os/iptv_free_catalog.json'
+        self.assertIn(source, builder)
+        self.assertIn('cp ' + source + ' ' + target, builder)
+        workflow = WORKFLOW.read_text(encoding='utf-8')
+        self.assertIn('      - "ktv-os/iptv_free_catalog.json"', workflow)
 
     def test_iso_and_artifact_names_use_launcher_version(self):
         build = BUILD.read_text(encoding='utf-8')
