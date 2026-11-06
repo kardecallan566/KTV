@@ -135,6 +135,7 @@
   function makeCard(title, description, onClick) {
     var b = document.createElement('button'); b.className='info-card focusable'; b.type='button';
     var icon=document.createElement('span');icon.className='card-icon';icon.textContent='▷';
+      if(c.logo){var logo=document.createElement('img');logo.className='iptv-channel-logo';logo.src=c.logo;logo.alt='';logo.loading='lazy';logo.referrerPolicy='no-referrer';icon.textContent='';icon.appendChild(logo);}
       if(c.logo){var logo=document.createElement('img');logo.className='iptv-channel-logo';logo.src=c.logo;logo.alt='';logo.loading='lazy';logo.referrerPolicy='no-referrer';icon.textContent='';icon.appendChild(logo);}\n      if(c.logo){var logo=document.createElement('img');logo.className='iptv-channel-logo';logo.src=c.logo;logo.alt='';logo.loading='lazy';logo.referrerPolicy='no-referrer';icon.textContent='';icon.appendChild(logo);}
     var strong=document.createElement('strong');strong.textContent=title;
     var small=document.createElement('small');small.textContent=description;
@@ -573,6 +574,9 @@
       controls.appendChild(miniButton(iptvFreeFavorites.indexOf(c.id)!==-1?'★ Favorito':'☆ Favoritar',function(){\n        post('/api/iptv-free/favorites/toggle',{id:c.id},function(err,data){if(err){dialog('Favoritos',err.message);return;}iptvFreeFavorites=data.ids||[];renderIptvFreeChannels();});\n      },false));\n      controls.appendChild(miniButton(iptvFreeFavorites.indexOf(c.id)!==-1?'★ Favorito':'☆ Favoritar',function(){
         post('/api/iptv-free/favorites/toggle',{id:c.id},function(err,data){if(err){dialog('Favoritos',err.message);return;}iptvFreeFavorites=data.ids||[];renderIptvFreeChannels();});
       },false));
+      controls.appendChild(miniButton(iptvFreeFavorites.indexOf(c.id)!==-1?'★ Favorito':'☆ Favoritar',function(){
+        post('/api/iptv-free/favorites/toggle',{id:c.id},function(err,data){if(err){dialog('Favoritos',err.message);return;}iptvFreeFavorites=data.ids||[];renderIptvFreeChannels();});
+      },false));
       controls.appendChild(miniButton('▶ Assistir',function(){
         nativePlay({kind:'antenna',index:channel.id},channel.name,null);
       },true));
@@ -794,7 +798,8 @@
   function loadIptvFreeChannels(){
     get('/api/iptv-free/channels',function(err,data){
       if(err){el('iptv-free-status').textContent='Playlist externa indisponível: '+err.message;return;}
-      iptvFreeCache=data.channels||[];\n      get('/api/iptv-free/favorites',function(favErr,favData){iptvFreeFavorites=favErr?[]:(favData.ids||[]);renderIptvFreeChannels();});
+      iptvFreeCache=data.channels||[];
+      get('/api/iptv-free/favorites',function(favErr,favData){iptvFreeFavorites=favErr?[]:(favData.ids||[]);renderIptvFreeChannels();});
       var select=el('iptv-free-category'),previous=select.value;
       select.textContent='';
       var all=document.createElement('option');all.value='all';all.textContent='Todas as categorias';select.appendChild(all);
