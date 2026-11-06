@@ -87,6 +87,22 @@
           <p class="small-note" id="public-filter-hint">As categorias indicam tipos de programas da emissora, não um canal dedicado ao assunto 24 horas por dia.</p>
           <div id="public-channels" class="content-grid"></div>
 
+          <div class="community-section iptv-free-section">
+            <h2 class="section-title">Playlist externa • 155 canais</h2>
+            <p class="small-note">Snapshot da lista Kaiollio-cpu/iptv_free (7 categorias). Origem, direitos de retransmissão e disponibilidade não foram verificados; há canais de assinatura. Use somente transmissões que você tem autorização para assistir. Este catálogo é separado dos seus canais pessoais e dos catálogos públicos já existentes.</p>
+            <div class="channel-actions pluto-toolbar">
+              <label for="iptv-free-category">Categoria</label>
+              <select id="iptv-free-category" class="focusable"><option value="all">Todas</option></select>
+              <label for="iptv-free-search">Buscar</label>
+              <input id="iptv-free-search" class="focusable" type="search" maxlength="80" placeholder="Nome do canal...">
+              <button class="ghost focusable" id="iptv-free-refresh" type="button">Recarregar lista</button>
+              <span id="iptv-free-count" class="chip">155 canais</span>
+            </div>
+            <p class="small-note" id="iptv-free-status" role="status">Lista local do KTV OS; não consulta servidores externos ao abrir.</p>
+            <div id="iptv-free-channels" class="content-grid"></div>
+            <button class="ghost focusable" id="iptv-free-more" type="button" hidden>Mostrar mais canais</button>
+          </div>
+
           <div class="community-section">
             <h2 class="section-title">Mais canais gratuitos • GitHub</h2>
             <p class="small-note">Catálogo de transmissões livres com procedência identificada (Public IPTV e Free-TV). A integração usa apenas links HTTPS de servidores revisados; alguns canais podem ser regionais ou ficar indisponíveis. Não garantimos licenciamento de cada conteúdo.</p>
