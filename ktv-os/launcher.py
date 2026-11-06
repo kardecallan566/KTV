@@ -32,6 +32,8 @@ from hardware import HardwareManager, HardwareError
 from cec_bridge import CECBridge, CECError
 from network import NetworkManager, NetworkError
 from public_channels import validated_catalog, public_channel
+from iptv_free_catalog import validated_catalog as validated_iptv_free_catalog, iptv_free_channel
+from iptv_free_catalog import IPTVFreeCatalogError
 from pluto_catalog import PlutoCatalog, PlutoError
 from pluto_favorites import PlutoFavorites, PlutoFavoritesError
 from pluto_recovery import PlutoRecovery
@@ -287,6 +289,17 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json(self.server.stream_check.check(kind,ident,lookup))
             except (ValueError,PlutoError,CommunityCatalogError) as exc:
                 return self.send_json({'error':str(exc)},400)
+        if path == '/api/iptv-free/channels':
+            try:
+                channels = validated_iptv_free_catalog()
+                public_items = [{'id': item['id'], 'name': item['name'],
+                                 'category': item['category'], 'logo': item['logo']}
+                                for item in channels]
+                return self.send_json({'channels': public_items,
+                                       'source': 'Kaiollio-cpu/iptv_free (snapshot)',
+                                       'warning': 'Fonte externa; direitos e disponibilidade nao verificados.'})
+            except IPTVFreeCatalogError as exc:
+                return self.send_json({'error': str(exc)}, 503)
         if path == '/api/public-channels':
             return self.send_json({'channels': validated_catalog()})
         if path == '/api/pluto/favorites':
@@ -526,7 +539,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                                                quality=quality,decode=decode)
                 return self.send_json({'ok':True,'player':info})
             self.server.antenna.stop()
-            if kind == 'public':
+            if kind == 'iptv_free':
+                entry = iptv_free_channel(payload.get('id'))
+                if entry is None:
+                    raise ValueError('Canal da playlist externa nao reconhecido')
+                source, title = entry['url'], entry['name']
+                user_agent, referrer = entry['user_agent'], entry['referrer']
+            elif kind == 'public':
                 entry = public_channel(payload.get('id'))
                 if entry is None:
                     raise ValueError('Canal publico nao reconhecido')
@@ -565,7 +584,11 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             # Compatibility with simple mocked players used in old regression suites.
             from player import NativePlayer
             if isinstance(self.server.player, NativePlayer):
-                info = self.server.player.play(source, title, quality=quality, decode=decode)
+                if kind == 'iptv_free':
+                    info = self.server.player.play(source, title, quality=quality, decode=decode,
+                                                  user_agent=user_agent, referrer=referrer)
+                else:
+                    info = self.server.player.play(source, title, quality=quality, decode=decode)
             else:
                 info = self.server.player.play(source, title)
             if kind == 'pluto':

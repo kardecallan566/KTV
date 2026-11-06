@@ -48,6 +48,15 @@ Edite esse arquivo e entre em "Canais" novamente. Somente URLs HTTP/HTTPS direta
 
 **Limite do MVP:** a lista exibe streams HLS, mas navegadores desktop geralmente não tocam \`.m3u8\` diretamente. A integração com um player nativo ou HLS.js é checkpoint posterior; não confunda cadastro com reprodução.
 
+## Playlist externa — 155 canais
+
+A Alpha inclui um snapshot separado da playlist de terceiros [Kaiollio-cpu/iptv_free](https://github.com/Kaiollio-cpu/iptv_free/blob/main/main.m3u), em `iptv_free_catalog.json`. Consulte também [docs/IPTV_EXTERNAL_CATALOG.md](../docs/IPTV_EXTERNAL_CATALOG.md). A seção **Playlist externa** aparece em Canais e permite filtrar por categoria e pesquisar. Ela não altera `~/.config/ktv-os/channels.json`, não substitui os canais pessoais ou o catálogo público e não consulta a origem remota automaticamente.
+
+- 155 entradas em 7 categorias (Esportes, Filmes e Séries, Canais Abertos, Variedades, Notícias, Infantil e Religiosos).
+- A reprodução usa mpv com os cabeçalhos fixos User-Agent/Referer definidos pela própria lista, sem permitir que o navegador forneça comandos ou headers arbitrários.
+- A fonte é externa: direitos de retransmissão, estabilidade, região e funcionamento de cada stream não foram verificados. A lista contém marcas de serviços de assinatura; use somente conteúdo autorizado. Os links podem parar de funcionar a qualquer momento.
+- Atualizar o snapshot exige revisar a nova versão da playlist e validar os canais novamente; o KTV não faz download automático no boot.
+
 ## TV aberta, HDMI e controle remoto
 
 - **TV aberta:** pressione SOURCE no controle Samsung e selecione TV/Antena. Um eventual sintonizador ISDB-Tb USB no PC exigirá driver e software dedicado.

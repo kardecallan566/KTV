@@ -42,6 +42,22 @@ class NativePlayerTests(unittest.TestCase):
         self.assertTrue(player.stop())
         self.assertFalse(player.status()['playing'])
 
+    def test_catalog_headers_are_passed_as_mpv_arguments(self):
+        calls = []
+        player = m.NativePlayer(executable='/usr/bin/mpv', popen=lambda argv, **kw: (calls.append(argv) or MockProcess()))
+        player.play('https://example.com/test.m3u8', 'Canal', user_agent='KTV-Test/1.0',
+                    referrer='https://example.com/')
+        self.assertIn('--user-agent=KTV-Test/1.0', calls[0])
+        self.assertIn('--referrer=https://example.com/', calls[0])
+        player.stop()
+
+    def test_catalog_headers_reject_invalid_values(self):
+        player = m.NativePlayer(executable='/usr/bin/mpv', popen=lambda *a, **kw: MockProcess())
+        with self.assertRaises(ValueError):
+            player.play('https://example.com/test.m3u8', 'Canal', user_agent='bad\nheader')
+        with self.assertRaises(ValueError):
+            player.play('https://example.com/test.m3u8', 'Canal', referrer='http://example.com/')
+
     def test_missing_binary_and_bad_source(self):
         player = m.NativePlayer(executable='', popen=lambda *a, **kw: None)
         with self.assertRaisesRegex(RuntimeError, 'mpv nao instalado'):

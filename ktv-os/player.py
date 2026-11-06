@@ -170,7 +170,7 @@ class NativePlayer:
                 self._clear_ipc()
             return True
 
-    def play(self, source, name, quality='balanced', decode='default'):
+    def play(self, source, name, quality='balanced', decode='default', user_agent=None, referrer=None):
         if not self.executable:
             raise RuntimeError('mpv nao instalado. Disponivel na imagem KTV OS Linux Live.')
         if not isinstance(source, str) or not source or source.startswith('-') or '\0' in source:
@@ -203,6 +203,25 @@ class NativePlayer:
             # exit silently. A user-initiated Q/CLOSE_WIN exits with code 77.
             args.extend(('--keep-open=yes','--network-timeout=20',
                          '--demuxer-thread=yes','--cache=yes','--cache-secs=15'))
+        # Optional HTTP headers are supplied only by a server-side catalog,
+        # never directly by the browser. Keep them bounded and syntactically safe.
+        if user_agent is not None:
+            if (type(user_agent) is not str or not 1 <= len(user_agent) <= 200 or
+                    any(ord(char) < 32 or ord(char) == 127 for char in user_agent)):
+                raise ValueError('User-Agent de transmissao invalido')
+            args.append('--user-agent=' + user_agent)
+        if referrer is not None:
+            try:
+                ref_parts = urlsplit(referrer)
+                valid_referrer = (type(referrer) is str and len(referrer) <= 300 and
+                                  ref_parts.scheme == 'https' and ref_parts.hostname and
+                                  ref_parts.username is None and ref_parts.password is None and
+                                  ref_parts.port in (None, 443) and not ref_parts.fragment)
+            except ValueError:
+                valid_referrer = False
+            if not valid_referrer:
+                raise ValueError('Referer de transmissao invalido')
+            args.append('--referrer=' + referrer)
         if decode == 'compatible':
             # Manual fallback for audio-only/black picture or buggy GPU drivers.
             # Software decoding + X11 output is slower: never enable by default.
