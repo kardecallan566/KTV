@@ -54,7 +54,7 @@ class NativePlayerTests(unittest.TestCase):
     def test_catalog_headers_reject_invalid_values(self):
         player = m.NativePlayer(executable='/usr/bin/mpv', popen=lambda *a, **kw: MockProcess())
         with self.assertRaises(ValueError):
-            player.play('https://example.com/test.m3u8', 'Canal', user_agent='bad\\nheader')
+            player.play('https://example.com/test.m3u8', 'Canal', user_agent='bad\nheader')
         with self.assertRaises(ValueError):
             player.play('https://example.com/test.m3u8', 'Canal', referrer='http://example.com/')
 
