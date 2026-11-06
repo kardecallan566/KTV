@@ -34,6 +34,7 @@ from network import NetworkManager, NetworkError
 from public_channels import validated_catalog, public_channel
 from iptv_free_catalog import validated_catalog as validated_iptv_free_catalog, iptv_free_channel
 from iptv_free_catalog import IPTVFreeCatalogError
+from iptv_free_favorites import IPTVFreeFavorites, IPTVFreeFavoritesError
 from pluto_catalog import PlutoCatalog, PlutoError
 from pluto_favorites import PlutoFavorites, PlutoFavoritesError
 from pluto_recovery import PlutoRecovery
@@ -143,6 +144,7 @@ class KTVOSServer(ThreadingHTTPServer):
         self.stream_check = stream_check if stream_check is not None else StreamCheck()
         self.state_dir = Path(state_dir) if state_dir else STATE
         self.pluto_favorites = PlutoFavorites(self.state_dir)
+        self.iptv_free_favorites = IPTVFreeFavorites(self.state_dir)
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.antenna = antenna if antenna is not None else AntennaTV(self.state_dir)
         self.media_dir = Path(media_dir).resolve(strict=True) if media_dir else None
@@ -289,6 +291,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json(self.server.stream_check.check(kind,ident,lookup))
             except (ValueError,PlutoError,CommunityCatalogError) as exc:
                 return self.send_json({'error':str(exc)},400)
+        if path == '/api/iptv-free/favorites':
+            try:
+                valid_ids = {item['id'] for item in validated_iptv_free_catalog()}
+                ids = [ident for ident in self.server.iptv_free_favorites.load() if ident in valid_ids]
+                return self.send_json({'ids': ids})
+            except (IPTVFreeFavoritesError, IPTVFreeCatalogError) as exc:
+                return self.send_json({'error': str(exc)}, 500)
         if path == '/api/iptv-free/channels':
             try:
                 channels = validated_iptv_free_catalog()
@@ -361,7 +370,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ('/api/tv/antenna/scan', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
+        if path not in ('/api/tv/antenna/scan', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/iptv-free/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
@@ -507,6 +516,15 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             except (ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 400)
 
+        if path == '/api/iptv-free/favorites/toggle':
+            try:
+                ident = payload.get('id')
+                if ident not in {item['id'] for item in validated_iptv_free_catalog()}:
+                    raise IPTVFreeFavoritesError('Canal IPTV externo nao reconhecido')
+                ids = self.server.iptv_free_favorites.toggle(ident)
+                return self.send_json({'ok': True, 'ids': ids})
+            except (IPTVFreeFavoritesError, IPTVFreeCatalogError) as exc:
+                return self.send_json({'error': str(exc)}, 400)
         if path == '/api/pluto/favorites/toggle':
             try:
                 ids = self.server.pluto_favorites.toggle(payload.get('id'))
