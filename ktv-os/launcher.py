@@ -291,8 +291,12 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error':str(exc)},400)
         if path == '/api/iptv-free/channels':
             try:
-                return self.send_json({'channels': validated_iptv_free_catalog(),
-                                       'source': 'Kaiollio-cpu/iptv_free (snapshot) ',
+                channels = validated_iptv_free_catalog()
+                public_items = [{'id': item['id'], 'name': item['name'],
+                                 'category': item['category'], 'logo': item['logo']}
+                                for item in channels]
+                return self.send_json({'channels': public_items,
+                                       'source': 'Kaiollio-cpu/iptv_free (snapshot)',
                                        'warning': 'Fonte externa; direitos e disponibilidade nao verificados.'})
             except IPTVFreeCatalogError as exc:
                 return self.send_json({'error': str(exc)}, 503)
