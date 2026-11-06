@@ -1,0 +1,1404 @@
+{
+  "schema": "ktv-iptv-source-v1",
+  "source_url": "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u",
+  "source_name": "Kaiollio-cpu/iptv_free (snapshot 2026-11-06)",
+  "count": 155,
+  "warning": "Catalogo de terceiros fornecido pelo usuario. Origem, direitos, disponibilidade, estabilidade e compatibilidade de cada stream nao foram verificados. Use apenas transmissões autorizadas.",
+  "channels": [
+    {
+      "id": "primevideo",
+      "name": "Amazon Prime",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/amazonprimevideo.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/amazonprimevideo/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "primevideo2",
+      "name": "Amazon Prime 02",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/amazonprimevideo.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/amazonprimevideo02/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "primevideo3",
+      "name": "Amazon Prime 03",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/amazonprimevideo.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/amazonprimevideo03/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "primevideo4",
+      "name": "Amazon Prime 04",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/amazonprimevideo.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/amazonprimevideo04/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "amazonprimevideo05",
+      "name": "Amazon Prime 05",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/amazonprimevideo.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/amazonprimevideo05/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "appletv01",
+      "name": "Apple TV 01",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/appletv1.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/appletv01/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "appletv02",
+      "name": "Apple TV 02",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/appletv1.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/appletv02/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "appletv03",
+      "name": "Apple TV 03",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/appletv1.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/appletv03/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "appletv04",
+      "name": "Apple TV 04",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/appletv1.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/appletv04/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "appletv05",
+      "name": "Apple TV 05",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/appletv1.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/appletv05/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "appletv06",
+      "name": "Apple TV 06",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/appletv1.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/appletv06/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "bandsports",
+      "name": "Band Sports",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/bandsports.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/bandsports/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "canalgoat",
+      "name": "Canal GOAT",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/canalgoat.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/canalgoat/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "off",
+      "name": "Canal Off",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/canaloff.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/canaloff/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "caze1",
+      "name": "CazéTV",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/cazetv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cazetv/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "caze2",
+      "name": "CazéTV 2",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/cazetv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cazetv2/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "caze3",
+      "name": "CazéTV 3",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/cazetv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cazetv3/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cazetv4",
+      "name": "CazéTV 4",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/cazetv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cazetv4/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cazetv5",
+      "name": "CazéTV 5",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/cazetv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cazetv5/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cazetv6",
+      "name": "CazéTV 6",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/cazetv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cazetv6/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "combate",
+      "name": "Combate",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/combate.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/combate/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "dazn",
+      "name": "DAZN",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/dazn.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/dazn/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus07",
+      "name": "Disney + 07",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus07/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus08",
+      "name": "Disney + 08",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus08/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus09",
+      "name": "Disney + 09",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus09/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus1",
+      "name": "Disney+",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus2",
+      "name": "Disney+ 02",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus02/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus3",
+      "name": "Disney+ 03",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus03/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus04",
+      "name": "Disney+ 04",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus04/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus05",
+      "name": "Disney+ 05",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus05/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "disneyplus06",
+      "name": "Disney+ 06",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/disneyplus06/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "espn",
+      "name": "ESPN",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/espn.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/espn/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "espn2",
+      "name": "ESPN 2",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/espn.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/espn2/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "espn3",
+      "name": "ESPN 3",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/espn.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/espn3/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "espn4",
+      "name": "ESPN 4",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/espn.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/espn4/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "espn5",
+      "name": "ESPN 5",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/espn.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/espn5/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "espn6",
+      "name": "ESPN 6",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/espn.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/espn6/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "getv",
+      "name": "GE TV",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/getv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/getv/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "max1",
+      "name": "Max",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/max/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "max2",
+      "name": "Max 02",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/max02/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "max3",
+      "name": "Max 03",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/max03/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "max04",
+      "name": "Max 04",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/max04/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "max05",
+      "name": "Max 05",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/max05/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "max06",
+      "name": "Max 06",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/max06/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "nsports",
+      "name": "N Sports",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/nsports.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/nsports/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "nossofutebol",
+      "name": "Nosso Futebol",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/nossofutebol.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/nossofutebol/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "paramountplus",
+      "name": "Paramount +",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/paramountplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paramountplus/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "paramountplus2",
+      "name": "Paramount + 02",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/paramountplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paramountplus02/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "paramountplus03",
+      "name": "Paramount+ 03",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/paramountplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paramountplus03/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "paramountplus04",
+      "name": "Paramount+ 04",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/paramountplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paramountplus04/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "paramountplus05",
+      "name": "Paramount+ 05",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/paramountplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paramountplus05/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "paramountplus06",
+      "name": "Paramount+ 06",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/paramountplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paramountplus06/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "paramountplus07",
+      "name": "Paramount+ 07",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/paramountplus.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paramountplus07/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "premiere2",
+      "name": "Premiere 2",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/premiere.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/premiere2/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "premiere3",
+      "name": "Premiere 3",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/premiere.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/premiere3/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "premiere4",
+      "name": "Premiere 4",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/premiere.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/premiere4/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "premiere5",
+      "name": "Premiere 5",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/premiere.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/premiere5/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "premiere6",
+      "name": "Premiere 6",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/premiere.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/premiere6/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "premiere7",
+      "name": "Premiere 7",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/premiere.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/premiere7/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "premiere8",
+      "name": "Premiere 8",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/premiere.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/premiere8/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "premiere",
+      "name": "Premiere Clubes",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/premiere.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/premiereclubes/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sportv",
+      "name": "SporTV",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/sportv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sportv/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sportv2",
+      "name": "SporTV 2",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/sportv2.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sportv2/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sportv3",
+      "name": "SporTV 3",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/sportv3.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sportv3/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sportynet",
+      "name": "SportyNet",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/sportynet.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sportynet/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sportynetplus1",
+      "name": "SportyNet +1",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/sportynet.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sportynet1/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sportynetplus2",
+      "name": "SportyNet +2",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/sportynet.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sportynet2/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sportynetplus3",
+      "name": "SportyNet +3",
+      "category": "Esportes",
+      "logo": "https://vipcanais.net/images/sportynet.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sportynet3/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "tnt",
+      "name": "TNT",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/tnt.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tnt/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "xsports",
+      "name": "Xsports",
+      "category": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/xsports.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/xsports/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "ae",
+      "name": "A&E",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/aee.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/aee/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "amc",
+      "name": "AMC",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/amc.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/amc/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "amcseries",
+      "name": "AMC Séries",
+      "category": "Filmes e Séries",
+      "logo": "https://vipcanais.net/images/amcseries.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/amcseries/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "axn",
+      "name": "AXN",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/axn.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/axn/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cinemax",
+      "name": "Cinemax",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/cinemax.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cinemax/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "globonovelas",
+      "name": "Globoplay Novelas",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/globoplaynovelas.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/globoplaynovelas/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hbo",
+      "name": "HBO",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/hbo.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hbo/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hbo2",
+      "name": "HBO 2",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/hbo2.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hbo2/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hbofamily",
+      "name": "HBO Family",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/hbofamily.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hbofamily/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hbomundi",
+      "name": "HBO Mundi",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/hbomundi.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hbomundi/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hboplus",
+      "name": "HBO Plus",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/hboplus.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hboplus/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hbopop",
+      "name": "HBO Pop",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/hbopop.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hbopop/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hbosignature",
+      "name": "HBO Signature",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/hbosignature.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hbosignature/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hboxtreme",
+      "name": "HBO Xtreme",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/hboxtreme.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hboxtreme/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "megapix",
+      "name": "Megapix",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/megapix.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/megapix/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "paramountnetwork",
+      "name": "Paramount Network",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/paramountnetwork.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paramountnetwork/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sonychannel",
+      "name": "Sony Channel",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/sonychannel.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sonychannel/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "space",
+      "name": "Space",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/space.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/space/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "studiouniversal",
+      "name": "Studio Universal",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/studiouniversal.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/studiouniversal/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "telecineaction",
+      "name": "Telecine Action",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/tcaction.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tcaction/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "telecinecult",
+      "name": "Telecine Cult",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/tccult.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tccult/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "telecinefun",
+      "name": "Telecine Fun",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/tcfun.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tcfun/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "telecinepipoca",
+      "name": "Telecine Pipoca",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/tcpipoca.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tcpipoca/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "telecinepremium",
+      "name": "Telecine Premium",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/tcpremium.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tcpremium/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "telecinetouch",
+      "name": "Telecine Touch",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/tctouch.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tctouch/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "tntnovelas",
+      "name": "TNT Novelas",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/tntnovelas.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tntnovelas/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "tntseries",
+      "name": "TNT Series",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/tntseries.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tntseries/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "universaltv",
+      "name": "Universal TV",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/universaltv.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/universaltv/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "usa",
+      "name": "USA",
+      "category": "Filmes e Séries",
+      "logo": "https://vipcanais.net/images/usa.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/usa/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "warnerchannel",
+      "name": "Warner Channel",
+      "category": "Filmes e Séries",
+      "logo": "https://1.embedcanaisdetv.com/images/warnertv.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/warner/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "bandsp",
+      "name": "Band SP",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/bandsp.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/bandsp/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "globodf",
+      "name": "Globo DF",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/globo.webp",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/globodf/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "globoes",
+      "name": "Globo Espírito Santo",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/globo.webp",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/globoes/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "globomg",
+      "name": "Globo Minas",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/globo.webp",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/globomg/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "globors",
+      "name": "Globo Porto Alegre",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/globo.webp",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/globors/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "globorj",
+      "name": "Globo Rio",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/globo.webp",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/globorj/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "globosp",
+      "name": "Globo São Paulo",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/globo.webp",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/globosp/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "recorddf",
+      "name": "Record DF",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/record.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/recorddf/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "recordes",
+      "name": "Record Espírito Santo",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/record.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/recordes/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "recordmg",
+      "name": "Record Minas",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/record.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/recordmg/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "recordrj",
+      "name": "Record Rio",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/record.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/recordrj/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "recordsp",
+      "name": "Record São Paulo",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/record.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/recordsp/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "redetv",
+      "name": "RedeTV!",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/redetv.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/redetv/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sbtrj",
+      "name": "SBT Rio",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/sbtsp.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sbtrj/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "sbtsp",
+      "name": "SBT São Paulo",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/sbtsp.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/sbtsp/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cultura",
+      "name": "TV Cultura",
+      "category": "Canais Abertos",
+      "logo": "https://1.embedcanaisdetv.com/images/tvcultura.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tvcultura/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "adultswim",
+      "name": "Adult Swim",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/adultswim.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/adultswim/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "animalplanet",
+      "name": "Animal Planet",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/animalplanet.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/animalplanet/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "comedycentral",
+      "name": "Comedy Central",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/comedycentral.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/comedycentral/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "discoverychannel",
+      "name": "Discovery Channel",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/discoverychannel.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/discoverychannel/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "discoveryhh",
+      "name": "Discovery Home & Health",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/discoveryhh.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/discoveryhh/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "discoveryscience",
+      "name": "Discovery Science",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/discoveryscience.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/discoveryscience/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "discoverytheather",
+      "name": "Discovery Theater",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/discoverytheater.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/discoverytheater/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "discoveryturbo",
+      "name": "Discovery Turbo",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/discoveryturbo.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/discoveryturbo/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "discoveryworld",
+      "name": "Discovery World",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/discoveryworld.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/discoveryworld/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "foodnetwork",
+      "name": "Food Network",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/foodnetwork.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/foodnetwork/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "gnt",
+      "name": "GNT",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/gnt.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/gnt/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "hgtv",
+      "name": "HGTV",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/hgtv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/hgtv/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "history",
+      "name": "History",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/history.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/history/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "history2",
+      "name": "History 2",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/history2.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/history2/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "discoveryid",
+      "name": "Investigation Discovery",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/discoveryid.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/discoveryid/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "mtv",
+      "name": "MTV",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/mtv.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/mtv/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "multishow",
+      "name": "Multishow",
+      "category": "Variedades",
+      "logo": "https://1.embedcanaisdetv.com/images/multishow.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/multishow/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "bandnews",
+      "name": "BandNews",
+      "category": "Notícias",
+      "logo": "https://1.embedcanaisdetv.com/images/bandnews.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/bandnews/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cnnbrasil",
+      "name": "CNN Brasil",
+      "category": "Notícias",
+      "logo": "https://1.embedcanaisdetv.com/images/cnnbrasil.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cnnbrasil/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "globonews",
+      "name": "GloboNews",
+      "category": "Notícias",
+      "logo": "https://1.embedcanaisdetv.com/images/globonews.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/globonews/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "jovempannews",
+      "name": "Jovem Pan News",
+      "category": "Notícias",
+      "logo": "https://1.embedcanaisdetv.com/images/jovempannews.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/jovempannews/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "recordnews",
+      "name": "Record News",
+      "category": "Notícias",
+      "logo": "https://1.embedcanaisdetv.com/images/recordnews.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/recordnews/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cartoonnetwork",
+      "name": "Cartoon Network",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/cartoonnetwork.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cartoonnetwork/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cartoonito",
+      "name": "Cartoonito",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/cartoonito.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cartoonito/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "discoverykids",
+      "name": "Discovery Kids",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/discoverykids.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/discoverykids/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "dreamworks",
+      "name": "DreamWorks",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/dreamworks.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/dreamworks/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "gloob",
+      "name": "Gloob",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/gloob.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/gloob/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "gloobinho",
+      "name": "Gloobinho",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/gloobinho.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/gloobinho/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "nickjr",
+      "name": "Nick Jr.",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/nickjr.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/nickjr/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "nickelodeon",
+      "name": "Nickelodeon",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/nickelodeon.png",
+      "url": "https://d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/nickelodeon/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "tooncast",
+      "name": "Tooncast",
+      "category": "Infantil",
+      "logo": "https://1.embedcanaisdetv.com/images/tooncast.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tooncast/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "tvratimbum",
+      "name": "TV Ra Tim Bum",
+      "category": "Infantil",
+      "logo": "https://vipcanais.net/images/tvratimbum.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tvratimbum/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "cancaonova",
+      "name": "Canção Nova",
+      "category": "Religiosos",
+      "logo": "https://vipcanais.net/images/cancaonova.png",
+      "url": "https://d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/cancaonova/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "novotempo",
+      "name": "Novo Tempo",
+      "category": "Religiosos",
+      "logo": "https://vipcanais.net/images/novotempo.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/novotempo/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "tvpaieterno",
+      "name": "Pai Eterno",
+      "category": "Religiosos",
+      "logo": "https://vipcanais.net/images/paieterno.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/paieterno/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "redegospel",
+      "name": "Rede Gospel",
+      "category": "Religiosos",
+      "logo": "https://vipcanais.net/images/redegospel.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/redegospel/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "redevida",
+      "name": "Rede Vida",
+      "category": "Religiosos",
+      "logo": "https://vipcanais.net/images/redevida.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/redevida/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "aparecida",
+      "name": "TV Aparecida",
+      "category": "Religiosos",
+      "logo": "https://vipcanais.net/images/tvaparecida.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tvaparecida/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    },
+    {
+      "id": "tvevangelizar",
+      "name": "TV Evangelizar",
+      "category": "Religiosos",
+      "logo": "https://vipcanais.net/images/tvevangelizar.png",
+      "url": "https://d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn10embed.xyz/tvevangelizar/index.m3u8",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "referrer": "https://embedcanaisdetv.xyz/"
+    }
+  ]
+}
