@@ -20,6 +20,7 @@ O repositório contém **dois projetos relacionados, mas diferentes**:
 | Testes automatizados | Aprovados para a Alpha 0.21 no [workflow de regressão](https://github.com/kardecallan566/KTV/actions/runs/40762109653) |
 | ISO Linux Live AMD64 | Build da Alpha 0.21 concluído; artefato `KTV-OS-Alpha-0.21-amd64` disponível no workflow |
 | Reprodução de canais | Implementada; a disponibilidade varia por fonte, rede, codec e autorização |
+| Playlist externa M3U | Snapshot de 155 canais separado dos canais pessoais; fonte/autorizações não verificadas |
 | Pluto TV | Catálogo dinâmico, favoritos e mecanismo de recuperação automática implementados; teste físico prolongado ainda necessário |
 | Rei dos Canais | Integração somente de metadados/guia; não adiciona 104 transmissões |
 | Raspberry Pi ARM64 | Ainda não existe imagem própria validada |
