@@ -88,9 +88,50 @@ jobs:
           cd "$IMAGEGEN_DIR"
           ./rpi-image-gen metadata --lint "$SOURCE_DIR/layer/ktv-os.yaml"
           test -s "$CONFIG"
-          ./rpi-image-gen config "$CONFIG" > "$RUNNER_TEMP/ktv-os-pi3-resolved.conf"
-          grep -q 'IGconf_device_layer="pi3"' "$RUNNER_TEMP/ktv-os-pi3-resolved.conf"
-          grep -q 'IGconf_image_name="ktv-os-arm64-pi3"' "$RUNNER_TEMP/ktv-os-pi3-resolved.conf"
+          grep -qE '^[[:space:]]+layer:[[:space:]]+pi3
+
+      - name: Build bootable Raspberry Pi 3 image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
+          SOURCE_DIR="$GITHUB_WORKSPACE/ktv-os/arm64-image"
+          CONFIG="$SOURCE_DIR/config/ktv-os-pi3.yaml"
+          cd "$IMAGEGEN_DIR"
+          ./rpi-image-gen build -S "$SOURCE_DIR" -c "$CONFIG"
+
+      - name: Validate and compress Raspberry Pi 3 image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IMAGE_NAME="ktv-os-arm64-pi3"
+          IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
+          OUT_DIR="$GITHUB_WORKSPACE/dist/raspberry-pi-3"
+          IMAGE_PATH="$IMAGEGEN_DIR/work/image-${IMAGE_NAME}/${IMAGE_NAME}.img"
+          mkdir -p "$OUT_DIR"
+
+          test -s "$IMAGE_PATH"
+          file "$IMAGE_PATH"
+          fdisk -l "$IMAGE_PATH"
+
+          OUTPUT="KTV-OS-Raspberry-Pi-3-Model-B.img.xz"
+          xz -T0 -6 -c "$IMAGE_PATH" > "$OUT_DIR/$OUTPUT"
+          test -s "$OUT_DIR/$OUTPUT"
+          (cd "$OUT_DIR" && sha256sum "$OUTPUT" > "$OUTPUT.sha256")
+          (cd "$OUT_DIR" && sha256sum -c "$OUTPUT.sha256")
+
+      - name: Publish Raspberry Pi 3 image
+        uses: actions/upload-artifact@v6
+        with:
+          name: KTV-OS-Raspberry-Pi-3-Model-B
+          path: |
+            dist/raspberry-pi-3/KTV-OS-Raspberry-Pi-3-Model-B.img.xz
+            dist/raspberry-pi-3/KTV-OS-Raspberry-Pi-3-Model-B.img.xz.sha256
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+ "$CONFIG"
+          grep -q 'name: ktv-os-arm64-pi3' "$CONFIG"
 
       - name: Build bootable Raspberry Pi 3 image
         shell: bash
