@@ -50,7 +50,7 @@ Edite esse arquivo e entre em "Canais" novamente. Somente URLs HTTP/HTTPS direta
 
 ## Playlist externa — 155 canais
 
-A Alpha inclui um snapshot separado da playlist de terceiros [Kaiollio-cpu/iptv_free](https://github.com/Kaiollio-cpu/iptv_free/blob/main/main.m3u), em `iptv_free_catalog.json`. A seção **Playlist externa** aparece em Canais e permite filtrar por categoria e pesquisar. Ela não altera `~/.config/ktv-os/channels.json`, não substitui os canais pessoais ou o catálogo público e não consulta a origem remota automaticamente.
+A Alpha inclui um snapshot separado da playlist de terceiros [Kaiollio-cpu/iptv_free](https://github.com/Kaiollio-cpu/iptv_free/blob/main/main.m3u), em `iptv_free_catalog.json`. Consulte também [docs/IPTV_EXTERNAL_CATALOG.md](../docs/IPTV_EXTERNAL_CATALOG.md). A seção **Playlist externa** aparece em Canais e permite filtrar por categoria e pesquisar. Ela não altera `~/.config/ktv-os/channels.json`, não substitui os canais pessoais ou o catálogo público e não consulta a origem remota automaticamente.
 
 - 155 entradas em 7 categorias (Esportes, Filmes e Séries, Canais Abertos, Variedades, Notícias, Infantil e Religiosos).
 - A reprodução usa mpv com os cabeçalhos fixos User-Agent/Referer definidos pela própria lista, sem permitir que o navegador forneça comandos ou headers arbitrários.
