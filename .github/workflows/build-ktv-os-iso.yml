@@ -24,6 +24,8 @@ on:
       - "ktv-os/display_layout.py"
       - "ktv-os/system_actions.py"
       - "ktv-os/public_channels.py"
+      - "ktv-os/iptv_free_catalog.py"
+      - "ktv-os/iptv_free_catalog.json"
       - "ktv-os/pluto_catalog.py"
       - "ktv-os/pluto_recovery.py"
       - "ktv-os/reidos_guide.py"
