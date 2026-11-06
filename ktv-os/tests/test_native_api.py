@@ -82,6 +82,16 @@ class NativeAPITests(unittest.TestCase):
             self.post('/api/player/play',{'kind':'channel','index':100})
         self.assertEqual(e.exception.code,400)
 
+    def test_external_playlist_channel_plays_by_catalog_id(self):
+        code, data = self.post('/api/player/play', {'kind':'iptv_free','id':'primevideo'})
+        self.assertEqual(code, 200)
+        self.assertTrue(data['player']['playing'])
+        self.assertEqual(self.fake.calls[-1][1], 'Amazon Prime')
+        self.assertIn('cdn10embed.xyz/amazonprimevideo/index.m3u8', self.fake.calls[-1][0])
+        with self.assertRaises(HTTPError) as error:
+            self.post('/api/player/play', {'kind':'iptv_free','id':'unknown'})
+        self.assertEqual(error.exception.code, 400)
+
     def test_channel_cannot_play_arbitrary_url(self):
         for payload in ({'kind':'channel','url':'file:///etc/shadow'},
                         {'kind':'media','name':'../secret.mp4'},
