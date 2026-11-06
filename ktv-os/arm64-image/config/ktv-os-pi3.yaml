@@ -2,7 +2,7 @@ include:
   file: trixie-minbase.yaml
 
 device:
-  layer: pi3
+  layer: rpi3
 
 image:
   layer: image-rpios
