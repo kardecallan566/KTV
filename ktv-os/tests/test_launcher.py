@@ -72,6 +72,15 @@ class KTVOSSmokeTests(unittest.TestCase):
         self.assertEqual(len(content['channels']), 1)
         self.assertEqual(content['channels'][0]['name'], 'Canal proprio')
 
+    def test_external_iptv_catalog_is_separate_from_personal_channels(self):
+        _, raw, _ = self.fetch('/api/iptv-free/channels')
+        catalog = json.loads(raw)
+        self.assertEqual(len(catalog['channels']), 155)
+        self.assertEqual(catalog['channels'][0]['name'], 'Amazon Prime')
+        self.assertIn('direitos', catalog['warning'])
+        _, personal_raw, _ = self.fetch('/api/channels')
+        self.assertEqual(json.loads(personal_raw)['channels'], [])
+
     def test_usb_devices_are_metadata_only(self):
         _, raw, _ = self.fetch('/api/devices')
         self.assertIsInstance(json.loads(raw)['devices'], list)
