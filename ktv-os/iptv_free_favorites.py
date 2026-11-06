@@ -50,7 +50,7 @@ class IPTVFreeFavorites:
                                    prefix=".iptv-fav-", delete=False) as handle:
                 temp = handle.name
                 json.dump({"schema":"ktv-iptv-favorites-v1","ids":ids}, handle)
-                handle.write("\\n")
+                handle.write("\n")
             os.replace(temp, self.path)
         except OSError as exc:
             if temp:
