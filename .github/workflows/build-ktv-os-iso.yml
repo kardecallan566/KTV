@@ -1,37 +1,11 @@
-name: Build KTV OS Bootable ISO
+name: Build KTV OS PC ISO + Raspberry Pi 3
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - "ktv-os/linux-live/**"
-      - "ktv-os/launcher.py"
-      - "ktv-os/player.py"
-      - "ktv-os/stream_urls.py"
-      - "ktv-os/internet_browser.py"
-      - "ktv-os/input_support.py"
-      - "ktv-os/community_catalog.py"
-      - "ktv-os/epg_guide.py"
-      - "ktv-os/stream_check.py"
-      - "ktv-os/smart_player.py"
-      - "ktv-os/antenna_tv.py"
-      - "ktv-os/channel_store.py"
-      - "ktv-os/persistence.py"
-      - "ktv-os/hardware.py"
-      - "ktv-os/cec_bridge.py"
-      - "ktv-os/network.py"
-      - "ktv-os/display_layout.py"
-      - "ktv-os/system_actions.py"
-      - "ktv-os/public_channels.py"
-      - "ktv-os/iptv_free_catalog.py"
-      - "ktv-os/iptv_free_catalog.json"
-      - "ktv-os/pluto_catalog.py"
-      - "ktv-os/pluto_recovery.py"
-      - "ktv-os/reidos_guide.py"
-      - "ktv-os/pluto_favorites.py"
-      - "ktv-os/persistence.py"
-      - "ktv-os/app/**"
+      - "ktv-os/**"
       - ".github/workflows/build-ktv-os-iso.yml"
 
 permissions:
@@ -39,6 +13,7 @@ permissions:
 
 jobs:
   iso:
+    name: Build PC bootable ISO (amd64)
     runs-on: ubuntu-24.04
     timeout-minutes: 100
     steps:
@@ -73,7 +48,7 @@ jobs:
           test -s "$expected.sha256"
           sha256sum -c "$expected.sha256"
           echo "ISO conferida: $expected"
-      - name: Disponibilizar ISO inicializavel
+      - name: Disponibilizar ISO inicializavel para PC
         uses: actions/upload-artifact@v6
         with:
           name: KTV-OS-Alpha-${{ steps.version.outputs.version }}-amd64
@@ -82,4 +57,78 @@ jobs:
             ktv-os/linux-live/dist/KTV-OS-Alpha-*.iso.sha256
           if-no-files-found: error
           retention-days: 7
+          compression-level: 0
+
+  raspberry-pi-3:
+    name: Build Raspberry Pi 3 Model B image (ARM64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - name: Checkout KTV OS
+        uses: actions/checkout@v6
+
+      - name: Download pinned Raspberry Pi image generator
+        env:
+          RPI_IMAGE_GEN_REF: v2.9.0
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --depth 1 --branch "$RPI_IMAGE_GEN_REF" \
+            https://github.com/raspberrypi/rpi-image-gen.git "$RUNNER_TEMP/rpi-image-gen"
+          cd "$RUNNER_TEMP/rpi-image-gen"
+          sudo ./install_deps.sh
+
+      - name: Lint image configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
+          SOURCE_DIR="$GITHUB_WORKSPACE/ktv-os/arm64-image"
+          CONFIG="$SOURCE_DIR/config/ktv-os-pi3.yaml"
+          cd "$IMAGEGEN_DIR"
+          ./rpi-image-gen metadata --lint "$SOURCE_DIR/layer/ktv-os.yaml"
+          test -s "$CONFIG"
+          ./rpi-image-gen config "$CONFIG" > "$RUNNER_TEMP/ktv-os-pi3-resolved.conf"
+          grep -q 'IGconf_device_layer="pi3"' "$RUNNER_TEMP/ktv-os-pi3-resolved.conf"
+          grep -q 'IGconf_image_name="ktv-os-arm64-pi3"' "$RUNNER_TEMP/ktv-os-pi3-resolved.conf"
+
+      - name: Build bootable Raspberry Pi 3 image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
+          SOURCE_DIR="$GITHUB_WORKSPACE/ktv-os/arm64-image"
+          CONFIG="$SOURCE_DIR/config/ktv-os-pi3.yaml"
+          cd "$IMAGEGEN_DIR"
+          ./rpi-image-gen build -S "$SOURCE_DIR" -c "$CONFIG"
+
+      - name: Validate and compress Raspberry Pi 3 image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IMAGE_NAME="ktv-os-arm64-pi3"
+          IMAGEGEN_DIR="$RUNNER_TEMP/rpi-image-gen"
+          OUT_DIR="$GITHUB_WORKSPACE/dist/raspberry-pi-3"
+          IMAGE_PATH="$IMAGEGEN_DIR/work/image-${IMAGE_NAME}/${IMAGE_NAME}.img"
+          mkdir -p "$OUT_DIR"
+
+          test -s "$IMAGE_PATH"
+          file "$IMAGE_PATH"
+          fdisk -l "$IMAGE_PATH"
+
+          OUTPUT="KTV-OS-Raspberry-Pi-3-Model-B.img.xz"
+          xz -T0 -6 -c "$IMAGE_PATH" > "$OUT_DIR/$OUTPUT"
+          test -s "$OUT_DIR/$OUTPUT"
+          (cd "$OUT_DIR" && sha256sum "$OUTPUT" > "$OUTPUT.sha256")
+          (cd "$OUT_DIR" && sha256sum -c "$OUTPUT.sha256")
+
+      - name: Publish Raspberry Pi 3 image
+        uses: actions/upload-artifact@v6
+        with:
+          name: KTV-OS-Raspberry-Pi-3-Model-B
+          path: |
+            dist/raspberry-pi-3/KTV-OS-Raspberry-Pi-3-Model-B.img.xz
+            dist/raspberry-pi-3/KTV-OS-Raspberry-Pi-3-Model-B.img.xz.sha256
+          if-no-files-found: error
+          retention-days: 14
           compression-level: 0
