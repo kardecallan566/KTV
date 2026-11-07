@@ -626,6 +626,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_json({'ok':True,'player':self.server.player.status()})
         kind = payload.get('kind')
         try:
+            # Invalidate an in-flight watchdog retry before any manual source change.
+            self.server.player_watchdog.set_session(None, None, None, None, recoverable=False)
             if kind == 'antenna':
                 self.server.pluto_recovery.cancel()
                 self.server.player.stop()
