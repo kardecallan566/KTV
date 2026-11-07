@@ -11,6 +11,7 @@ import mimetypes
 import os
 from pathlib import Path
 import re
+import socket
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
@@ -40,6 +41,7 @@ from pluto_favorites import PlutoFavorites, PlutoFavoritesError
 from pluto_recovery import PlutoRecovery
 from reidos_guide import ReiGuide, DiscoveryError
 from system_actions import SystemActions, SystemActionError
+from remote_control import RemoteControl
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path(os.environ.get('KTV_STATE_DIR', str(Path.home() / '.config' / 'ktv-os'))).expanduser()  # USB opcional
@@ -60,6 +62,7 @@ STATIC = {
     '/browser-green.js': ('browser-green.js', 'text/javascript; charset=utf-8'),
     '/osk.js': ('osk.js', 'text/javascript; charset=utf-8'),
     '/osk.css': ('osk.css', 'text/css; charset=utf-8'),
+    '/remote': ('remote.html', 'text/html; charset=utf-8'),
 }
 
 def usb_mounts():
@@ -157,6 +160,7 @@ class KTVOSServer(ThreadingHTTPServer):
         self.cec = cec if cec is not None else CECBridge()
         self.network = network if network is not None else NetworkManager()
         self.system_actions = system_actions if system_actions is not None else SystemActions()
+        self.remote = RemoteControl()
         self.channels = ChannelStore(self.state_dir)
         self.persistence = PersistenceManager(self.channels, self.pluto_favorites)
         self._persistence_stop = Event()
@@ -165,6 +169,11 @@ class KTVOSServer(ThreadingHTTPServer):
         self.persistence.poll(usb_mounts())
         self._persistence_thread = Thread(target=self._persistence_loop, daemon=True)
         self._persistence_thread.start()
+
+    def remote_info(self):
+        address = lan_ipv4()
+        return {'url': ('http://{}:{}/remote'.format(address, self.server_address[1]) if address else ''),
+                'pin': self.remote.pin}
 
     def _persistence_loop(self):
         while not self._persistence_stop.wait(3):
@@ -177,6 +186,19 @@ class KTVOSServer(ThreadingHTTPServer):
         self.hardware.close()
         self.cec.close()
         super().server_close()
+
+def lan_ipv4():
+    # Determine the interface selected by the routing table without sending traffic.
+    probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        probe.connect(('192.0.2.1', 80))
+        address = probe.getsockname()[0]
+        return address if not address.startswith('127.') else ''
+    except OSError:
+        return ''
+    finally:
+        probe.close()
+
 
 class KTVOSHandler(BaseHTTPRequestHandler):
     server_version = 'KTV-OS/0.20'
@@ -205,14 +227,34 @@ class KTVOSHandler(BaseHTTPRequestHandler):
     def send_json(self, payload, status=200):
         self.send_data(status, json.dumps(payload, ensure_ascii=False).encode('utf-8'), 'application/json; charset=utf-8')
 
+    def _guard_lan_request(self, path, method):
+        address = self.client_address[0]
+        if address in ('127.0.0.1', '::1') or address.startswith('127.'):
+            return True
+        allowed = (method == 'GET' and path == '/remote') or (
+            method == 'POST' and path in ('/api/remote/pair', '/api/remote/command'))
+        if not allowed:
+            self.send_json({'error': 'Acesso pela rede limitado ao controle remoto protegido.'}, 403)
+        return allowed
+
     def do_GET(self):
         url = urlsplit(self.path)
         path = unquote(url.path)
+        if not self._guard_lan_request(path, 'GET'):
+            return
         if path in STATIC:
             filename, mime = STATIC[path]
             return self.send_data(200, (APP / filename).read_bytes(), mime)
+        if path == '/api/remote/commands':
+            try:
+                after = parse_qs(url.query).get('after', ['0'])[0]
+                if not re.fullmatch(r'\\d{1,12}', after):
+                    raise ValueError('Sequencia invalida')
+                return self.send_json(self.server.remote.events_since(int(after)))
+            except ValueError as exc:
+                return self.send_json({'error': str(exc)}, 400)
         if path == '/api/status':
-            return self.send_json({'version': VERSION, 'host': self.server.server_address[0],
+            return self.send_json({'version': VERSION, 'host': '127.0.0.1', 'remote': self.server.remote_info(),
                                    'usb_direct_tv': self.server.antenna.available(), 'player': self.server.player.status(),
                                    'pluto_recovery': self.server.pluto_recovery.status(),
                                    'persistence': self.server.persistence.status(usb_mounts())})
@@ -370,20 +412,22 @@ class KTVOSHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
+        if not self._guard_lan_request(path, 'POST'):
+            return
         if path not in ('/api/tv/antenna/scan', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/iptv-free/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
                         '/api/cec/enable', '/api/cec/disable',
                         '/api/network/connect', '/api/network/wifi-radio',
-                        '/api/system/poweroff'):
+                        '/api/system/poweroff', '/api/remote/pair', '/api/remote/command'):
             return self.send_json({'error': 'Rota nao encontrada'}, 404)
 
         # Only this machine may write to the playback controller.
         # JSON content type rejects HTML form posts from unrelated origins.
         origin = self.headers.get('Origin')
         expected = 'http://127.0.0.1:{}'.format(self.server.server_address[1])
-        if origin is not None and origin != expected:
+        if path not in ('/api/remote/pair', '/api/remote/command') and origin is not None and origin != expected:
             return self.send_json({'error': 'Origem nao autorizada'}, 403)
         if self.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json':
             return self.send_json({'error': 'JSON obrigatorio'}, 415)
@@ -396,6 +440,19 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 raise ValueError('Payload deve ser objeto')
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
             return self.send_json({'error': 'JSON invalido'}, 400)
+
+        if path == '/api/remote/pair':
+            try:
+                token = self.server.remote.pair(payload.get('pin'), self.client_address[0])
+                return self.send_json({'ok': True, 'token': token})
+            except ValueError as exc:
+                return self.send_json({'error': str(exc)}, 403)
+        if path == '/api/remote/command':
+            try:
+                result = self.server.remote.command(payload.get('token'), payload.get('action'))
+                return self.send_json(result)
+            except ValueError as exc:
+                return self.send_json({'error': str(exc)}, 403)
 
         if path == '/api/system/poweroff':
             # Unprivileged logind/systemctl policy enforcement. A custom header
@@ -679,10 +736,12 @@ def main():
     parser.add_argument('--media-dir', help='Pasta local autorizada para exibir midias; leitura apenas')
     parser.add_argument('--open', action='store_true', help='Abrir no navegador padrao')
     args = parser.parse_args()
-    server = KTVOSServer(port=args.port, media_dir=args.media_dir)
+    server = KTVOSServer(host='0.0.0.0', port=args.port, media_dir=args.media_dir)
     url = 'http://127.0.0.1:{}'.format(server.server_address[1])
     print('=== KTV OS ALPHA 0.8 ===')
     print('Tela:', url)
+    print('Controle pelo celular:', server.remote_info()['url'] or 'IP local não identificado')
+    print('Código de conexão:', server.remote.pin)
     print('Pasta de midias:', server.media_dir or '(nenhuma: use --media-dir)')
     print('Canais:', server.state_dir / 'channels.json')
     print('PC -> HDMI -> TV (USB da Samsung NAO inicia sistemas operacionais)')
