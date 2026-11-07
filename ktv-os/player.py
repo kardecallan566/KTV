@@ -195,18 +195,18 @@ class NativePlayer:
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
             '--force-window=yes', '--ontop=yes', '--ontop-level=system', '--really-quiet',
-            '--cache=yes', '--cache-secs=20', '--demuxer-readahead-secs=15',
-            '--demuxer-max-bytes=32MiB', '--demuxer-max-back-bytes=8MiB',
-            '--audio-buffer=0.5', '--video-sync=audio', '--framedrop=vo',
-            '--vd-lavc-threads=2', '--network-timeout=20',
+            '--cache=yes', '--cache-secs=30', '--demuxer-readahead-secs=25',
+            '--demuxer-max-bytes=48MiB', '--demuxer-max-back-bytes=12MiB',
+            '--demuxer-thread=yes', '--audio-buffer=1.0', '--video-sync=audio', '--framedrop=vo',
+            '--vd-lavc-threads=1', '--network-timeout=25',
         ]
         is_pluto = (urlsplit(source).hostname == 'ipv4.pluto.tv'
                     and urlsplit(source).path.endswith('/master.m3u8'))
         if is_pluto:
             # End-of-playlist should be detected by the recovery worker, not
             # exit silently. A user-initiated Q/CLOSE_WIN exits with code 77.
-            args.extend(('--keep-open=yes','--network-timeout=20',
-                         '--demuxer-thread=yes','--cache=yes','--cache-secs=15'))
+            args.extend(('--keep-open=yes','--network-timeout=25',
+                         '--demuxer-thread=yes','--cache=yes','--cache-secs=30'))
         # Optional HTTP headers are supplied only by a server-side catalog,
         # never directly by the browser. Keep them bounded and syntactically safe.
         if user_agent is not None:
