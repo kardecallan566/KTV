@@ -24,7 +24,7 @@ QUALITY_PROFILES = {
 VIDEO_PROPERTIES = (
     'video-params', 'video-codec', 'container-fps', 'estimated-vf-fps',
     'frame-drop-count', 'decoder-frame-drop-count', 'demuxer-cache-duration',
-    'audio-pts', 'audio-speed', 'audio-bitrate', 'avsync,
+    'audio-pts', 'audio-speed', 'audio-bitrate', 'avsync',
     'hwdec-current', 'vid', 'aid', 'video-out-params',
     'time-pos', 'pause', 'eof-reached',
 )
