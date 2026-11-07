@@ -449,7 +449,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error': str(exc)}, 403)
         if path == '/api/remote/command':
             try:
-                result = self.server.remote.command(payload.get('token'), payload.get('action'))
+                result = self.server.remote.command(payload.get('token'), payload.get('action'),
+                                                   payload.get('dx', 0), payload.get('dy', 0))
+                action = result.get('action')
+                if action in ('mouse_move', 'mouse_left', 'mouse_right', 'scroll_up', 'scroll_down'):
+                    mouse_action = {'mouse_move':'move','mouse_left':'left','mouse_right':'right',
+                                    'scroll_up':'scroll_up','scroll_down':'scroll_down'}[action]
+                    self.server.input_controller.mouse(mouse_action, result.get('dx', 0), result.get('dy', 0))
                 return self.send_json(result)
             except ValueError as exc:
                 return self.send_json({'error': str(exc)}, 403)
