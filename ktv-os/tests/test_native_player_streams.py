@@ -34,7 +34,9 @@ class NativePlayerStreamTests(unittest.TestCase):
         args = self._launch_args("https://cdn.example.org/live/channel.ts", "best")
         self.assertIn("--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=10", args)
         self.assertIn("--demuxer-max-bytes=64MiB", args)
-        self.assertIn("--demuxer-max-back-bytes=16MiB", args)\n        self.assertIn("--cache-secs=40", args)\n        self.assertIn("--demuxer-readahead-secs=32", args)
+        self.assertIn("--demuxer-max-back-bytes=16MiB", args)
+        self.assertIn("--cache-secs=40", args)
+        self.assertIn("--demuxer-readahead-secs=32", args)
         self.assertFalse(any(arg.startswith("--hls-bitrate=") for arg in args))
         self.assertFalse(any("reconnect_at_eof" in arg for arg in args))
 
@@ -42,7 +44,9 @@ class NativePlayerStreamTests(unittest.TestCase):
         args = self._launch_args("https://cdn.example.org/live/channel.m3u8", "balanced")
         self.assertIn("--hls-bitrate=4000000", args)
         self.assertIn("--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_at_eof=1", args)
-        self.assertIn("--demuxer-max-bytes=32MiB", args)\n        self.assertIn("--cache-secs=30", args)\n        self.assertIn("--demuxer-readahead-secs=25", args)
+        self.assertIn("--demuxer-max-bytes=32MiB", args)
+        self.assertIn("--cache-secs=30", args)
+        self.assertIn("--demuxer-readahead-secs=25", args)
 
 
 if __name__ == "__main__":
