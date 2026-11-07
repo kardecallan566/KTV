@@ -430,7 +430,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if not self._guard_lan_request(path, 'POST'):
             return
-        if path not in ('/api/tv/antenna/scan', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/iptv-free/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
+        if path not in ('/api/tv/antenna/scan', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/iptv-free/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/player/audio-delay', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
@@ -477,6 +477,19 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error': str(exc)}, 403)
             except RuntimeError as exc:
                 return self.send_json({'error': str(exc)}, 503)
+
+        if path == '/api/player/audio-delay':
+            try:
+                from player import NativePlayer
+                delay=payload.get('delay')
+                if not isinstance(self.server.player,NativePlayer):
+                    raise RuntimeError('Ajuste de áudio requer o player mpv nativo')
+                applied=self.server.player.set_audio_delay(delay)
+                return self.send_json({'ok':True,'audio_delay':applied})
+            except ValueError as exc:
+                return self.send_json({'error':str(exc)},400)
+            except RuntimeError as exc:
+                return self.send_json({'error':str(exc)},503)
 
         if path == '/api/system/poweroff':
             # Unprivileged logind/systemctl policy enforcement. A custom header
