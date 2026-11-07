@@ -42,7 +42,8 @@ from pluto_favorites import PlutoFavorites, PlutoFavoritesError
 from pluto_recovery import PlutoRecovery
 from reidos_guide import ReiGuide, DiscoveryError
 from system_actions import SystemActions, SystemActionError
-from remote_control import RemoteControl\nfrom stability_engine import detect_playback_profile
+from remote_control import RemoteControl
+from stability_engine import detect_playback_profile
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path(os.environ.get('KTV_STATE_DIR', str(Path.home() / '.config' / 'ktv-os'))).expanduser()  # USB opcional
