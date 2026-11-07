@@ -263,6 +263,14 @@
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
       <div class="eyebrow">KTV OS</div><h2 id="dialog-title"></h2><p id="dialog-message"></p>
       <p class="small-note" id="smart-player-status" role="status"></p>
+      <div id="audio-sync-controls" class="small-note" hidden aria-label="Ajuste de sincronização do áudio">
+        <strong>Sincronização de áudio</strong>
+        <span id="audio-delay-value">0,00 s</span>
+        <button type="button" class="ghost focusable" id="audio-delay-minus">− 100 ms</button>
+        <button type="button" class="ghost focusable" id="audio-delay-reset">Zerar</button>
+        <button type="button" class="ghost focusable" id="audio-delay-plus">+ 100 ms</button>
+        <p>Use se o som estiver adiantado ou atrasado. Ajuste aplicado em tempo real (limite ±5 s).</p>
+      </div>
       <div id="integrated-player" hidden>
         <p id="embed-provider" class="embedded-provider"></p>
         <div class="embed-viewport"><iframe id="tv-embed" title="Player oficial incorporado ao KTV OS" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" allow="autoplay; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe></div>
