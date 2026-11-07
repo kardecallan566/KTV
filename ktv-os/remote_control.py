@@ -12,6 +12,7 @@ class RemoteControl:
         'accept', 'back', 'home', 'stop',
         'mouse_move', 'mouse_left', 'mouse_right', 'scroll_up', 'scroll_down',
         'channels', 'mychannels', 'tv', 'iptv', 'movies', 'sports', 'news', 'cartoons',
+        'volume_up', 'volume_down', 'mute',
     })
 
     def __init__(self):
