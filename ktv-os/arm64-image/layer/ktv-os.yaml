@@ -23,6 +23,8 @@ mmdebstrap:
 
     # Runtime e player nativo ja utilizados pelo KTV OS.
     - python3
+    - xdotool
+    - tzdata
     - mpv
     - curl
     - ca-certificates
@@ -78,6 +80,9 @@ mmdebstrap:
       install -d "$rootfs/opt/ktv-os"
       cp -a "$app_source/." "$rootfs/opt/ktv-os/"
 
+      # Define o fuso oficial de Brasília para relógio, logs e agenda.
+      ln -sf /usr/share/zoneinfo/America/Sao_Paulo "$rootfs/etc/localtime"
+      printf 'America/Sao_Paulo\\n' > "$rootfs/etc/timezone"
       # Reutiliza a sessao kiosk, autologin e diagnosticos ja usados no Linux Live.
       cp -a "$app_source/linux-live/overlay/." "$rootfs/"
 
