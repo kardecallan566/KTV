@@ -16,9 +16,9 @@ from urllib.parse import urlsplit
 from stream_urls import validate_stream_url, validate_pluto_url, StreamURLError
 
 QUALITY_PROFILES = {
-    'economy': {'hls_bitrate': 'min', 'forward': '12MiB', 'back': '4MiB'},
-    'balanced': {'hls_bitrate': '4000000', 'forward': '32MiB', 'back': '8MiB'},
-    'best': {'hls_bitrate': 'max', 'forward': '64MiB', 'back': '16MiB'},
+    'economy': {'hls_bitrate': 'min', 'forward': '12MiB', 'back': '4MiB', 'cache_secs': 15, 'readahead_secs': 10},
+    'balanced': {'hls_bitrate': '4000000', 'forward': '32MiB', 'back': '8MiB', 'cache_secs': 30, 'readahead_secs': 25},
+    'best': {'hls_bitrate': 'max', 'forward': '64MiB', 'back': '16MiB', 'cache_secs': 40, 'readahead_secs': 32},
 }
 # All property names are fixed: the browser cannot choose mpv commands.
 VIDEO_PROPERTIES = (
@@ -200,8 +200,10 @@ class NativePlayer:
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
             '--force-window=yes', '--ontop=yes', '--ontop-level=system', '--really-quiet',
-            '--cache=yes', '--cache-secs=30', '--demuxer-readahead-secs=25',
-            '--demuxer-max-bytes=48MiB', '--demuxer-max-back-bytes=12MiB',
+            '--cache=yes', '--cache-secs=' + str(QUALITY_PROFILES[quality]['cache_secs']),
+            '--demuxer-readahead-secs=' + str(QUALITY_PROFILES[quality]['readahead_secs']),
+            '--demuxer-max-bytes=' + QUALITY_PROFILES[quality]['forward'],
+            '--demuxer-max-back-bytes=' + QUALITY_PROFILES[quality]['back'],
             '--demuxer-thread=yes', '--audio-buffer=1.0', '--video-sync=audio', '--framedrop=vo',
             '--vd-lavc-threads=1', '--network-timeout=25',
             '--audio-pitch-correction=yes', '--interpolation=no', '--opengl-swapinterval=1',
