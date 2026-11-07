@@ -251,6 +251,9 @@
         else if(data.watchdog.state==='starting')parts.push('Monitor: estabilizando');
         else if(data.watchdog.state==='paused')parts.push('Monitor: pausado');
         else if(data.watchdog.state==='healthy')parts.push('Monitor: estável');
+        else if(data.watchdog.state==='recovering')parts.push('Reconectando automaticamente');
+        if(data.watchdog.recovery_in_progress)parts.push('Tentativa de recuperação em andamento');
+        else if(data.watchdog.recovery_attempts>0)parts.push('Reconexões: '+data.watchdog.recovery_attempts+'/3');
       }
       if(v.width && v.height)parts.push(v.width+'×'+v.height);
       if(v.codec)parts.push('Codec: '+v.codec);
