@@ -207,14 +207,14 @@ class NativePlayer:
                 '--no-video-title-show', '--no-osd', '--no-one-instance',
                 '--network-caching=4000', '--live-caching=4000', '--file-caching=1000',
                 '--clock-jitter=500', '--clock-synchro=1',
-                '--drop-late-frames', '--skip-frames', '--avcodec-hw=auto',
+                '--drop-late-frames', '--skip-frames', '--avcodec-hw=any',
                 '--quiet',
             ]
             if user_agent is not None:
                 args.append('--http-user-agent=' + user_agent)
             if referrer is not None:
                 args.append('--http-referrer=' + referrer)
-            args.extend(('--', source))
+            args.append(source)
             with self.lock:
                 try:
                     self.process = self.popen(args, stdin=subprocess.DEVNULL,
