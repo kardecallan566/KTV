@@ -42,7 +42,7 @@ from pluto_favorites import PlutoFavorites, PlutoFavoritesError
 from pluto_recovery import PlutoRecovery
 from reidos_guide import ReiGuide, DiscoveryError
 from system_actions import SystemActions, SystemActionError
-from remote_control import RemoteControl
+from remote_control import RemoteControl\nfrom stability_engine import detect_playback_profile
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path(os.environ.get('KTV_STATE_DIR', str(Path.home() / '.config' / 'ktv-os'))).expanduser()  # USB opcional
@@ -417,7 +417,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 self.server.antenna.stop()
             return self.send_json({'player':player_status,
                                    'recovery':self.server.pluto_recovery.status(),
-                                   'watchdog':self.server.player_watchdog.tick()})
+                                   'watchdog':self.server.player_watchdog.tick(),\n                                   'profile':detect_playback_profile()})
         if path == '/api/media':
             params = parse_qs(url.query)
             source = params.get('source', ['local'])[0]
@@ -656,7 +656,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             if kind == 'antenna':
                 self.server.pluto_recovery.cancel()
                 self.server.player.stop()
-                quality=payload.get('quality','balanced')
+                quality=payload.get('quality',detect_playback_profile()['quality'])
                 decode=payload.get('decode','default')
                 if quality not in ('economy','balanced','best') or type(quality) is not str:
                     raise ValueError('Perfil invalido')
@@ -701,7 +701,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 source, title = str(file), file.name
             else:
                 raise ValueError('Tipo de conteudo invalido')
-            quality = payload.get('quality', 'balanced')
+            quality = payload.get('quality', detect_playback_profile()['quality'])
             if type(quality) is not str or quality not in ('economy', 'balanced', 'best'):
                 raise ValueError('Perfil de qualidade invalido')
             decode = payload.get('decode', 'default')
