@@ -1134,6 +1134,8 @@
   el('backup-refresh').addEventListener('click',loadBackupDevices);
   el('backup-save').addEventListener('click',function(){backupRequest('backup');});
   el('backup-restore').addEventListener('click',function(){backupRequest('restore');});
+  function refreshRemoteHome(){get('/api/status',function(err,data){if(err||!data||!data.remote)return;el('home-remote-pin').textContent=data.remote.pin||'------';el('home-remote-url').textContent=data.remote.url?'Acesse no celular: '+data.remote.url:'Endereço remoto indisponível';});}
+  document.querySelector('[data-action="remote-refresh"]').addEventListener('click',refreshRemoteHome);
   get('/api/status',function(err,data){
     el('connection').textContent=err?'Servidor indisponível':'Sistema local conectado';
     if(!err){
@@ -1142,6 +1144,8 @@
       var remote=data.remote||{};
       el('remote-url').textContent=remote.url||'Não foi possível identificar o IP da rede';
       el('remote-pin').textContent=remote.pin||'Indisponível';
+      el('home-remote-pin').textContent=remote.pin||'------';
+      el('home-remote-url').textContent=remote.url?'Acesse no celular: '+remote.url:'Endereço remoto indisponível';
     }
   });
 
