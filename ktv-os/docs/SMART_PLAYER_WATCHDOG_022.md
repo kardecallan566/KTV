@@ -15,3 +15,12 @@
 O watchdog observa o relógio da mídia. Uma transmissão cujo timestamp não avance pode ser classificada como travada; por isso o limite é conservador. Não detecta congelamento visual com timestamp avançando, nem silêncio de áudio. A recuperação tenta reabrir o stream; não garante que o servidor remoto esteja disponível.
 
 Testes automatizados cobrem estado saudável, pausa, travamento, sessão recuperável e bloqueio de sessão não registrada. CI e reprodução real em hardware são validações separadas.
+
+
+## Diagnóstico de áudio e sincronização A/V
+
+- A telemetria agora diferencia faixa de áudio ausente, conteúdo somente áudio e faixa de vídeo detectada sem renderização confirmada.
+- Streams somente áudio não acionam o fallback de decodificação de vídeo por software; isso evita reinícios desnecessários em rádios e transmissões de áudio.
+- Exibe bitrate, velocidade e PTS de áudio quando o mpv fornece esses valores.
+- A sincronização A/V é mostrada em segundos; valores absolutos a partir de 250 ms recebem aviso e a partir de 500 ms recebem alerta mais forte.
+- Esses indicadores são diagnósticos, não correção automática de atraso. A disponibilidade das propriedades depende do stream, do decoder e do mpv.
