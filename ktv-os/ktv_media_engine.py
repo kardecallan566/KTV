@@ -188,6 +188,34 @@ class KTVMediaEngine:
                 with self._lock:
                     self._record('state', '{}->{}'.format(old.value_nick, new.value_nick))
 
+    def pause(self):
+        gst = self._gst or self._load_gst()
+        with self._lock:
+            pipeline = self._pipeline
+            if pipeline is None:
+                return False
+            result = pipeline.set_state(gst.State.PAUSED)
+            if result == gst.StateChangeReturn.FAILURE:
+                return False
+            self._state = 'paused'
+            self._record('pause')
+        self._recovery.pause()
+        return True
+
+    def resume(self):
+        gst = self._gst or self._load_gst()
+        with self._lock:
+            pipeline = self._pipeline
+            if pipeline is None:
+                return False
+            result = pipeline.set_state(gst.State.PLAYING)
+            if result == gst.StateChangeReturn.FAILURE:
+                return False
+            self._state = 'starting'
+            self._record('resume')
+        self._recovery.resume()
+        return True
+
     def _recover_pipeline(self):
         gst = self._gst or self._load_gst()
         with self._lock:
