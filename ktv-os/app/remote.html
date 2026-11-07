@@ -38,7 +38,7 @@ button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .touchpad:before{content:"";position:absolute;inset:12px;border:1px dashed #42647e;border-radius:13px;pointer-events:none}
 .touchpad:active{border-color:#66d8d0;background:#15374b}.touchpad small{display:block;font-size:12px;margin-top:9px;color:#84a9c5}
 .mousebuttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.mousebuttons button{font-size:13px;min-height:48px}.mousebuttons .stop{grid-column:1/-1}
-.wheel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.wheel button{min-height:44px;font-size:13px}
+.wheel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px} .wheel button{min-height:44px;font-size:13px}\n.volume{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:9px}.volume button{min-height:48px;font-size:13px}\n.sensitivity{margin-top:13px;padding:10px 12px;border:1px solid #294762;border-radius:13px;background:#091a2c}.sensitivity label{display:flex;justify-content:space-between;font-size:12px;color:#b5c9dc;margin-bottom:8px}.sensitivity input{min-height:auto;height:28px;letter-spacing:0;padding:0;accent-color:#62e4d7}
 @media(min-width:420px){body{padding:22px 16px}.card{padding:20px}.touchpad{height:270px}.pad button{min-height:76px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 </style>
@@ -60,7 +60,7 @@ button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
       <div>☝ Deslize o dedo para mover o mouse<small>Toque uma vez para clicar • use os botões abaixo</small></div>
     </div>
     <div class="mousebuttons"><button data-action="mouse_left">Clique esquerdo</button><button data-action="mouse_right">Clique direito</button><button data-action="stop">■ Parar vídeo</button></div>
-    <div class="wheel"><button data-action="scroll_up">▲ Rolar</button><button data-action="scroll_down">▼ Rolar</button></div>
+    <div class="wheel"><button data-action="scroll_up">▲ Rolar</button><button data-action="scroll_down">▼ Rolar</button></div>\n    <div class="volume"><button data-action="volume_down">🔉 Volume −</button><button data-action="mute">🔇 Silenciar</button><button data-action="volume_up">🔊 Volume +</button></div>\n    <div class="sensitivity"><label for="mouse-speed">Velocidade do mouse <strong id="speed-value">2,0×</strong></label><input id="mouse-speed" type="range" min="0.5" max="4" step="0.1" value="2" aria-label="Sensibilidade do mouse"></div>
     <div class="section-label">Navegação</div><div class="pad">
       <span></span><button data-action="ArrowUp" aria-label="Cima">▲</button><span></span>
       <button data-action="ArrowLeft" aria-label="Esquerda">◀</button><button class="ok" data-action="accept">OK</button><button data-action="ArrowRight" aria-label="Direita">▶</button>
@@ -88,7 +88,7 @@ button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
       token=data.token;pairCard.classList.add('hidden');remoteCard.classList.remove('hidden');remoteCard.classList.add('connected');remoteStatus.textContent='Controle conectado.';
     }).catch(function(error){pairStatus.textContent=error.message;});
   });
-  var inflight=false,dxQueue=0,dyQueue=0,lastMove=0;
+  var inflight=false,dxQueue=0,dyQueue=0,mouseSpeed=2;\n  var speedControl=document.getElementById('mouse-speed'),speedValue=document.getElementById('speed-value');\n  try{var savedSpeed=localStorage.getItem('ktvRemoteMouseSpeed');if(savedSpeed&&Number(savedSpeed)>=0.5&&Number(savedSpeed)<=4)speedControl.value=savedSpeed;}catch(ignore){}\n  mouseSpeed=Number(speedControl.value);speedValue.textContent=mouseSpeed.toFixed(1).replace('.',',')+'×';\n  speedControl.addEventListener('input',function(){mouseSpeed=Number(speedControl.value);speedValue.textContent=mouseSpeed.toFixed(1).replace('.',',')+'×';try{localStorage.setItem('ktvRemoteMouseSpeed',String(mouseSpeed));}catch(ignore){}});
   function send(action,extra){
     if(!token)return;
     var started=performance.now(),body=Object.assign({token:token,action:action},extra||{});
@@ -106,7 +106,7 @@ button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
   pad.addEventListener('pointermove',function(e){
     if(!pointer||pointer.id!==e.pointerId)return;
     var dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer.x=e.clientX;pointer.y=e.clientY;
-    if(Math.abs(dx)+Math.abs(dy)>0){pointer.moved=true;dxQueue+=Math.round(dx*2.0);dyQueue+=Math.round(dy*2.0);}
+    if(Math.abs(dx)+Math.abs(dy)>0){pointer.moved=true;dxQueue+=Math.round(dx*mouseSpeed);dyQueue+=Math.round(dy*mouseSpeed);}
     e.preventDefault();
   });
   function flushMouse(){
