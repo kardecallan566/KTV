@@ -1,6 +1,8 @@
 #!/bin/sh
 # Executed inside the disposable Debian Live filesystem during ISO build.
 set -eu
+# Relogio do sistema, logs e agenda no horario de Brasilia.ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
+printf 'America/Sao_Paulo\n' > /etc/timezone
 systemctl set-default graphical.target
 systemctl enable lightdm.service
 systemctl enable NetworkManager.service
