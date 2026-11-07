@@ -248,7 +248,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         if path == '/api/remote/commands':
             try:
                 after = parse_qs(url.query).get('after', ['0'])[0]
-                if not re.fullmatch(r'\\d{1,12}', after):
+                if not re.fullmatch(r'\d{1,12}', after):
                     raise ValueError('Sequencia invalida')
                 return self.send_json(self.server.remote.events_since(int(after)))
             except ValueError as exc:
