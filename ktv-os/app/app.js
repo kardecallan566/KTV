@@ -252,6 +252,9 @@
       if(v.dropped_frames!==null && v.dropped_frames!==undefined)parts.push('Quadros perdidos: '+v.dropped_frames);
       if(v.buffer_seconds!==null && v.buffer_seconds!==undefined)parts.push('Buffer: '+v.buffer_seconds+' s');
       if(v.hardware_decoder)parts.push('Decoder: '+v.hardware_decoder);
+      if(v.audio_bitrate)parts.push('Áudio: '+Math.round(v.audio_bitrate/1000)+' kb/s');
+      if(v.audio_speed)parts.push('Velocidade áudio: '+v.audio_speed);
+      if(v.av_sync!==null&&v.av_sync!==undefined)parts.push('Sincronia A/V: '+v.av_sync+' s');
       if(v.video_track && v.audio_track && v.video_rendered===false)parts.push('Vídeo ainda não renderizado — tente modo compatível se persistir');
       if(v.audio_track && (v.video_rendered===false || v.video_track===false)){
         noVideoPolls++;
