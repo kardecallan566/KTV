@@ -43,3 +43,12 @@ class RemoteLongPollTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+    def test_multimedia_actions_are_allowlisted_and_session_protected(self):
+        for action in ('volume_up', 'volume_down', 'mute'):
+            result = self.remote.command(self.token, action)
+            self.assertEqual(result['action'], action)
+        with self.assertRaises(ValueError):
+            self.remote.command(self.token, 'arbitrary_key')
+        with self.assertRaises(ValueError):
+            self.remote.command('invalid-token', 'mute')
