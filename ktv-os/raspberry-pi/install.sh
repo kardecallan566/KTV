@@ -30,7 +30,7 @@ DEST="/opt/ktv-os"
 echo "==> Instalando dependências (pode levar alguns minutos)..."
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  python3 mpv chromium-browser \
+  python3 mpv chromium-browser rsync \
   xserver-xorg xinit openbox lightdm curl ca-certificates
 
 echo "==> Copiando KTV OS para $DEST..."
