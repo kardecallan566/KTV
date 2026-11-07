@@ -3,7 +3,7 @@
 Pure decision logic: no player commands, no hardware assumptions, easy to test.
 """
 from collections import deque
-from statistics import median
+from statistics import median\nfrom pathlib import Path
 
 
 PI3_PROFILE = {
@@ -117,3 +117,16 @@ def visual_state(video, timeline_advanced):
     if video.get("video_track") and not video.get("video_rendered"):
         return {"state": "black_or_missing", "confidence": "low", "message": "Faixa de vídeo existe, mas saída de vídeo não foi confirmada."}
     return {"state": "unknown", "confidence": "low", "message": "Não há evidência suficiente para avaliar frames."}
+
+
+def detect_playback_profile(model_path="/proc/device-tree/model"):
+    """Select conservative defaults only when Raspberry Pi 3 is explicitly detected."""
+    try:
+        model = Path(model_path).read_bytes().decode("ascii", "ignore").replace("\\x00", "").strip()
+    except OSError:
+        model = ""
+    if "Raspberry Pi 3" in model or "BCM2837" in model:
+        return dict(PI3_PROFILE)
+    return {"name": "generic", "quality": "balanced", "decode": "default",
+            "max_width": None, "max_height": None, "max_fps": None,
+            "reason": "Hardware não identificado; perfil padrão equilibrado."}
