@@ -64,7 +64,8 @@ class LinuxLiveProfileTests(unittest.TestCase):
 
     def test_local_user_state_and_iso_hybrid(self):
         launcher = (ROOT / 'ktv-os/launcher.py').read_text()
-        self.assertIn('KTV_STATE_DIR', launcher)\n        self.assertIn("Path.home() / '.config' / 'ktv-os'", launcher)
+        self.assertIn('KTV_STATE_DIR', launcher)
+        self.assertIn("Path.home() / '.config' / 'ktv-os'", launcher)
         builder = (LINUX / 'build-iso.sh').read_text()
         self.assertIn('--binary-images iso-hybrid', builder)
         self.assertIn('--debian-installer none', builder)
