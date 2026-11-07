@@ -1097,6 +1097,9 @@
     if(!err){
       nativeAvailable=!!(data.player&&data.player.available);
       el('server-detail').textContent='KTV OS '+data.version+' · '+data.host+' · Player: '+(nativeAvailable?'mpv nativo pronto':'navegador (mpv não encontrado)')+' · Acesso local.';
+      var remote=data.remote||{};
+      el('remote-url').textContent=remote.url||'Não foi possível identificar o IP da rede';
+      el('remote-pin').textContent=remote.pin||'Indisponível';
     }
   });
 
@@ -1298,8 +1301,26 @@
       return;
     }
     if(action==='home'){route('inicio');return;}
+    if(action==='stop'){
+      if(nativeActive)stopNative();
+      else post('/api/player/stop',{},function(){});
+      if(!overlay.hidden)el('dialog-message').textContent='Reprodução encerrada.';
+      return;
+    }
     document.dispatchEvent(new KeyboardEvent('keydown',{key:action,bubbles:true,cancelable:true}));
   }
+  var remoteSequence=0,remotePollBusy=false;
+  function pollRemoteCommands(){
+    if(remotePollBusy)return;
+    remotePollBusy=true;
+    get('/api/remote/commands?after='+remoteSequence,function(err,data){
+      remotePollBusy=false;
+      if(err||!data)return;
+      if(typeof data.last==='number')remoteSequence=Math.max(remoteSequence,data.last);
+      (data.events||[]).forEach(function(event){padAction(event.action);});
+    });
+  }
+  window.setInterval(pollRemoteCommands,220);
   function gamepadPoll(timestamp) {
     if(typeof navigator.getGamepads==='function'){
       var pads=navigator.getGamepads();
