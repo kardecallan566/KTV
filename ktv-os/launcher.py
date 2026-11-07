@@ -418,7 +418,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 self.server.antenna.stop()
             return self.send_json({'player':player_status,
                                    'recovery':self.server.pluto_recovery.status(),
-                                   'watchdog':self.server.player_watchdog.tick(),\n                                   'profile':detect_playback_profile()})
+                                   'watchdog':self.server.player_watchdog.tick(),
+                                   'profile':detect_playback_profile()})
         if path == '/api/media':
             params = parse_qs(url.query)
             source = params.get('source', ['local'])[0]
