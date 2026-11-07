@@ -1290,6 +1290,23 @@
   var lastPadTime = 0;
   var lastPadConnected = false;
   function padAction(action) {
+    var shortcuts={channels:'all',movies:'Filmes',sports:'Futebol',news:'Notícias',cartoons:'Desenhos'};
+    if(action==='channels'||action==='tv'||action==='iptv'||shortcuts[action]){
+      route('canais');
+      setTimeout(function(){
+        var target=null;
+        if(action==='tv'){
+          target=document.querySelector('.tv-aberta-panel');
+        }else if(action==='iptv'){
+          target=el('iptv-free-channels');
+        }else if(shortcuts[action]){
+          var filter=el('public-channel-filter');
+          filter.value=shortcuts[action];renderPublicChannels();target=el('public-channels');
+        }else target=el('channel-create');
+        if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+      },120);
+      return;
+    }
     if(action==='accept'){
       var focused=document.activeElement;
       if(focused && typeof focused.click==='function')focused.click();
@@ -1320,7 +1337,7 @@
       (data.events||[]).forEach(function(event){padAction(event.action);});
     });
   }
-  window.setInterval(pollRemoteCommands,70);
+  window.setInterval(pollRemoteCommands,40);
   function gamepadPoll(timestamp) {
     if(typeof navigator.getGamepads==='function'){
       var pads=navigator.getGamepads();
