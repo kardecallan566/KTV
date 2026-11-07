@@ -134,9 +134,10 @@ def read_media(media_root):
             pass
     return found
 
-def watchdog_reconnect(player, session):
+def watchdog_reconnect(player, session, decode_override=None):
     """Replay only a previously validated non-Pluto catalog stream."""
     source, name, quality, decode, user_agent, referrer = session
+    decode = decode_override or decode
     from player import NativePlayer
     if isinstance(player, NativePlayer):
         player.play(source, name, quality=quality, decode=decode,
@@ -169,7 +170,9 @@ class KTVOSServer(ThreadingHTTPServer):
         self.player = player if player is not None else NativePlayer()
         self.pluto_recovery = (pluto_recovery if pluto_recovery is not None
                                else PlutoRecovery(self.pluto, self.player))
-        self.player_watchdog = PlayerWatchdog(self.player, recover=lambda session: watchdog_reconnect(self.player, session))
+        self.player_watchdog = PlayerWatchdog(
+            self.player, recover=lambda session: watchdog_reconnect(self.player, session),
+            fallback=lambda session: watchdog_reconnect(self.player, session, decode_override='compatible'))
         self.hardware = hardware if hardware is not None else HardwareManager()
         self.cec = cec if cec is not None else CECBridge()
         self.network = network if network is not None else NetworkManager()
