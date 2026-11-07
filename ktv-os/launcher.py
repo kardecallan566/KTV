@@ -262,10 +262,12 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_data(200, (APP / filename).read_bytes(), mime)
         if path == '/api/remote/commands':
             try:
-                after = parse_qs(url.query).get('after', ['0'])[0]
-                if not re.fullmatch(r'\d{1,12}', after):
-                    raise ValueError('Sequencia invalida')
-                return self.send_json(self.server.remote.events_since(int(after)))
+                params = parse_qs(url.query)
+                after = params.get('after', ['0'])[0]
+                wait = params.get('wait', ['0'])[0]
+                if not re.fullmatch(r'\d{1,12}', after) or not re.fullmatch(r'\d{1,2}(?:\.\d+)?', wait):
+                    raise ValueError('Sequencia ou espera invalida')
+                return self.send_json(self.server.remote.events_since(int(after), float(wait)))
             except ValueError as exc:
                 return self.send_json({'error': str(exc)}, 400)
         if path == '/api/status':
