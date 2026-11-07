@@ -24,6 +24,7 @@ QUALITY_PROFILES = {
 VIDEO_PROPERTIES = (
     'video-params', 'video-codec', 'container-fps', 'estimated-vf-fps',
     'frame-drop-count', 'decoder-frame-drop-count', 'demuxer-cache-duration',
+    'audio-pts', 'audio-speed', 'audio-bitrate', 'avsync,
     'hwdec-current', 'vid', 'aid', 'video-out-params',
     'time-pos', 'pause', 'eof-reached',
 )
@@ -123,6 +124,10 @@ class NativePlayer:
             'dropped_frames': _number(properties.get('frame-drop-count'), 100000000),
             'decoder_dropped_frames': _number(properties.get('decoder-frame-drop-count'), 100000000),
             'buffer_seconds': _number(properties.get('demuxer-cache-duration'), 3600),
+            'audio_pts': _number(properties.get('audio-pts'), 8640000),
+            'audio_speed': _number(properties.get('audio-speed'), 10),
+            'audio_bitrate': _number(properties.get('audio-bitrate'), 100000000),
+            'av_sync': _number(properties.get('avsync'), 3600),
         }
 
     def status(self):
@@ -199,6 +204,8 @@ class NativePlayer:
             '--demuxer-max-bytes=48MiB', '--demuxer-max-back-bytes=12MiB',
             '--demuxer-thread=yes', '--audio-buffer=1.0', '--video-sync=audio', '--framedrop=vo',
             '--vd-lavc-threads=1', '--network-timeout=25',
+            '--audio-pitch-correction=yes', '--interpolation=no', '--opengl-swapinterval=1',
+            '--hr-seek=no', '--force-seekable=no',
         ]
         is_pluto = (urlsplit(source).hostname == 'ipv4.pluto.tv'
                     and urlsplit(source).path.endswith('/master.m3u8'))
