@@ -11,7 +11,7 @@ class RemoteControl:
         'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
         'accept', 'back', 'home', 'stop',
         'mouse_move', 'mouse_left', 'mouse_right', 'scroll_up', 'scroll_down',
-        'channels', 'tv', 'iptv', 'movies', 'sports', 'news', 'cartoons',
+        'channels', 'mychannels', 'tv', 'iptv', 'movies', 'sports', 'news', 'cartoons,
     })
 
     def __init__(self):
