@@ -47,7 +47,7 @@ from stability_engine import detect_playback_profile
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path(os.environ.get('KTV_STATE_DIR', str(Path.home() / '.config' / 'ktv-os'))).expanduser()  # USB opcional
-VERSION = '0.26.0'
+VERSION = '0.27.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
     '.mp3': ('audio', 'audio/mpeg'), '.m4a': ('audio', 'audio/mp4'),
@@ -220,7 +220,7 @@ def lan_ipv4():
 
 
 class KTVOSHandler(BaseHTTPRequestHandler):
-    server_version = 'KTV-OS/0.26'
+    server_version = 'KTV-OS/0.27'
     def log_message(self, fmt, *args):
         # Mouse motion is high-frequency (dozens of requests per second).
         # Avoid synchronous terminal/log I/O for routine remote traffic.
