@@ -44,7 +44,8 @@ class RemoteLongPollTests(unittest.TestCase):
     def test_multimedia_actions_are_allowlisted_and_session_protected(self):
         for action in ('volume_up', 'volume_down', 'mute'):
             result = self.remote.command(self.token, action)
-            self.assertTrue(result['ok'])\n            self.assertEqual(self.remote.events_since(0)['events'][-1]['action'], action)
+            self.assertTrue(result['ok'])
+            self.assertEqual(self.remote.events_since(0)['events'][-1]['action'], action)
         with self.assertRaises(ValueError):
             self.remote.command(self.token, 'arbitrary_key')
         with self.assertRaises(ValueError):
