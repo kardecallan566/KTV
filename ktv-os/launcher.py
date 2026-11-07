@@ -660,6 +660,9 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             decode = payload.get('decode', 'default')
             if type(decode) is not str or decode not in ('default', 'compatible'):
                 raise ValueError('Modo de decodificacao invalido')
+            backend = payload.get('backend', 'mpv')
+            if type(backend) is not str or backend not in ('mpv', 'vlc'):
+                raise ValueError('Player selecionado invalido')
             # A manual channel change cancels automatic Pluto restoration.
             self.server.pluto_recovery.cancel()
             # Compatibility with simple mocked players used in old regression suites.
@@ -667,9 +670,9 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             if isinstance(self.server.player, NativePlayer):
                 if kind == 'iptv_free':
                     info = self.server.player.play(source, title, quality=quality, decode=decode,
-                                                  user_agent=user_agent, referrer=referrer)
+                                                  user_agent=user_agent, referrer=referrer, backend=backend)
                 else:
-                    info = self.server.player.play(source, title, quality=quality, decode=decode)
+                    info = self.server.player.play(source, title, quality=quality, decode=decode, backend=backend)
             else:
                 info = self.server.player.play(source, title)
             if kind == 'pluto':
