@@ -1291,12 +1291,13 @@
   var lastPadConnected = false;
   function padAction(action) {
     var shortcuts={channels:'all',movies:'Filmes',sports:'Futebol',news:'Notícias',cartoons:'Desenhos'};
-    if(action==='channels'||action==='tv'||action==='iptv'||shortcuts[action]){
+    if(action==='channels'||action==='mychannels'||action==='tv'||action==='iptv'||shortcuts[action]){
       route('canais');
       setTimeout(function(){
         var target=null;
         if(action==='tv'){
           target=document.querySelector('.tv-aberta-panel');
+        }else if(action==='mychannels'){target=el('channels');
         }else if(action==='iptv'){
           target=el('iptv-free-channels');
         }else if(shortcuts[action]){
