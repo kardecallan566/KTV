@@ -1369,18 +1369,27 @@
     }
     document.dispatchEvent(new KeyboardEvent('keydown',{key:action,bubbles:true,cancelable:true}));
   }
-  var remoteSequence=0,remotePollBusy=false;
+  // Long polling: the server wakes this request as soon as the phone sends
+  // a command. It replaces 25 HTTP requests/second and avoids timer throttling.
+  var remoteSequence=0,remotePollBusy=false,remoteRetryTimer=null;
   function pollRemoteCommands(){
     if(remotePollBusy)return;
     remotePollBusy=true;
-    get('/api/remote/commands?after='+remoteSequence,function(err,data){
+    get('/api/remote/commands?after='+remoteSequence+'&wait=20',function(err,data){
       remotePollBusy=false;
-      if(err||!data)return;
+      if(err||!data){
+        if(!remoteRetryTimer)remoteRetryTimer=window.setTimeout(function(){
+          remoteRetryTimer=null;pollRemoteCommands();
+        },500);
+        return;
+      }
       if(typeof data.last==='number')remoteSequence=Math.max(remoteSequence,data.last);
       (data.events||[]).forEach(function(event){padAction(event.action);});
+      // Re-arm only after the previous request has completed.
+      pollRemoteCommands();
     });
   }
-  window.setInterval(pollRemoteCommands,40);
+  pollRemoteCommands();
   function gamepadPoll(timestamp) {
     if(typeof navigator.getGamepads==='function'){
       var pads=navigator.getGamepads();
