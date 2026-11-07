@@ -69,6 +69,30 @@ class InputController:
                 raise RuntimeError('Nao foi possivel abrir teclado virtual') from exc
             return self.status()
 
+    def mouse(self, action, dx=0, dy=0):
+        """Move/click the X11 pointer using fixed xdotool operations only."""
+        executable = shutil.which('xdotool')
+        if not executable:
+            raise RuntimeError('Mouse remoto requer xdotool (sudo apt install xdotool)')
+        if action == 'move':
+            if type(dx) is not int or type(dy) is not int or abs(dx) > 1000 or abs(dy) > 1000:
+                raise ValueError('Movimento do mouse invalido')
+            if dx == 0 and dy == 0:
+                return {'moved': True}
+            args = [executable, 'mousemove_relative', '--', str(dx), str(dy)]
+        elif action in ('left', 'right'):
+            args = [executable, 'click', '1' if action == 'left' else '3']
+        elif action in ('scroll_up', 'scroll_down'):
+            args = [executable, 'click', '4' if action == 'scroll_up' else '5']
+        else:
+            raise ValueError('Acao de mouse invalida')
+        try:
+            subprocess.run(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=0.35, check=True)
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise RuntimeError('Nao foi possivel controlar o mouse X11') from exc
+        return {'moved': True}
+
     def close(self):
         with self.lock:
             if self.process is not None and self.process.poll() is None:
