@@ -35,7 +35,7 @@ main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{fo
       <button data-action="ArrowLeft" aria-label="Esquerda">◀</button><button class="ok" data-action="accept">OK</button><button data-action="ArrowRight" aria-label="Direita">▶</button>
       <span></span><button data-action="ArrowDown" aria-label="Baixo">▼</button><span></span>
     </div>
-    <div class="actions"><button data-action="home">⌂ Início</button><button data-action="back">↩ Voltar</button><button id="disconnect">Desconectar</button><button id="recenter">Mouse: centralizar</button></div>
+    <div class="actions"><button data-action="home">⌂ Início</button><button data-action="back">↩ Voltar</button><button id="disconnect">Desconectar</button></div>
     <div class="status" id="remote-status" role="status">Conectado.</div>
   </section>
   <div class="hint">Controle local protegido por código temporário. Não funciona fora da sua rede.</div>
@@ -93,7 +93,6 @@ main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{fo
   pad.addEventListener('contextmenu',function(e){e.preventDefault();send('mouse_right');});
   function disconnect(){token='';dxQueue=dyQueue=0;remoteCard.classList.add('hidden');pairCard.classList.remove('hidden');document.getElementById('pin').value='';pairStatus.textContent='Desconectado.';}
   document.getElementById('disconnect').addEventListener('click',disconnect);
-  document.getElementById('recenter').addEventListener('click',function(){send('mouse_move', {dx:0,dy:0});remoteStatus.textContent='Use o touchpad para posicionar o cursor.';});
 })();
 </script>
 </body>
