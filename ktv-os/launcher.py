@@ -134,6 +134,18 @@ def read_media(media_root):
             pass
     return found
 
+def watchdog_reconnect(player, session):
+    """Replay only a previously validated non-Pluto catalog stream."""
+    source, name, quality, decode, user_agent, referrer = session
+    from player import NativePlayer
+    if isinstance(player, NativePlayer):
+        player.play(source, name, quality=quality, decode=decode,
+                    user_agent=user_agent, referrer=referrer)
+    else:
+        player.play(source, name)
+    return True
+
+
 class KTVOSServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
@@ -157,7 +169,7 @@ class KTVOSServer(ThreadingHTTPServer):
         self.player = player if player is not None else NativePlayer()
         self.pluto_recovery = (pluto_recovery if pluto_recovery is not None
                                else PlutoRecovery(self.pluto, self.player))
-        self.player_watchdog = PlayerWatchdog(self.player)
+        self.player_watchdog = PlayerWatchdog(self.player, recover=lambda session: watchdog_reconnect(self.player, session))
         self.hardware = hardware if hardware is not None else HardwareManager()
         self.cec = cec if cec is not None else CECBridge()
         self.network = network if network is not None else NetworkManager()
@@ -609,6 +621,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         if path == '/api/player/stop':
             self.server.pluto_recovery.cancel()
             self.server.player.stop()
+            self.server.player_watchdog.set_session(None, None, None, None, recoverable=False)
             self.server.antenna.stop()
             return self.send_json({'ok':True,'player':self.server.player.status()})
         kind = payload.get('kind')
@@ -679,6 +692,10 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             else:
                 info = self.server.player.play(source, title)
             self.server.player_watchdog.reset()
+            self.server.player_watchdog.set_session(
+                source, title, quality, decode, user_agent, referrer,
+                recoverable=(kind != 'pluto' and kind != 'antenna' and
+                            source.startswith(('http://', 'https://'))))
             if kind == 'pluto':
                 self.server.pluto_recovery.activate(payload.get('id'),quality,decode)
         except (ValueError, OSError) as exc:
