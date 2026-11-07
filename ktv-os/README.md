@@ -210,3 +210,12 @@ sudo python3 tools/atualizar_ktv_usb.py
 ```
 
 Os backups ficam em `.ktv-backups/` dentro da pasta do KTV. Após a atualização, recarregue a página da TV com `Ctrl+Shift+R`; mudanças em Python podem exigir reiniciar o serviço KTV. Não use o atualizador enquanto estiver reproduzindo ou durante uma gravação de configuração.
+
+
+### Smart Player — estabilidade e diagnóstico (atualização)
+
+O mpv usa cache de 30 s, pré-leitura de 25 s, buffer de áudio de 1 s, decodificação limitada a uma thread e reconexão FFmpeg para HLS. Essas opções priorizam estabilidade e menor disputa de CPU em Raspberry Pi 3; o resultado varia com codec, resolução, rede e capacidade do servidor.
+
+Na tela **Canais → KTV Smart Player**, o diagnóstico informa resolução, codec, FPS, quadros perdidos, buffer, decoder, bitrate de áudio e sincronismo A/V quando o mpv fornece essas métricas. Elas são indicadores técnicos: não detectam com certeza o áudio audivelmente silencioso (ex.: stream sem amostras de áudio ou saída HDMI mutada).
+
+Se um canal ficar sem som, teste outro canal e confira a saída de áudio do sistema/HDMI. Para vídeo sem imagem, use o modo compatível; decodificação por software pode consumir mais CPU. Não existe garantia de recuperação automática para toda fonte genérica; Pluto TV possui rotina específica de reconexão.
