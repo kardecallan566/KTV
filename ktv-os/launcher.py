@@ -479,6 +479,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                     mouse_action = {'mouse_move':'move','mouse_left':'left','mouse_right':'right',
                                     'scroll_up':'scroll_up','scroll_down':'scroll_down'}[action]
                     self.server.input_controller.mouse(mouse_action, result.get('dx', 0), result.get('dy', 0))
+                elif action in ('volume_up', 'volume_down', 'mute'):
+                    self.server.input_controller.media_key(action)
                 return self.send_json(result)
             except ValueError as exc:
                 return self.send_json({'error': str(exc)}, 403)
