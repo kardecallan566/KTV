@@ -1,20 +1,19 @@
-"""Conservative playback watchdog for native mpv sessions.
-
-It detects timeline stalls without restarting arbitrary streams. Pluto's
-credential-aware recovery remains handled by PlutoRecovery.
-"""
+"""Conservative mpv timeline watchdog with bounded generic reconnection."""
 import threading
 import time
 
 CHECK_INTERVAL = 5
-STALL_SECONDS = 45
+STALL_SECONDS = 60
 START_GRACE = 35
+MAX_RECOVERY_ATTEMPTS = 3
+RECOVERY_COOLDOWN = 30
 
 
 class PlayerWatchdog:
-    def __init__(self, player, clock=None, threaded=True):
+    def __init__(self, player, clock=None, threaded=True, recover=None):
         self.player = player
         self.clock = clock or time.monotonic
+        self.recover = recover
         self.lock = threading.RLock()
         self.stop_event = threading.Event()
         self.started = 0
@@ -22,6 +21,10 @@ class PlayerWatchdog:
         self.last_pos = None
         self.state = "idle"
         self.message = "Monitor aguardando reprodução."
+        self.session = None
+        self.recovery_attempts = 0
+        self.last_recovery = 0
+        self.recovery_in_progress = False
         self.thread = None
         if threaded:
             self.thread = threading.Thread(target=self._loop, daemon=True,
@@ -31,6 +34,15 @@ class PlayerWatchdog:
     def _loop(self):
         while not self.stop_event.wait(CHECK_INTERVAL):
             self.tick()
+
+    def set_session(self, source, name, quality, decode, user_agent=None,
+                    referrer=None, recoverable=True):
+        with self.lock:
+            self.session = ((source, name, quality, decode, user_agent, referrer)
+                           if recoverable else None)
+            self.recovery_attempts = 0
+            self.last_recovery = 0
+            self.recovery_in_progress = False
 
     def reset(self):
         now = self.clock()
@@ -50,6 +62,9 @@ class PlayerWatchdog:
                 self.last_pos = None
                 self.state = "idle"
                 self.message = "Nenhuma reprodução nativa ativa."
+                self.session = None
+                self.recovery_attempts = 0
+                self.recovery_in_progress = False
                 return self.status_unlocked()
             video = info.get("video")
             if not isinstance(video, dict):
@@ -71,7 +86,6 @@ class PlayerWatchdog:
                     self.state = "healthy"
                     self.message = "Avanço de reprodução normal."
                 elif pos < self.last_pos - 5:
-                    # Live timelines can reset/wrap; treat as progress.
                     self.last_pos = pos
                     self.last_progress = now
                     self.state = "healthy"
@@ -82,18 +96,53 @@ class PlayerWatchdog:
             elif now - self.last_progress >= STALL_SECONDS:
                 self.state = "stalled"
                 self.message = "Possível travamento: linha do tempo sem avançar."
-            elif self.state not in ("healthy", "stalled"):
+                if (self.session and self.recover and not self.recovery_in_progress
+                        and self.recovery_attempts < MAX_RECOVERY_ATTEMPTS
+                        and now - self.last_recovery >= RECOVERY_COOLDOWN):
+                    self.recovery_in_progress = True
+                    threading.Thread(target=self._recover_session, daemon=True,
+                                     name="ktv-watchdog-recovery").start()
+            elif self.state not in ("healthy", "stalled", "recovering"):
                 self.state = "healthy"
                 self.message = "Player ativo; monitoramento normal."
             return self.status_unlocked()
+
+    def _recover_session(self):
+        with self.lock:
+            session = self.session
+            if not session or self.stop_event.is_set():
+                self.recovery_in_progress = False
+                return
+            self.recovery_attempts += 1
+            self.last_recovery = self.clock()
+        try:
+            result = self.recover(session)
+            with self.lock:
+                if result:
+                    now = self.clock()
+                    self.started = now
+                    self.last_progress = now
+                    self.last_pos = None
+                    self.state = "recovering"
+                    self.message = "Reconexão automática solicitada; aguardando sinal."
+                else:
+                    self.message = "Reconexão automática não foi possível; mantendo monitoramento."
+        except Exception:
+            with self.lock:
+                self.message = "Falha ao tentar reconexão automática."
+        finally:
+            with self.lock:
+                self.recovery_in_progress = False
 
     def status_unlocked(self):
         now = self.clock()
         return {
             "state": self.state,
             "message": self.message,
-            "stall_seconds": (round(max(0, now - self.last_progress))
-                              if self.last_progress else 0),
+            "stall_seconds": round(max(0, now - self.last_progress)) if self.last_progress else 0,
+            "recovery_attempts": self.recovery_attempts,
+            "recovery_available": bool(self.session and self.recover),
+            "recovery_in_progress": self.recovery_in_progress,
         }
 
     def status(self):
@@ -102,5 +151,7 @@ class PlayerWatchdog:
 
     def close(self):
         self.stop_event.set()
+        with self.lock:
+            self.session = None
         if self.thread is not None and threading.current_thread() != self.thread:
             self.thread.join(timeout=2)
