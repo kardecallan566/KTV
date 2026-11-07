@@ -3,7 +3,8 @@
 Pure decision logic: no player commands, no hardware assumptions, easy to test.
 """
 from collections import deque
-from statistics import median\nfrom pathlib import Path
+from statistics import median
+from pathlib import Path
 
 
 PI3_PROFILE = {
