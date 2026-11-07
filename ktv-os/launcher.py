@@ -459,6 +459,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json(result)
             except ValueError as exc:
                 return self.send_json({'error': str(exc)}, 403)
+            except RuntimeError as exc:
+                return self.send_json({'error': str(exc)}, 503)
 
         if path == '/api/system/poweroff':
             # Unprivileged logind/systemctl policy enforcement. A custom header
