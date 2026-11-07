@@ -48,8 +48,7 @@ class WatchdogTests(unittest.TestCase):
     def test_recovery_is_bounded_and_replays_registered_session(self):
         clock, player = Clock(), FakePlayer()
         calls = []
-        monitor = PlayerWatchdog(player, clock=clock, threaded=False,
-                                 recover=lambda session: calls.append(session) or True)
+        monitor = PlayerWatchdog(player, clock=clock, threaded=False)
         monitor.set_session("https://example.com/live.m3u8", "Canal", "balanced",
                             "default", recoverable=True)
         monitor.reset()
@@ -57,6 +56,7 @@ class WatchdogTests(unittest.TestCase):
         monitor.tick()
         clock.value += 61
         self.assertEqual(monitor.tick()["state"], "stalled")
+        monitor.recover = lambda session: calls.append(session) or True
         monitor._recover_session()
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0][1], "Canal")
