@@ -234,6 +234,9 @@ class NativePlayer:
             args.append('--hwdec=auto-safe')
         if urlsplit(source).path.lower().endswith('.m3u8'):
             chosen = QUALITY_PROFILES[quality]
+            # FFmpeg HTTP reconnection flags improve resilience to brief Wi-Fi
+            # drops and live playlist EOFs without changing the source URL.
+            args.append('--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_at_eof=1')
             args.extend((
                 '--hls-bitrate=' + chosen['hls_bitrate'],
                 '--demuxer-max-bytes=' + chosen['forward'],
