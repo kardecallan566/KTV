@@ -231,8 +231,7 @@ class NativePlayer:
             '--demuxer-max-bytes=' + QUALITY_PROFILES[quality]['forward'],
             '--demuxer-max-back-bytes=' + QUALITY_PROFILES[quality]['back'],
             '--demuxer-thread=yes', '--audio-buffer=1.0', '--video-sync=audio', '--framedrop=vo',
-            '--cache-pause=yes', '--cache-pause-wait=3', '--cache-pause-initial=no',
-            '--network-timeout=25',
+            '--vd-lavc-threads=1', '--network-timeout=25',
             '--audio-pitch-correction=yes', '--interpolation=no', '--opengl-swapinterval=1',
             '--hr-seek=no', '--force-seekable=no',
         ]
@@ -241,7 +240,7 @@ class NativePlayer:
         if is_pluto:
             # End-of-playlist should be detected by the recovery worker, not
             # exit silently. A user-initiated Q/CLOSE_WIN exits with code 77.
-            args.extend(('--keep-open=yes','--network-timeout=20',
+            args.extend(('--keep-open=yes','--network-timeout=25',
                          '--demuxer-thread=yes','--cache=yes','--cache-secs=30'))
         # Optional HTTP headers are supplied only by a server-side catalog,
         # never directly by the browser. Keep them bounded and syntactically safe.
