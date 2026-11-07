@@ -12,7 +12,7 @@ if [[ $# -ne 1 ]]; then
   exit 2
 fi
 USB="$(realpath "$1")"
-[[ -d "$USB" && -f "$USB/../.mounted" || -d "$USB" ]] || { echo "USB mount not found"; exit 1; }
+[[ -d "$USB" ]] || { echo "USB mount not found"; exit 1; }
 findmnt -rn -T "$USB" >/dev/null || { echo "The path is not on a mounted filesystem."; exit 1; }
 SOURCE="$(cd "$(dirname "$0")/../.." && pwd)/ktv-os"
 [[ -f "$SOURCE/launcher.py" && -f "$SOURCE/app/index.html" ]] || { echo "KTV source not found: $SOURCE"; exit 1; }
