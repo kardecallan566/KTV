@@ -68,7 +68,7 @@ for i in $(seq 1 60); do
   curl -fsS http://127.0.0.1:8787/ >/dev/null && break
   sleep 1
 done
-exec chromium-browser --no-sandbox --disable-dev-shm-usage --disable-gpu \
+chromium-browser --no-sandbox --disable-dev-shm-usage --disable-gpu \
   --kiosk --incognito --noerrdialogs --disable-infobars \
   http://127.0.0.1:8787/
 WATCHER
