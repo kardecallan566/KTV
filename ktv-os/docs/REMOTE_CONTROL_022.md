@@ -13,3 +13,10 @@
 
 ## Limites
 O indicador em milissegundos no celular mede a confirmação HTTP do servidor (recebimento do comando), não o tempo de renderização/execução da ação na TV. A execução da navegação depende de a interface KTV estar aberta no computador/TV. O teste automatizado não substitui validação física no Raspberry Pi e no celular.
+
+## Iteração adicional — mouse e volume
+- Controle deslizante de sensibilidade de 0,5× a 4×, persistido localmente no navegador.
+- Botões Volume +, Volume − e Mudo enviam teclas multimídia Linux por uma lista fixa e allowlist; não existe execução de texto/command arbitrário.
+- O status não é mais atualizado a cada pacote de movimento do mouse, reduzindo re-renderizações e mensagens durante o arrasto.
+- Testes cobrem a allowlist e rejeição de sessão inválida.
+- Teclas de volume dependem do suporte de áudio/teclas XF86 do ambiente Linux e do xdotool instalado.
