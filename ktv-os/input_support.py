@@ -93,6 +93,25 @@ class InputController:
             raise RuntimeError('Nao foi possivel controlar o mouse X11') from exc
         return {'moved': True}
 
+    def media_key(self, action):
+        """Execute only fixed multimedia keys; never accept a shell/key string."""
+        keys = {
+            'volume_up': 'XF86AudioRaiseVolume',
+            'volume_down': 'XF86AudioLowerVolume',
+            'mute': 'XF86AudioMute',
+        }
+        key = keys.get(action)
+        executable = shutil.which('xdotool')
+        if not key or not executable:
+            raise RuntimeError('Teclas de volume requerem xdotool')
+        try:
+            subprocess.run([executable, 'key', key], stdin=subprocess.DEVNULL,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           timeout=0.35, check=True)
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise RuntimeError('Nao foi possivel executar tecla multimidia') from exc
+        return {'sent': True, 'action': action}
+
     def close(self):
         with self.lock:
             if self.process is not None and self.process.poll() is None:
