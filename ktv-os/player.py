@@ -130,6 +130,27 @@ class NativePlayer:
             'av_sync': _number(properties.get('avsync'), 3600),
         }
 
+    def set_audio_delay(self, delay):
+        """Set mpv audio-delay in seconds using the private local IPC socket."""
+        if type(delay) not in (int, float) or not math.isfinite(delay) or not -5 <= delay <= 5:
+            raise ValueError('Atraso de áudio deve ficar entre -5 e 5 segundos')
+        with self.lock:
+            if self.process is None or self.process.poll() is not None or not self.ipc_path:
+                raise RuntimeError('Player nativo não está em reprodução')
+            request = json.dumps({'command':['set_property','audio-delay',round(float(delay),3)]})+'\n'
+            try:
+                with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as client:
+                    client.settimeout(0.5)
+                    client.connect(self.ipc_path)
+                    client.sendall(request.encode('utf-8'))
+                    response = client.recv(4096)
+                replies=[json.loads(line) for line in response.splitlines() if line.strip()]
+                if not any(item.get('error')=='success' for item in replies if isinstance(item,dict)):
+                    raise RuntimeError('mpv não confirmou o ajuste de áudio')
+            except (OSError,ValueError,json.JSONDecodeError) as exc:
+                raise RuntimeError('Não foi possível ajustar áudio via IPC: {}'.format(exc))
+            return round(float(delay),3)
+
     def status(self):
         with self.lock:
             code = self.process.poll() if self.process is not None else None
