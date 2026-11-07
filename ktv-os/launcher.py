@@ -42,7 +42,7 @@ from reidos_guide import ReiGuide, DiscoveryError
 from system_actions import SystemActions, SystemActionError
 from threading import Event, Thread
 APP = ROOT / 'app'
-STATE = Path.home() / '.config' / 'ktv-os'  # writable in Linux Live and Windows
+STATE = Path(os.environ.get('KTV_STATE_DIR', str(Path.home() / '.config' / 'ktv-os'))).expanduser()  # USB opcional
 VERSION = '0.21.0'
 MEDIA_EXTENSIONS = {
     '.mp4': ('video', 'video/mp4'), '.webm': ('video', 'video/webm'),
