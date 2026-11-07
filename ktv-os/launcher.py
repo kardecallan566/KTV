@@ -19,7 +19,8 @@ import webbrowser
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
-from player import NativePlayer, safe_media_path\nfrom player_watchdog import PlayerWatchdog
+from player import NativePlayer, safe_media_path
+from player_watchdog import PlayerWatchdog
 from internet_browser import InternetBrowser, BrowserError
 from input_support import InputController
 from epg_guide import EPGGuide, EPGError
@@ -156,6 +157,7 @@ class KTVOSServer(ThreadingHTTPServer):
         self.player = player if player is not None else NativePlayer()
         self.pluto_recovery = (pluto_recovery if pluto_recovery is not None
                                else PlutoRecovery(self.pluto, self.player))
+        self.player_watchdog = PlayerWatchdog(self.player)
         self.hardware = hardware if hardware is not None else HardwareManager()
         self.cec = cec if cec is not None else CECBridge()
         self.network = network if network is not None else NetworkManager()
@@ -182,6 +184,7 @@ class KTVOSServer(ThreadingHTTPServer):
     def server_close(self):
         self._persistence_stop.set()
         self.pluto_recovery.close()
+        self.player_watchdog.close()
         self.antenna.close()
         self.hardware.close()
         self.cec.close()
@@ -391,7 +394,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             if not player_status.get('playing'):
                 self.server.antenna.stop()
             return self.send_json({'player':player_status,
-                                   'recovery':self.server.pluto_recovery.status(),\n                                   'watchdog':self.server.player_watchdog.tick()})
+                                   'recovery':self.server.pluto_recovery.status(),
+                                   'watchdog':self.server.player_watchdog.tick()})
         if path == '/api/media':
             params = parse_qs(url.query)
             source = params.get('source', ['local'])[0]
@@ -674,6 +678,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                     info = self.server.player.play(source, title, quality=quality, decode=decode)
             else:
                 info = self.server.player.play(source, title)
+            self.server.player_watchdog.reset()
             if kind == 'pluto':
                 self.server.pluto_recovery.activate(payload.get('id'),quality,decode)
         except (ValueError, OSError) as exc:
