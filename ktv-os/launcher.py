@@ -218,6 +218,11 @@ def lan_ipv4():
 class KTVOSHandler(BaseHTTPRequestHandler):
     server_version = 'KTV-OS/0.20'
     def log_message(self, fmt, *args):
+        # Mouse motion is high-frequency (dozens of requests per second).
+        # Avoid synchronous terminal/log I/O for routine remote traffic.
+        request_line = str(args[2]) if len(args) > 2 else ''
+        if '/api/remote/command' in request_line:
+            return
         print('[KTV OS] ' + fmt % args, flush=True)
 
     def send_data(self, status, body, mime):
