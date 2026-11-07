@@ -177,7 +177,7 @@ class RecoveryTests(unittest.TestCase):
             args=calls[-1]
             self.assertIn('--keep-open=yes',args)
             self.assertIn('--network-timeout=20',args)
-            self.assertIn('--cache-secs=15',args)
+            self.assertIn('--cache-secs=30',args)
             binding=next(x for x in args if x.startswith('--input-conf='))
             data=Path(binding.partition('=')[2]).read_text()
             self.assertIn('q quit 77',data)
