@@ -20,6 +20,21 @@
     embedFrame.removeAttribute('src');integratedPlayer.hidden=true;
     embedProvider.textContent='';
   }
+  var audioSyncControls=el('audio-sync-controls');
+  var audioDelayValue=el('audio-delay-value');
+  var audioDelay=0;
+  function renderAudioDelay(){audioDelayValue.textContent=audioDelay.toFixed(2).replace('.',',')+' s';}
+  function changeAudioDelay(delta){
+    var next=Math.max(-5,Math.min(5,Math.round((audioDelay+delta)*1000)/1000));
+    fetch('/api/player/audio-delay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({delay:next}),cache:'no-store'})
+      .then(function(r){return r.json().then(function(data){if(!r.ok)throw new Error(data.error||'Falha no ajuste');return data;});})
+      .then(function(data){audioDelay=data.audio_delay;renderAudioDelay();})
+      .catch(function(err){smartNotice.textContent='Não foi possível ajustar o áudio: '+err.message;});
+  }
+  el('audio-delay-minus').addEventListener('click',function(){changeAudioDelay(-0.1);});
+  el('audio-delay-plus').addEventListener('click',function(){changeAudioDelay(0.1);});
+  el('audio-delay-reset').addEventListener('click',function(){changeAudioDelay(-audioDelay);});
+  renderAudioDelay();
   var smartNotice = document.getElementById('smart-player-status');
   var noVideoPolls=0;
   var autoCompatibleAttempted=false;
@@ -50,6 +65,7 @@
     el('dialog-message').textContent = body;
     overlay.hidden = false;
     playerStop.hidden = !nativeActive;
+    audioSyncControls.hidden=!nativeActive;
     compatibleButton.hidden = !lastNativeRequest || lastNativeRequest.decode === 'compatible';
     smartNotice.textContent='';
     updateSmartOptions();
@@ -62,6 +78,8 @@
     image.removeAttribute('src'); image.hidden = true; clearEmbed(); overlay.hidden = true;
     if (nativeActive) stopNative();
     playerStop.hidden = true;
+    audioSyncControls.hidden=true;
+    audioDelay=0;renderAudioDelay();
     compatibleButton.hidden = true;
     officialButton.hidden = true;
     lastNativeRequest = null;
