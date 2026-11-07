@@ -75,3 +75,14 @@ sudo reboot
 As configurações e favoritos desse modo são gravados em uma pasta oculta `.ktv-config` ao lado de `ktv-os` no pendrive. Não remova a unidade enquanto o KTV estiver gravando. Para encerrar com segurança, desligue o Pi pelo menu do KTV antes de retirar o pendrive.
 
 **Importante:** Python, Chromium, MPV e bibliotecas do sistema continuam instalados no microSD; o pendrive guarda o aplicativo e seus dados. Não é um sistema operacional completo portátil nem um boot direto pelo USB. O instalador configura a sessão para aguardar o KTV USB; sem o pendrive, a tela ficará aguardando.
+
+
+### Copiar o KTV para o pendrive com um único comando
+
+Com o pendrive conectado e montado no computador Linux, dentro do clone do KTV execute (troque o caminho pelo ponto de montagem real):
+
+```bash
+sudo bash ktv-os/raspberry-pi/prepare-usb.sh "/media/$USER/NOME_DO_PENDRIVE"
+```
+
+O script confirma antes de copiar, atualiza a pasta `ktv-os` no pendrive e preserva `.ktv-config` (dados e favoritos). **Ele não formata nem particiona o pendrive.** Ao terminar, ejete com segurança e conecte ao Raspberry Pi. Para Windows, copie a pasta `ktv-os` manualmente ou use o WSL com o pendrive montado.
