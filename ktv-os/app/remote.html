@@ -6,10 +6,41 @@
 <meta name="theme-color" content="#081524">
 <title>Controle remoto • KTV OS</title>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#07101e,#102a40);color:#f2f8ff;font-family:system-ui,Arial,sans-serif;display:flex;justify-content:center;padding:16px}
-main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{font-size:25px;font-weight:900;letter-spacing:-1px}.brand span{color:#70e5df}.card{background:#122b42;border:1px solid #345773;border-radius:20px;padding:18px;box-shadow:0 14px 40px #0003}h1{font-size:21px;margin:0 0 8px}p{color:#b8ccdd;line-height:1.45;margin:8px 0 14px}.muted{font-size:13px;color:#9bb3c8}input{width:100%;min-height:56px;border:1px solid #54728b;border-radius:12px;background:#071b2d;color:#fff;font-size:27px;letter-spacing:9px;text-align:center}button{border:0;border-radius:13px;background:#1d405a;color:#fff;font-size:17px;font-weight:750;min-height:54px;touch-action:manipulation;user-select:none}button:active{background:#28677a;transform:scale(.98)}.primary{width:100%;background:linear-gradient(100deg,#53ddd2,#66bdf1);color:#092239;margin-top:12px}.hidden{display:none!important}.status{min-height:22px;color:#9ce9d5;font-size:14px}.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.pad button{font-size:23px;min-height:66px}.pad .ok{background:#1c8b78;color:#fff;font-size:17px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions button{font-size:14px}.shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.shortcuts button{min-height:48px;font-size:13px;padding:5px 3px;background:#20445e}.shortcut-title{font-size:12px;color:#a9c5d9;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px}.stop{background:#673947}.connected{border-color:#3e987c}.hint{text-align:center;font-size:12px;color:#8ca9c0}
-.touchpad{height:220px;border:2px dashed #52738d;border-radius:17px;background:radial-gradient(ellipse at center,#1a3b55,#0a2033);display:flex;align-items:center;justify-content:center;text-align:center;color:#a9c5d9;font-size:15px;touch-action:none;user-select:none;cursor:crosshair;position:relative;overflow:hidden}
-.touchpad:active{border-color:#66d8d0;background:#15374b}.touchpad small{display:block;font-size:12px;margin-top:8px;color:#769ab5}.mousebuttons{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}.mousebuttons button{font-size:14px;min-height:48px}.wheel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+:root{color-scheme:dark;--bg:#07111f;--card:#101f32;--line:#233d57;--text:#edf6ff;--muted:#9eb5cb;--cyan:#62e4d7;--blue:#72bfff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#1c4261 0,transparent 52%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;padding:14px 12px 28px}
+main{width:min(100%,480px);margin:0 auto;display:flex;flex-direction:column;gap:13px}
+.brand{display:flex;align-items:center;gap:9px;font-size:27px;font-weight:950;letter-spacing:-1.3px;padding:5px 4px 2px}
+.brand span{color:var(--cyan)}.brand small{font-size:10px;color:#8eaac4;letter-spacing:1.7px;font-weight:800}
+.card{background:linear-gradient(155deg,#132840,#0e1d30);border:1px solid var(--line);border-radius:22px;padding:17px;box-shadow:0 15px 35px #0002}
+h1{font-size:20px;letter-spacing:-.4px;margin:0 0 8px}p{color:#b4c8dc;line-height:1.45;margin:8px 0 14px}.muted{font-size:12px;color:#8fa9c2}
+input{width:100%;min-height:58px;border:1px solid #355875;border-radius:14px;background:#081729;color:#fff;font-size:28px;letter-spacing:10px;text-align:center;outline:none}
+input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #62e4d71a}
+button{border:1px solid #294762;border-radius:14px;background:#19344e;color:#f4f9ff;font-size:15px;font-weight:750;min-height:52px;padding:8px 10px;touch-action:manipulation;user-select:none;cursor:pointer;transition:transform .08s,background .12s,border-color .12s}
+button:active{background:#28677a;transform:scale(.97);border-color:#63dcd5}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.primary{width:100%;background:linear-gradient(105deg,#57e1d4,#75bfff);color:#062239;border:0;margin-top:12px;font-size:16px}
+.hidden{display:none!important}.status{min-height:23px;color:#9ce9d5;font-size:13px;margin-top:9px}
+.statusline{display:flex;align-items:center;gap:8px;font-size:12px;color:#a8c0d5;margin:0 0 12px}
+.dot{width:8px;height:8px;border-radius:50%;background:#5ce2bb;box-shadow:0 0 12px #5ce2bb66}
+.section-label{font-size:11px;color:#88a8c3;text-transform:uppercase;letter-spacing:1.4px;font-weight:850;margin:17px 2px 9px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:10px auto 2px;max-width:340px}
+.pad button{font-size:25px;min-height:70px;background:linear-gradient(145deg,#1d3d59,#142c43);box-shadow:inset 0 1px #ffffff0b}
+.pad .ok{background:linear-gradient(140deg,#168e7b,#116b68);color:#fff;font-size:17px;border-color:#269d8b}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.actions button{font-size:14px;min-height:48px}
+.shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+.shortcuts button{min-height:55px;font-size:13px;padding:7px 3px;background:#162f49;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.shortcuts button .ico{font-size:19px;line-height:1}
+.stop{background:#4a2638;border-color:#69374e;color:#ffdce8}
+.connected{border-color:#286b61}
+.hint{text-align:center;font-size:11px;color:#7895af;padding:0 12px}
+.touchpad{height:245px;border:1px solid #365b77;border-radius:19px;background:radial-gradient(ellipse at center,#1b3d58,#091a2c);display:flex;align-items:center;justify-content:center;text-align:center;color:#c0d5e8;font-size:15px;touch-action:none;user-select:none;cursor:crosshair;position:relative;overflow:hidden;box-shadow:inset 0 0 35px #0003}
+.touchpad:before{content:"";position:absolute;inset:12px;border:1px dashed #42647e;border-radius:13px;pointer-events:none}
+.touchpad:active{border-color:#66d8d0;background:#15374b}.touchpad small{display:block;font-size:12px;margin-top:9px;color:#84a9c5}
+.mousebuttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.mousebuttons button{font-size:13px;min-height:48px}.mousebuttons .stop{grid-column:1/-1}
+.wheel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.wheel button{min-height:44px;font-size:13px}
+@media(min-width:420px){body{padding:22px 16px}.card{padding:20px}.touchpad{height:270px}.pad button{min-height:76px}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
 </style>
 </head>
 <body>
@@ -24,19 +55,19 @@ main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{fo
   </section>
   <section class="card hidden" id="remote-card">
     <h1>Controle do KTV OS</h1>
-    <p class="muted">Celular e Raspberry Pi devem permanecer na mesma rede Wi-Fi.</p>
+    <div class="statusline"><span class="dot"></span><span id="connection-label">Conectado à TV · mesma rede Wi-Fi</span></div>
     <div class="touchpad" id="touchpad" aria-label="Touchpad para mover o mouse">
       <div>☝ Deslize o dedo para mover o mouse<small>Toque uma vez para clicar • use os botões abaixo</small></div>
     </div>
     <div class="mousebuttons"><button data-action="mouse_left">Clique esquerdo</button><button data-action="mouse_right">Clique direito</button><button data-action="stop">■ Parar vídeo</button></div>
     <div class="wheel"><button data-action="scroll_up">▲ Rolar</button><button data-action="scroll_down">▼ Rolar</button></div>
-    <div class="pad">
+    <div class="section-label">Navegação</div><div class="pad">
       <span></span><button data-action="ArrowUp" aria-label="Cima">▲</button><span></span>
       <button data-action="ArrowLeft" aria-label="Esquerda">◀</button><button class="ok" data-action="accept">OK</button><button data-action="ArrowRight" aria-label="Direita">▶</button>
       <span></span><button data-action="ArrowDown" aria-label="Baixo">▼</button><span></span>
     </div>
-    <div class="shortcut-title">Atalhos de canais e categorias</div><div class="shortcuts"><button data-action="channels">▦ Canais</button><button data-action="mychannels">★ Meus</button><button data-action="tv">📡 TV aberta</button><button data-action="iptv">▶ IPTV</button><button data-action="movies">🎬 Filmes</button><button data-action="sports">⚽ Futebol</button><button data-action="news">📰 Notícias</button><button data-action="cartoons">🧸 Desenhos</button></div>
-    <div class="actions"><button data-action="home">⌂ Início</button><button data-action="back">↩ Voltar</button><button id="disconnect">Desconectar</button></div>
+    <div class="section-label">Acesso rápido</div><div class="shortcuts"><button data-action="channels"><span class="ico">▦</span>Canais</button><button data-action="mychannels"><span class="ico">★</span>Favoritos</button><button data-action="tv"><span class="ico">📡</span>TV aberta</button><button data-action="iptv"><span class="ico">▶</span>IPTV</button><button data-action="movies"><span class="ico">🎬</span>Filmes</button><button data-action="sports"><span class="ico">⚽</span>Futebol</button><button data-action="news"><span class="ico">📰</span>Notícias</button><button data-action="cartoons"><span class="ico">🧸</span>Desenhos</button><button data-action="home"><span class="ico">⌂</span>Início</button></div>
+    <div class="actions"><button data-action="back">↩ Voltar</button><button id="disconnect">⏻ Desconectar</button></div>
     <div class="status" id="remote-status" role="status">Conectado.</div>
   </section>
   <div class="hint">Controle local protegido por código temporário. Não funciona fora da sua rede.</div>
@@ -60,9 +91,10 @@ main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{fo
   var inflight=false,dxQueue=0,dyQueue=0,lastMove=0;
   function send(action,extra){
     if(!token)return;
-    var body=Object.assign({token:token,action:action},extra||{});
-    request('/api/remote/command',body).then(function(){remoteStatus.textContent='Conectado • comando enviado';})
-      .catch(function(error){remoteStatus.textContent=error.message;if(error.message.indexOf('conectado')!==-1)disconnect();});
+    var started=performance.now(),body=Object.assign({token:token,action:action},extra||{});
+    if(navigator.vibrate)navigator.vibrate(8);
+    request('/api/remote/command',body).then(function(){remoteStatus.textContent='✓ Enviado ao KTV · '+Math.round(performance.now()-started)+' ms';})
+      .catch(function(error){remoteStatus.textContent='⚠ '+error.message;if(error.message.indexOf('conectado')!==-1)disconnect();});
   }
   document.querySelectorAll('[data-action]').forEach(function(button){
     button.addEventListener('click',function(){send(button.getAttribute('data-action'));});
@@ -82,11 +114,11 @@ main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{fo
     var dx=Math.max(-1000,Math.min(1000,dxQueue)),dy=Math.max(-1000,Math.min(1000,dyQueue));
     dxQueue-=dx;dyQueue-=dy;inflight=true;
     request('/api/remote/command',{token:token,action:'mouse_move',dx:dx,dy:dy})
-      .then(function(){remoteStatus.textContent='Mouse ativo';})
+      .then(function(){remoteStatus.textContent='Mouse · movimento enviado';})
       .catch(function(error){remoteStatus.textContent=error.message;})
       .finally(function(){inflight=false;});
   }
-  window.setInterval(flushMouse,20);
+  window.setInterval(flushMouse,30);
   pad.addEventListener('pointerup',function(e){
     if(pointer&&pointer.id===e.pointerId){var moved=pointer.moved;pointer=null;if(!moved)send('mouse_left');}
   });
