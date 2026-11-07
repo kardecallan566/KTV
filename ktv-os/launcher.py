@@ -656,6 +656,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                                                quality=quality,decode=decode)
                 return self.send_json({'ok':True,'player':info})
             self.server.antenna.stop()
+            user_agent = referrer = None
             if kind == 'iptv_free':
                 entry = iptv_free_channel(payload.get('id'))
                 if entry is None:
