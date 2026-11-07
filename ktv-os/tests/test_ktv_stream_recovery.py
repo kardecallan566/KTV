@@ -16,10 +16,13 @@ class StreamRecoveryTests(unittest.TestCase):
 
     def test_stall_triggers_recovery(self):
         calls = []
+        clock = [100.0]
         engine = KTVStreamRecovery(lambda: calls.append(1) or True,
                                    stall_timeout=3, poll_interval=0.1,
-                                   max_recoveries=1, cooldown=0)
+                                   max_recoveries=1, cooldown=0,
+                                   clock=lambda: clock[0])
         engine.start()
+        clock[0] += 3.1
         self.assertTrue(self.wait_for(lambda: len(calls) == 1, timeout=2))
         self.assertEqual(engine.status()['state'], 'watching')
         engine.stop()
