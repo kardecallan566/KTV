@@ -10,6 +10,7 @@ class RemoteControl:
     ACTIONS = frozenset({
         'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
         'accept', 'back', 'home', 'stop',
+        'mouse_move', 'mouse_left', 'mouse_right', 'scroll_up', 'scroll_down',
     })
 
     def __init__(self):
@@ -36,7 +37,7 @@ class RemoteControl:
             self._sessions[token] = now + 8 * 60 * 60
             return token
 
-    def command(self, token, action):
+    def command(self, token, action, dx=0, dy=0):
         now = time.monotonic()
         with self._lock:
             expiry = self._sessions.get(str(token or ''))
@@ -45,6 +46,12 @@ class RemoteControl:
                 raise ValueError('Controle não conectado. Digite novamente o código da TV.')
             if type(action) is not str or action not in self.ACTIONS:
                 raise ValueError('Comando não permitido.')
+            if action == 'mouse_move':
+                if type(dx) is not int or type(dy) is not int or abs(dx) > 1000 or abs(dy) > 1000:
+                    raise ValueError('Movimento do mouse invalido.')
+                return {'ok': True, 'action': action, 'dx': dx, 'dy': dy}
+            if action in ('mouse_left', 'mouse_right', 'scroll_up', 'scroll_down'):
+                return {'ok': True, 'action': action}
             self._sequence += 1
             self._events.append({'sequence': self._sequence, 'action': action})
             return {'ok': True, 'sequence': self._sequence}
