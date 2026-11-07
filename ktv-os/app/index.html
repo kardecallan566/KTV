@@ -41,6 +41,14 @@
             <button class="tile purple focusable" data-route="usb"><div class="tile-art">▤</div><span class="tile-kicker">ARQUIVOS LOCAIS</span><strong>USB e mídias</strong><small>Vídeos, fotos e dispositivos no PC</small><span class="tile-arrow">↗</span></button>
             <button class="tile amber focusable" data-route="navegador"><div class="tile-art">◎</div><span class="tile-kicker">PESQUISAR</span><strong>Internet</strong><small>Pesquisar no Chromium sem sair do sistema</small><span class="tile-arrow">↗</span></button>
           </div>
+          <section class="panel remote-home-panel" aria-label="Controle remoto">
+            <div class="eyebrow">CONTROLE PELO CELULAR</div>
+            <h2>Controle remoto KTV</h2>
+            <p class="lead">Abra o controle no celular conectado à mesma rede Wi-Fi e informe o código exibido abaixo.</p>
+            <div class="remote-home-code"><span>CÓDIGO DE CONEXÃO</span><strong id="home-remote-pin">------</strong></div>
+            <div class="hero-actions"><a class="primary focusable remote-home-link" href="/remote">Abrir controle remoto ↗</a><button class="ghost focusable" data-action="remote-refresh">Atualizar código</button></div>
+            <p class="small-note" id="home-remote-url">Endereço do controle: carregando…</p>
+          </section>
         </section>
         <section class="screen" data-screen="canais"><div class="eyebrow">TV AO VIVO</div><h1>Seus <span class="gradient-text">canais.</span></h1><p class="lead">Gerencie suas transmissões pelo arquivo local de configuração. Reprodução de HLS, DASH e vídeos diretos pelo mpv nativo quando disponível. Antes de abrir, o sistema faz uma verificação preliminar dos links públicos. Cadastre apenas fontes próprias ou autorizadas.</p><div class="channel-actions"><button class="primary focusable" id="channel-create">+ Adicionar canal</button><span class="chip" id="channel-count">0 canais</span></div>
           <div class="panel quality-panel"><h2>KTV Smart Player · Alpha 0.20</h2><p class="small-note">O mpv reproduz canais livres. Se houver áudio sem imagem ou falha, tente o modo compatível. Quando a emissora disponibilizar um player para incorporação, ele abre dentro do KTV OS. O sistema não copia conteúdo protegido, não contorna DRM e não altera anúncios do provedor.</p><label for="quality-profile">Perfil de reprodução</label> <select class="focusable" id="quality-profile"><option value="balanced">Equilibrado (padrão)</option><option value="economy">Econômico (menor variante)</option><option value="best">Melhor disponível</option></select><p id="quality-telemetry" class="small-note" role="status">Inicie um canal para consultar resolução, codec, FPS e buffer (quando informados pelo mpv).</p></div>
