@@ -17,6 +17,7 @@ class RemoteControl:
     def __init__(self):
         self.pin = '{:06d}'.format(secrets.randbelow(1000000))
         self._lock = threading.RLock()
+        self._changed = threading.Condition(self._lock)
         self._sessions = {}
         self._attempts = defaultdict(deque)
         self._events = deque(maxlen=100)
@@ -54,10 +55,23 @@ class RemoteControl:
             if action in ('mouse_left', 'mouse_right', 'scroll_up', 'scroll_down'):
                 return {'ok': True, 'action': action}
             self._sequence += 1
-            self._events.append({'sequence': self._sequence, 'action': action})
+            self._events.append({'sequence': self._sequence, 'action': action, 'created': now})
+            self._changed.notify_all()
             return {'ok': True, 'sequence': self._sequence}
 
-    def events_since(self, after):
-        with self._lock:
+    def events_since(self, after, wait=0):
+        """Read queued UI actions; optionally wait for the next command (long poll).
+
+        This avoids a 25-request/second polling loop on the Raspberry Pi while
+        keeping remote navigation responsive: a command wakes the TV immediately.
+        """
+        try:
+            timeout = max(0.0, min(float(wait), 25.0))
+        except (TypeError, ValueError):
+            timeout = 0.0
+        with self._changed:
             events = [event for event in self._events if event['sequence'] > after]
+            if not events and timeout:
+                self._changed.wait(timeout)
+                events = [event for event in self._events if event['sequence'] > after]
             return {'events': events, 'last': self._sequence}
