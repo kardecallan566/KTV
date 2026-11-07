@@ -246,6 +246,12 @@
       var v=data.player.video;
       if(!v){el('quality-telemetry').textContent='Reproduzindo. Diagnóstico de vídeo indisponível neste dispositivo.';return;}
       var parts=[];
+      if(data.watchdog){
+        if(data.watchdog.state==='stalled')parts.push('ALERTA: possível travamento ('+data.watchdog.stall_seconds+' s)');
+        else if(data.watchdog.state==='starting')parts.push('Monitor: estabilizando');
+        else if(data.watchdog.state==='paused')parts.push('Monitor: pausado');
+        else if(data.watchdog.state==='healthy')parts.push('Monitor: estável');
+      }
       if(v.width && v.height)parts.push(v.width+'×'+v.height);
       if(v.codec)parts.push('Codec: '+v.codec);
       if(v.fps)parts.push('FPS: '+v.fps);
