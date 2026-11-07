@@ -19,7 +19,7 @@ import webbrowser
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
-from player import NativePlayer, safe_media_path
+from player import NativePlayer, safe_media_path\nfrom player_watchdog import PlayerWatchdog
 from internet_browser import InternetBrowser, BrowserError
 from input_support import InputController
 from epg_guide import EPGGuide, EPGError
@@ -391,7 +391,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             if not player_status.get('playing'):
                 self.server.antenna.stop()
             return self.send_json({'player':player_status,
-                                   'recovery':self.server.pluto_recovery.status()})
+                                   'recovery':self.server.pluto_recovery.status(),\n                                   'watchdog':self.server.player_watchdog.tick()})
         if path == '/api/media':
             params = parse_qs(url.query)
             source = params.get('source', ['local'])[0]
