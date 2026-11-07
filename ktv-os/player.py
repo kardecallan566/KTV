@@ -194,7 +194,7 @@ class NativePlayer:
         self.stop()
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
-            '--force-window=yes', '--really-quiet',
+            '--force-window=yes', '--ontop=yes', '--ontop-level=system', '--really-quiet',
         ]
         is_pluto = (urlsplit(source).hostname == 'ipv4.pluto.tv'
                     and urlsplit(source).path.endswith('/master.m3u8'))
