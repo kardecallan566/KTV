@@ -40,6 +40,18 @@ class NativePlayerStreamTests(unittest.TestCase):
         self.assertFalse(any(arg.startswith("--hls-bitrate=") for arg in args))
         self.assertFalse(any("reconnect_at_eof" in arg for arg in args))
 
+    def test_audio_delay_rejects_out_of_range_values(self):
+        player = NativePlayer(executable="/usr/bin/mpv", popen=lambda *args, **kwargs: FakeProcess())
+        for invalid in (-5.01, 5.01, float("nan"), float("inf"), "0.1", True):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    player.set_audio_delay(invalid)
+
+    def test_audio_delay_requires_active_native_player(self):
+        player = NativePlayer(executable="/usr/bin/mpv", popen=lambda *args, **kwargs: FakeProcess())
+        with self.assertRaises(RuntimeError):
+            player.set_audio_delay(0.1)
+
     def test_hls_keeps_hls_bitrate_and_eof_reconnect(self):
         args = self._launch_args("https://cdn.example.org/live/channel.m3u8", "balanced")
         self.assertIn("--hls-bitrate=4000000", args)
