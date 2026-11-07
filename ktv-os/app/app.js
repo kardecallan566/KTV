@@ -1320,7 +1320,7 @@
       (data.events||[]).forEach(function(event){padAction(event.action);});
     });
   }
-  window.setInterval(pollRemoteCommands,220);
+  window.setInterval(pollRemoteCommands,70);
   function gamepadPoll(timestamp) {
     if(typeof navigator.getGamepads==='function'){
       var pads=navigator.getGamepads();
