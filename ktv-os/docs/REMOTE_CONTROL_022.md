@@ -6,6 +6,7 @@
 - O servidor continua validando PIN/token e a lista de ações permitidas. Long polling só entrega comandos de navegação já autenticados; mouse permanece no endpoint de comando direto.
 - A tela remota foi redesenhada para celular: cartões, navegação em grade, atalhos com ícones, touchpad ampliado, botões maiores, feedback de toque/vibração e tempo de confirmação HTTP.
 - O mouse acumula deslocamentos e envia em intervalos de 30 ms, evitando excesso de chamadas simultâneas.
+- O servidor deixa de gravar no terminal cada movimento do mouse (tráfego de alta frequência), reduzindo I/O e ruído no Raspberry Pi.
 
 ## Testes
 `tests/test_remote_control.py` verifica despertar imediato, resposta sem espera para eventos já disponíveis e timeout limitado.
