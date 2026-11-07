@@ -23,7 +23,7 @@ QUALITY_PROFILES = {
 # All property names are fixed: the browser cannot choose mpv commands.
 VIDEO_PROPERTIES = (
     'video-params', 'video-codec', 'container-fps', 'estimated-vf-fps',
-    'frame-drop-count', 'decoder-frame-drop-count', 'demuxer-cache-duration',
+    'frame-drop-count', 'decoder-frame-drop-count', 'vo-drop-frame-count',\n    'vo-delayed-frame-count', 'audio-codec', 'audio-params', 'demuxer-cache-duration',
     'audio-pts', 'audio-speed', 'audio-bitrate', 'avsync',
     'hwdec-current', 'vid', 'aid', 'video-out-params',
     'time-pos', 'pause', 'eof-reached',
@@ -121,12 +121,12 @@ class NativePlayer:
             'fps': fps if fps and fps > 0 else None,
             'codec': codec[:32] if isinstance(codec, str) else None,
             'hardware_decoder': hwdec[:32] if isinstance(hwdec, str) else None,
-            'dropped_frames': _number(properties.get('frame-drop-count'), 100000000),
+            'dropped_frames': _number(properties.get('frame-drop-count'), 100000000),\n            'vo_dropped_frames': _number(properties.get('vo-drop-frame-count'), 100000000),\n            'vo_delayed_frames': _number(properties.get('vo-delayed-frame-count'), 100000000),
             'decoder_dropped_frames': _number(properties.get('decoder-frame-drop-count'), 100000000),
             'buffer_seconds': _number(properties.get('demuxer-cache-duration'), 3600),
             'audio_pts': _number(properties.get('audio-pts'), 8640000),
             'audio_speed': _number(properties.get('audio-speed'), 10),
-            'audio_bitrate': _number(properties.get('audio-bitrate'), 100000000),
+            'audio_bitrate': _number(properties.get('audio-bitrate'), 100000000),\n            'audio_codec': (properties.get('audio-codec')[:32] if isinstance(properties.get('audio-codec'), str) else None),\n            'audio_output': isinstance(properties.get('audio-params'), dict),
             'av_sync': _number(properties.get('avsync'), 3600),
         }
 
