@@ -129,5 +129,4 @@ def detect_playback_profile(model_path="/proc/device-tree/model"):
     if "Raspberry Pi 3" in model or "BCM2837" in model:
         return dict(PI3_PROFILE)
     return {"name": "generic", "quality": "balanced", "decode": "default",
-            "max_width": None, "max_height": None, "max_fps": None,
-            "reason": "Hardware não identificado; perfil padrão equilibrado."}
+                        "reason": "Hardware não identificado; perfil padrão equilibrado."}
