@@ -86,3 +86,16 @@ sudo bash ktv-os/raspberry-pi/prepare-usb.sh "/media/$USER/NOME_DO_PENDRIVE"
 ```
 
 O script confirma antes de copiar, atualiza a pasta `ktv-os` no pendrive e preserva `.ktv-config` (dados e favoritos). **Ele não formata nem particiona o pendrive.** Ao terminar, ejete com segurança e conecte ao Raspberry Pi. Para Windows, copie a pasta `ktv-os` manualmente ou use o WSL com o pendrive montado.
+
+
+### Preparador automático para Windows
+
+No Windows, use o arquivo **prepare-usb.bat** dentro do projeto baixado/clonado:
+
+1. Baixe o projeto pelo botão **Code → Download ZIP** no GitHub e extraia o ZIP (ou use Git).
+2. Conecte o pendrive. Ele pode estar em FAT32 ou exFAT.
+3. Abra a pasta extraída e dê dois cliques em `ktv-os/raspberry-pi/prepare-usb.bat`.
+4. Digite a letra da unidade do pendrive (por exemplo, `E:`), confira o destino e confirme.
+5. Aguarde a cópia terminar e ejete o pendrive com segurança.
+
+O BAT usa Robocopy para sincronizar somente a pasta `ktv-os`; a pasta `.ktv-config` fica separada e é preservada. **Não formata o pendrive.** Execute o BAT a partir do projeto completo extraído, não isoladamente.
