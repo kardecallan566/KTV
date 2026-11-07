@@ -5,6 +5,10 @@ if [[ "$(id -u)" -ne 0 ]]; then
   echo "Execute com sudo: sudo bash $0" >&2
   exit 1
 fi
+if command -v apt-get >/dev/null 2>&1 && ! command -v xdotool >/dev/null 2>&1; then
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y xdotool
+fi
 if ! command -v timedatectl >/dev/null 2>&1; then
   echo "timedatectl não está disponível neste sistema." >&2
   exit 1
