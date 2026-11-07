@@ -5,11 +5,9 @@ Aproximar a experiência dos streams M3U/MPEG-TS da robustez observada no VLC. V
 
 ## Ajustes de reprodução
 - mpv usa demuxer em thread separada e cache de rede com limites de memória por perfil.
-- `cache-pause=yes`: quando a rede seca o buffer, o player pausa/rebufferiza em vez de continuar consumindo frames sem dados.
-- `cache-pause-wait=3`: exige até 3 segundos de dados para sair do rebuffer (respeitando cache disponível).
-- `cache-pause-initial=no`: não atrasa desnecessariamente a primeira imagem.
+- **Atenção:** o rebuffer automático via `cache-pause` foi revertido após relatos de piora em canais que já funcionavam. Não ativar novamente como padrão sem teste A/B por perfil e hardware.
 - MPEG-TS e HLS usam opções libavformat de reconexão; `reconnect_at_eof` é aplicado somente ao HLS para evitar loop em TS finito.
-- Threads de decoder deixam de ser fixadas em 1; mpv/libavcodec escolhem paralelismo automático conforme compilação e CPU.
+- No perfil atual, decoder permanece com 1 thread por segurança e previsibilidade no Raspberry Pi 3; paralelismo automático será testado separadamente, não como mudança global.
 - `framedrop=vo` preserva a continuidade do decoder e descarta apenas frames atrasados na saída quando necessário.
 
 ## Raspberry Pi 3
