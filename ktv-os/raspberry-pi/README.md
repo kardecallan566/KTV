@@ -53,3 +53,25 @@ Para reativar, execute novamente o instalador e reinicie.
 - O KTV pode ser iniciado manualmente: `cd /opt/ktv-os && python3 launcher.py`
 
 > A instalação foi preparada por scripts e não substitui o teste físico no Pi 3. Compatibilidade de Chromium/MPV, áudio HDMI e desempenho de canais devem ser validados no equipamento.
+
+
+## KTV OS executado pelo pendrive (sem boot USB)
+
+Neste modo, o Raspberry Pi OS e os programas necessários ficam no microSD. O KTV OS (interface, Python e catálogo do projeto) fica no pendrive. O Pi pode iniciar sem o pendrive; quando ele for conectado, o Openbox detecta a unidade e abre o KTV automaticamente.
+
+### Preparar o pendrive
+
+1. Formate o pendrive em FAT32 ou exFAT (para maior compatibilidade, FAT32; arquivos individuais têm limite de 4 GB).
+2. Copie a pasta **ktv-os** deste repositório para a raiz do pendrive. O resultado precisa ser `PENDRIVE/ktv-os/launcher.py` e `PENDRIVE/ktv-os/app/index.html`.
+3. No Raspberry Pi OS instalado no microSD, execute o instalador deste repositório uma vez:
+
+```bash
+sudo bash ktv-os/raspberry-pi/install.sh
+sudo reboot
+```
+
+4. Após reiniciar, conecte o pendrive. O KTV abre automaticamente; também funciona se ele já estiver conectado antes de ligar o Pi.
+
+As configurações e favoritos desse modo são gravados em uma pasta oculta `.ktv-config` ao lado de `ktv-os` no pendrive. Não remova a unidade enquanto o KTV estiver gravando. Para encerrar com segurança, desligue o Pi pelo menu do KTV antes de retirar o pendrive.
+
+**Importante:** Python, Chromium, MPV e bibliotecas do sistema continuam instalados no microSD; o pendrive guarda o aplicativo e seus dados. Não é um sistema operacional completo portátil nem um boot direto pelo USB. O instalador configura a sessão para aguardar o KTV USB; sem o pendrive, a tela ficará aguardando.
