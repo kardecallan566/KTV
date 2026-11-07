@@ -41,21 +41,19 @@ def _number(value, maximum):
 class NativePlayer:
     def __init__(self, executable=None, popen=None):
         self.executable = executable if executable is not None else shutil.which('mpv')
-        self.vlc_executable = shutil.which('cvlc') or shutil.which('vlc')
         self.popen = popen or subprocess.Popen
         self.lock = threading.RLock()
         self.process = None
         self.current = None
         self.quality = None
         self.decode = None
-        self.backend = None
         self.last_exit_code = None
         self.ipc_dir = None
         self.ipc_path = None
 
     @property
     def available(self):
-        return bool(self.executable or self.vlc_executable)
+        return bool(self.executable)
 
     def _clear_ipc(self):
         if self.ipc_dir:
@@ -138,7 +136,6 @@ class NativePlayer:
                 self.current = None
                 self.quality = None
                 self.decode = None
-                self.backend = None
                 self._clear_ipc()
             return {
                 'available': self.available,
@@ -146,7 +143,6 @@ class NativePlayer:
                 'name': self.current,
                 'quality': self.quality if playing else None,
                 'decode': self.decode if playing else None,
-                'backend': self.backend if playing else None,
                 'exit_code': None if playing else self.last_exit_code,
                 'video': self._read_video_state() if playing else None,
             }
@@ -161,7 +157,6 @@ class NativePlayer:
             self.current = None
             self.quality = None
             self.decode = None
-            self.backend = None
             self.last_exit_code = None
             try:
                 if process.poll() is None:
@@ -175,13 +170,9 @@ class NativePlayer:
                 self._clear_ipc()
             return True
 
-    def play(self, source, name, quality='balanced', decode='default', user_agent=None, referrer=None, backend='mpv'):
-        if type(backend) is not str or backend not in ('mpv', 'vlc'):
-            raise ValueError('Player selecionado invalido')
-        if backend == 'mpv' and not self.executable:
+    def play(self, source, name, quality='balanced', decode='default', user_agent=None, referrer=None):
+        if not self.executable:
             raise RuntimeError('mpv nao instalado. Disponivel na imagem KTV OS Linux Live.')
-        if backend == 'vlc' and not self.vlc_executable:
-            raise RuntimeError('VLC nao instalado. Execute: sudo apt install vlc')
         if not isinstance(source, str) or not source or source.startswith('-') or '\0' in source:
             raise ValueError('Fonte de video invalida')
         # Reject network protocols beyond direct HTTP(S), and unsafe local
@@ -201,32 +192,6 @@ class NativePlayer:
         if type(decode) is not str or decode not in ('default', 'compatible'):
             raise ValueError('Modo de decodificacao invalido')
         self.stop()
-        if backend == 'vlc':
-            args = [
-                self.vlc_executable, '--intf=dummy', '--fullscreen',
-                '--no-video-title-show', '--no-osd', '--no-one-instance',
-                '--network-caching=4000', '--live-caching=4000', '--file-caching=1000',
-                '--clock-jitter=500', '--clock-synchro=1',
-                '--drop-late-frames', '--skip-frames', '--avcodec-hw=any',
-                '--quiet',
-            ]
-            if user_agent is not None:
-                args.append('--http-user-agent=' + user_agent)
-            if referrer is not None:
-                args.append('--http-referrer=' + referrer)
-            args.append(source)
-            with self.lock:
-                try:
-                    self.process = self.popen(args, stdin=subprocess.DEVNULL,
-                                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                except OSError as exc:
-                    raise RuntimeError('Nao foi possivel iniciar VLC: {}'.format(exc))
-                self.current = name
-                self.quality = quality
-                self.decode = decode
-                self.backend = 'vlc'
-                self.last_exit_code = None
-                return self.status()
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
             '--force-window=yes', '--ontop=yes', '--ontop-level=system', '--really-quiet',
