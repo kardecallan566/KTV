@@ -239,16 +239,23 @@ class NativePlayer:
             args.extend(('--hwdec=no', '--vo=x11', '--profile=sw-fast'))
         else:
             args.append('--hwdec=auto-safe')
-        if urlsplit(source).path.lower().endswith('.m3u8'):
+        media_path = urlsplit(source).path.lower()
+        is_hls = media_path.endswith('.m3u8')
+        is_ts = media_path.endswith('.ts')
+        if is_hls or is_ts:
             chosen = QUALITY_PROFILES[quality]
-            # FFmpeg HTTP reconnection flags improve resilience to brief Wi-Fi
-            # drops and live playlist EOFs without changing the source URL.
-            args.append('--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_at_eof=1')
+            # HTTP reconnect applies to direct MPEG-TS as well as HLS. For TS,
+            # avoid reconnect_at_eof so finite .ts files do not unexpectedly loop.
+            reconnect = 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=10'
+            if is_hls:
+                reconnect += ',reconnect_at_eof=1'
+            args.append('--stream-lavf-o=' + reconnect)
             args.extend((
-                '--hls-bitrate=' + chosen['hls_bitrate'],
                 '--demuxer-max-bytes=' + chosen['forward'],
                 '--demuxer-max-back-bytes=' + chosen['back'],
             ))
+            if is_hls:
+                args.append('--hls-bitrate=' + chosen['hls_bitrate'])
         # mpv IPC is a local diagnostic socket, never a public TCP endpoint.
         if os.name == 'posix' and hasattr(socket, 'AF_UNIX'):
             self.ipc_dir = tempfile.mkdtemp(prefix='ktv-mpv-')
