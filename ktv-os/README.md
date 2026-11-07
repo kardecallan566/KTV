@@ -181,3 +181,32 @@ Além de **TV Brasil, Canal Gov e TV Câmara**, a lista fixa de emissoras públi
 - A API reproduz apenas IDs presentes na lista fixa; ela **não recebe uma URL remota arbitrária** nesse caminho. Não há downloads automáticos, tokens de serviços pagos ou listas comerciais.
 
 **Vídeo para Raspberry Pi:** veja [Plano de qualidade e Raspberry Pi ARM64](docs/VIDEO_QUALITY_RPI_PLAN.md). A ISO atual é AMD64 e não inicializa em placas ARM. IA para super-resolução fica somente planejada; a primeira prioridade é obter streams HD quando disponíveis e aproveitar escalonamento/decodificação de hardware.
+
+
+## Atualizar instalação no Raspberry Pi (pendrive, sem Git)
+
+O KTV instalado em `/mnt/ktv-usb/ktv-os` pode ser atualizado diretamente pelo SSH, sem clonar o repositório e sem instalar Git. O atualizador baixa um ZIP oficial do branch `main`, faz cópia de segurança dos arquivos que serão substituídos e mantém arquivos locais protegidos (configurações, favoritos, logs e arquivos extras). Ele não apaga arquivos locais que não existem no GitHub.
+
+Na primeira vez, conecte ao Pi e instale o atualizador:
+
+```bash
+ssh dietpi@IP_DO_RASPBERRY
+cd /mnt/ktv-usb/ktv-os
+mkdir -p tools
+curl -fL https://raw.githubusercontent.com/kardecallan566/KTV/main/ktv-os/tools/atualizar_ktv_usb.py -o tools/atualizar_ktv_usb.py
+chmod +x tools/atualizar_ktv_usb.py
+```
+
+Confira o pacote sem alterar a instalação:
+
+```bash
+python3 tools/atualizar_ktv_usb.py --check
+```
+
+Atualize o KTV:
+
+```bash
+sudo python3 tools/atualizar_ktv_usb.py
+```
+
+Os backups ficam em `.ktv-backups/` dentro da pasta do KTV. Após a atualização, recarregue a página da TV com `Ctrl+Shift+R`; mudanças em Python podem exigir reiniciar o serviço KTV. Não use o atualizador enquanto estiver reproduzindo ou durante uma gravação de configuração.
