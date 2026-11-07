@@ -130,7 +130,8 @@ class NativePlayer:
             'audio_pts': _number(properties.get('audio-pts'), 8640000),
             'audio_speed': _number(properties.get('audio-speed'), 10),
             'audio_bitrate': _number(properties.get('audio-bitrate'), 100000000),
-            'audio_codec': (properties.get('audio-codec')[:32] if isinstance(properties.get('audio-codec'), str) else None),\n            'audio_output': isinstance(properties.get('audio-params'), dict),
+            'audio_codec': (properties.get('audio-codec')[:32] if isinstance(properties.get('audio-codec'), str) else None),
+            'audio_output': isinstance(properties.get('audio-params'), dict),
             'av_sync': _number(properties.get('avsync'), 3600),
         }
 
