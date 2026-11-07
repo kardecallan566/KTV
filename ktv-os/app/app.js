@@ -277,6 +277,10 @@
       if(v.codec)parts.push('Codec: '+v.codec);
       if(v.fps)parts.push('FPS: '+v.fps);
       if(v.dropped_frames!==null && v.dropped_frames!==undefined)parts.push('Quadros perdidos: '+v.dropped_frames);
+      if(v.decoder_dropped_frames!==null && v.decoder_dropped_frames!==undefined){
+        parts.push('Frames descartados pelo decoder: '+v.decoder_dropped_frames);
+        if(v.decoder_dropped_frames>=120)parts.push('Decoder sob pressão: muitos frames descartados');
+      }
       if(v.buffer_seconds!==null && v.buffer_seconds!==undefined)parts.push('Buffer: '+v.buffer_seconds+' s');
       if(v.hardware_decoder)parts.push('Decoder: '+v.hardware_decoder);
       if(v.audio_track===false)parts.push('Aviso: faixa de áudio não identificada');
