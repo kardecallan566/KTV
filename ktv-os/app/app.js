@@ -304,6 +304,7 @@
     stopQualityPolling();
     // Only validated references (kind/id/index), never signed Pluto URLs.
     payload.quality=el('quality-profile').value;
+    payload.backend=el('player-backend').value;
     payload.decode=decode;
     // Preliminary metadata check; never promise playback without decoding.
     function doPlay(){
