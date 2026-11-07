@@ -7,7 +7,7 @@
 <title>Controle remoto • KTV OS</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#07101e,#102a40);color:#f2f8ff;font-family:system-ui,Arial,sans-serif;display:flex;justify-content:center;padding:16px}
-main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{font-size:25px;font-weight:900;letter-spacing:-1px}.brand span{color:#70e5df}.card{background:#122b42;border:1px solid #345773;border-radius:20px;padding:18px;box-shadow:0 14px 40px #0003}h1{font-size:21px;margin:0 0 8px}p{color:#b8ccdd;line-height:1.45;margin:8px 0 14px}.muted{font-size:13px;color:#9bb3c8}input{width:100%;min-height:56px;border:1px solid #54728b;border-radius:12px;background:#071b2d;color:#fff;font-size:27px;letter-spacing:9px;text-align:center}button{border:0;border-radius:13px;background:#1d405a;color:#fff;font-size:17px;font-weight:750;min-height:54px;touch-action:manipulation;user-select:none}button:active{background:#28677a;transform:scale(.98)}.primary{width:100%;background:linear-gradient(100deg,#53ddd2,#66bdf1);color:#092239;margin-top:12px}.hidden{display:none!important}.status{min-height:22px;color:#9ce9d5;font-size:14px}.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.pad button{font-size:23px;min-height:66px}.pad .ok{background:#1c8b78;color:#fff;font-size:17px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions button{font-size:14px}.stop{background:#673947}.connected{border-color:#3e987c}.hint{text-align:center;font-size:12px;color:#8ca9c0}
+main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{font-size:25px;font-weight:900;letter-spacing:-1px}.brand span{color:#70e5df}.card{background:#122b42;border:1px solid #345773;border-radius:20px;padding:18px;box-shadow:0 14px 40px #0003}h1{font-size:21px;margin:0 0 8px}p{color:#b8ccdd;line-height:1.45;margin:8px 0 14px}.muted{font-size:13px;color:#9bb3c8}input{width:100%;min-height:56px;border:1px solid #54728b;border-radius:12px;background:#071b2d;color:#fff;font-size:27px;letter-spacing:9px;text-align:center}button{border:0;border-radius:13px;background:#1d405a;color:#fff;font-size:17px;font-weight:750;min-height:54px;touch-action:manipulation;user-select:none}button:active{background:#28677a;transform:scale(.98)}.primary{width:100%;background:linear-gradient(100deg,#53ddd2,#66bdf1);color:#092239;margin-top:12px}.hidden{display:none!important}.status{min-height:22px;color:#9ce9d5;font-size:14px}.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.pad button{font-size:23px;min-height:66px}.pad .ok{background:#1c8b78;color:#fff;font-size:17px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions button{font-size:14px}.shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.shortcuts button{min-height:48px;font-size:13px;padding:5px 3px;background:#20445e}.shortcut-title{font-size:12px;color:#a9c5d9;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px}.stop{background:#673947}.connected{border-color:#3e987c}.hint{text-align:center;font-size:12px;color:#8ca9c0}
 .touchpad{height:220px;border:2px dashed #52738d;border-radius:17px;background:radial-gradient(ellipse at center,#1a3b55,#0a2033);display:flex;align-items:center;justify-content:center;text-align:center;color:#a9c5d9;font-size:15px;touch-action:none;user-select:none;cursor:crosshair;position:relative;overflow:hidden}
 .touchpad:active{border-color:#66d8d0;background:#15374b}.touchpad small{display:block;font-size:12px;margin-top:8px;color:#769ab5}.mousebuttons{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}.mousebuttons button{font-size:14px;min-height:48px}.wheel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 </style>
@@ -35,6 +35,7 @@ main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{fo
       <button data-action="ArrowLeft" aria-label="Esquerda">◀</button><button class="ok" data-action="accept">OK</button><button data-action="ArrowRight" aria-label="Direita">▶</button>
       <span></span><button data-action="ArrowDown" aria-label="Baixo">▼</button><span></span>
     </div>
+    <div class="shortcut-title">Atalhos de canais e categorias</div><div class="shortcuts"><button data-action="channels">▦ Canais</button><button data-action="tv">📡 TV aberta</button><button data-action="iptv">▶ IPTV</button><button data-action="movies">🎬 Filmes</button><button data-action="sports">⚽ Futebol</button><button data-action="news">📰 Notícias</button><button data-action="cartoons">🧸 Desenhos</button></div>
     <div class="actions"><button data-action="home">⌂ Início</button><button data-action="back">↩ Voltar</button><button id="disconnect">Desconectar</button></div>
     <div class="status" id="remote-status" role="status">Conectado.</div>
   </section>
@@ -73,7 +74,7 @@ main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{fo
   pad.addEventListener('pointermove',function(e){
     if(!pointer||pointer.id!==e.pointerId)return;
     var dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer.x=e.clientX;pointer.y=e.clientY;
-    if(Math.abs(dx)+Math.abs(dy)>0){pointer.moved=true;dxQueue+=Math.round(dx*1.7);dyQueue+=Math.round(dy*1.7);}
+    if(Math.abs(dx)+Math.abs(dy)>0){pointer.moved=true;dxQueue+=Math.round(dx*2.0);dyQueue+=Math.round(dy*2.0);}
     e.preventDefault();
   });
   function flushMouse(){
@@ -85,7 +86,7 @@ main{width:min(100%,460px);display:flex;flex-direction:column;gap:14px}.brand{fo
       .catch(function(error){remoteStatus.textContent=error.message;})
       .finally(function(){inflight=false;});
   }
-  window.setInterval(flushMouse,35);
+  window.setInterval(flushMouse,20);
   pad.addEventListener('pointerup',function(e){
     if(pointer&&pointer.id===e.pointerId){var moved=pointer.moved;pointer=null;if(!moved)send('mouse_left');}
   });
