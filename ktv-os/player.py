@@ -195,6 +195,10 @@ class NativePlayer:
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
             '--force-window=yes', '--ontop=yes', '--ontop-level=system', '--really-quiet',
+            '--cache=yes', '--cache-secs=20', '--demuxer-readahead-secs=15',
+            '--demuxer-max-bytes=32MiB', '--demuxer-max-back-bytes=8MiB',
+            '--audio-buffer=0.5', '--video-sync=audio', '--framedrop=vo',
+            '--vd-lavc-threads=2', '--network-timeout=20',
         ]
         is_pluto = (urlsplit(source).hostname == 'ipv4.pluto.tv'
                     and urlsplit(source).path.endswith('/master.m3u8'))
