@@ -24,3 +24,13 @@ Testes automatizados cobrem estado saudável, pausa, travamento, sessão recuper
 - Exibe bitrate, velocidade e PTS de áudio quando o mpv fornece esses valores.
 - A sincronização A/V é mostrada em segundos; valores absolutos a partir de 250 ms recebem aviso e a partir de 500 ms recebem alerta mais forte.
 - Esses indicadores são diagnósticos, não correção automática de atraso. A disponibilidade das propriedades depende do stream, do decoder e do mpv.
+
+
+## Audio Engine 2.3 — sincronização e diagnóstico do decoder
+
+- O player nativo aceita ajuste de `audio-delay` em tempo real pelo IPC Unix privado; a API local recebe somente um número limitado a ±5 segundos.
+- A interface oferece passos de 100 ms, reset e indicação do atraso aplicado. O ajuste vale para a sessão atual; ao fechar/reabrir o canal, o mpv retorna ao padrão.
+- O endpoint exige player mpv ativo e não expõe comandos arbitrários do IPC.
+- A telemetria diferencia frames descartados na saída e no decoder. A partir de 120 frames descartados pelo decoder, mostra aviso de pressão; isso é um sinal de diagnóstico, não prova congelamento nem escolhe decoder automaticamente.
+- O contador de frames descartados é cumulativo na sessão mpv. Avalie sua tendência e duração antes de concluir que há problema.
+- A detecção confiável de imagem congelada ainda precisa correlacionar mudança real de frames renderizados (não apenas relógio da mídia); não deve reiniciar stream só por um contador estático.
