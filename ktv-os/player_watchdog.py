@@ -108,6 +108,7 @@ class PlayerWatchdog:
             return self.status_unlocked()
 
     def _recover_session(self):
+        # Serialize recovery against session replacement/manual channel changes.
         with self.lock:
             session = self.session
             if not session or self.stop_event.is_set():
@@ -115,9 +116,8 @@ class PlayerWatchdog:
                 return
             self.recovery_attempts += 1
             self.last_recovery = self.clock()
-        try:
-            result = self.recover(session)
-            with self.lock:
+            try:
+                result = self.recover(session)
                 if result:
                     now = self.clock()
                     self.started = now
@@ -127,11 +127,9 @@ class PlayerWatchdog:
                     self.message = "Reconexão automática solicitada; aguardando sinal."
                 else:
                     self.message = "Reconexão automática não foi possível; mantendo monitoramento."
-        except Exception:
-            with self.lock:
+            except Exception:
                 self.message = "Falha ao tentar reconexão automática."
-        finally:
-            with self.lock:
+            finally:
                 self.recovery_in_progress = False
 
     def status_unlocked(self):
