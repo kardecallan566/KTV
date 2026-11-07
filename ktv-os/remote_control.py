@@ -43,7 +43,7 @@ class RemoteControl:
             if expiry is None or expiry <= now:
                 self._sessions.pop(str(token or ''), None)
                 raise ValueError('Controle não conectado. Digite novamente o código da TV.')
-            if action not in self.ACTIONS:
+            if type(action) is not str or action not in self.ACTIONS:
                 raise ValueError('Comando não permitido.')
             self._sequence += 1
             self._events.append({'sequence': self._sequence, 'action': action})
