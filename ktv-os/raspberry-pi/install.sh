@@ -41,10 +41,25 @@ chown -R "$TARGET_USER:$TARGET_USER" "$DEST"
 
 echo "==> Criando inicialização kiosk..."
 install -d -o "$TARGET_USER" -g "$TARGET_USER" "$TARGET_HOME/.config/openbox"
-cat > "$DEST/raspberry-pi/kiosk-session.sh" <<'KIOSK'
+cat > "$DEST/raspberry-pi/usb-kiosk-watcher.sh" <<'WATCHER'
 #!/usr/bin/env bash
 set -u
-cd /opt/ktv-os
+# Wait for a KTV USB drive; it may be plugged in after boot.
+USB_ROOT=""
+while [[ -z "$USB_ROOT" ]]; do
+  for base in "/media/$USER" "/run/media/$USER"; do
+    [[ -d "$base" ]] || continue
+    for mount in "$base"/*; do
+      [[ -d "$mount/ktv-os" && -f "$mount/ktv-os/launcher.py" && -f "$mount/ktv-os/app/index.html" ]] || continue
+      USB_ROOT="$mount/ktv-os"
+      break 2
+    done
+  done
+  sleep 2
+done
+cd "$USB_ROOT"
+export KTV_STATE_DIR="$(dirname "$USB_ROOT")/.ktv-config"
+mkdir -p "$KTV_STATE_DIR"
 python3 launcher.py &
 SERVER_PID=$!
 cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
@@ -56,16 +71,16 @@ done
 exec chromium-browser --no-sandbox --disable-dev-shm-usage --disable-gpu \
   --kiosk --incognito --noerrdialogs --disable-infobars \
   http://127.0.0.1:8787/
-KIOSK
-chmod 755 "$DEST/raspberry-pi/kiosk-session.sh"
-chown "$TARGET_USER:$TARGET_USER" "$DEST/raspberry-pi/kiosk-session.sh"
+WATCHER
+chmod 755 "$DEST/raspberry-pi/usb-kiosk-watcher.sh"
+chown "$TARGET_USER:$TARGET_USER" "$DEST/raspberry-pi/usb-kiosk-watcher.sh"
 
 cat > "$TARGET_HOME/.config/openbox/autostart" <<'OPENBOX'
 #!/bin/sh
 xset s off
 xset -dpms
 xset s noblank
-/opt/ktv-os/raspberry-pi/kiosk-session.sh
+/opt/ktv-os/raspberry-pi/usb-kiosk-watcher.sh
 OPENBOX
 chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.config/openbox/autostart"
 chmod 755 "$TARGET_HOME/.config/openbox/autostart"
@@ -94,5 +109,5 @@ systemctl set-default graphical.target
 
 echo
 echo "Instalação preparada. Reinicie com: sudo reboot"
-echo "Ao iniciar, o LightDM abrirá o KTV OS em modo kiosk."
+echo "Ao iniciar, o sistema aguardará o pendrive com KTV OS e abrirá automaticamente."
 echo "Para voltar ao terminal: Ctrl+Alt+F2 (ou F3)."
