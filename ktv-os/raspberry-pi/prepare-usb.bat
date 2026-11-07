@@ -29,7 +29,7 @@ set /p "DRIVE=Digite a letra do pendrive (ex.: E): "
 set "DRIVE=%DRIVE: =%"
 if "%DRIVE:~-1%"==":" set "DRIVE=%DRIVE:~0,-1%"
 set "USB=%DRIVE%:"
-if not exist "%USB%\NUL" (
+if not exist "%USB%\." (
   echo ERRO: unidade "%USB%" nao encontrada.
   pause
   exit /b 1
