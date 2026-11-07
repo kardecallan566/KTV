@@ -39,10 +39,10 @@ class WatchdogTests(unittest.TestCase):
         monitor.reset()
         clock.value += 36
         monitor.tick()  # ends startup grace
-        clock.value += 46
+        clock.value += 61
         status = monitor.tick()
         self.assertEqual(status["state"], "stalled")
-        self.assertGreaterEqual(status["stall_seconds"], 45)
+        self.assertGreaterEqual(status["stall_seconds"], 60)
         monitor.close()
 
     def test_recovery_is_bounded_and_replays_registered_session(self):
