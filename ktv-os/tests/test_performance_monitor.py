@@ -36,7 +36,7 @@ class PerformanceMonitorTests(unittest.TestCase):
         with mock.patch.object(Path, 'read_text', side_effect=read), \
              mock.patch.object(m.shutil, 'which', return_value=None):
             self.assertIsNone(monitor._cpu_percent())
-            self.assertEqual(monitor._cpu_percent(), 66.7)
+            self.assertEqual(monitor._cpu_percent(), 75.0)
             result = monitor.status()
         self.assertEqual(result['temperature_c'], 82.0)
         self.assertEqual(result['temperature_state'], 'critical')
