@@ -59,6 +59,23 @@
     el('clock').textContent = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
   }
   clock(); setInterval(clock, 20000);
+  function refreshPerformance(){
+    fetch('/api/performance',{cache:'no-store'})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(data){
+        var p=data.performance||{},m=p.memory||{},t=p.throttling||{};
+        el('perf-cpu').textContent=p.cpu_percent==null?'--':p.cpu_percent+'%';
+        el('perf-temp').textContent=p.temperature_c==null?'--':p.temperature_c+' °C';
+        el('perf-ram').textContent=m.used_percent==null?'--':m.used_percent+'% ('+m.used_mb+'/'+m.total_mb+' MB)';
+        el('perf-freq').textContent=p.cpu_frequency_mhz==null?'--':p.cpu_frequency_mhz+' MHz';
+        el('perf-throttle').textContent='Temperatura: '+(p.temperature_state||'desconhecida')+' · '+(t.message||'Throttling não consultado');
+        el('perf-throttle').dataset.state=p.temperature_state||'unknown';
+      }).catch(function(){
+        el('perf-throttle').textContent='Monitoramento indisponível neste sistema.';
+      });
+  }
+  refreshPerformance();setInterval(refreshPerformance,30000);
+  document.querySelector('[data-action="performance-refresh"]').addEventListener('click',refreshPerformance);
   function dialog(title, body) {
     clearEmbed();
     el('dialog-title').textContent = title;
