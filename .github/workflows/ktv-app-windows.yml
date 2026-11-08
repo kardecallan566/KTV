@@ -34,6 +34,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: KTV-App-Setup
-          path: ktv-os/installer-output/KTV-App-Setup.exe
+          path: ktv-os/windows/installer-output/KTV-App-Setup.exe
           if-no-files-found: error
           retention-days: 14
