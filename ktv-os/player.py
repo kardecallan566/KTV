@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 from urllib.parse import urlsplit
@@ -42,7 +43,17 @@ def _number(value, maximum):
 
 class NativePlayer:
     def __init__(self, executable=None, popen=None):
-        self.executable = executable if executable is not None else shutil.which('mpv')
+        if executable is not None:
+            self.executable = executable
+        else:
+            self.executable = shutil.which('mpv')
+            if not self.executable:
+                app_dir = (Path(sys.executable).resolve().parent
+                           if getattr(sys, 'frozen', False)
+                           else Path(__file__).resolve().parent)
+                bundled = app_dir / 'mpv' / ('mpv.exe' if os.name == 'nt' else 'mpv')
+                if bundled.is_file():
+                    self.executable = str(bundled)
         self.popen = popen or subprocess.Popen
         self.lock = threading.RLock()
         self.process = None
@@ -264,7 +275,10 @@ class NativePlayer:
         if decode == 'compatible':
             # Manual fallback for audio-only/black picture or buggy GPU drivers.
             # Software decoding + X11 output is slower: never enable by default.
-            args.extend(('--hwdec=no', '--vo=x11', '--profile=sw-fast'))
+            args.append('--hwdec=no')
+            if os.name != 'nt':
+                args.append('--vo=x11')
+            args.append('--profile=sw-fast')
         else:
             args.append('--hwdec=auto-safe')
         media_path = urlsplit(source).path.lower()
