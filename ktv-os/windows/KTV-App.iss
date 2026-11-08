@@ -21,7 +21,7 @@ PrivilegesRequired=lowest
 UninstallDisplayIcon={app}\{#AppExeName}
 
 [Files]
-Source: "dist\KTV-App\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "..\dist\KTV-App\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 [Icons]
 Name: "{group}\KTV App"; Filename: "{app}\{#AppExeName}"
