@@ -9,7 +9,7 @@ from launcher import KTVOSServer
 
 APP_NAME = "KTV App"
 HOST = "127.0.0.1"
-PORT = 8787
+PORT = 0  # porta livre: evita conflito com uma instância KTV OS já aberta
 
 
 def wait_server(host, port, timeout=12):
@@ -41,13 +41,14 @@ def main():
     server_thread = None
     try:
         server = KTVOSServer(host=HOST, port=PORT)
+        app_port = server.server_address[1]
         server_thread = threading.Thread(target=server.serve_forever, daemon=True)
         server_thread.start()
-        if not wait_server(HOST, PORT):
+        if not wait_server(HOST, app_port):
             raise RuntimeError("O servidor local do KTV não iniciou.")
         window = webview.create_window(
-            APP_NAME, f"http://{HOST}:{PORT}/",
-            width=1280, height=720, min_size=(800, 500),
+            APP_NAME, f"http://{HOST}:{app_port}/",
+            width=1280, height=720, min_size=(800, 500), fullscreen=True,
             background_color="#10131a",
         )
         webview.start()
