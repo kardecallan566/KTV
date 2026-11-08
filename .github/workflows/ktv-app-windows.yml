@@ -1,0 +1,27 @@
+name: KTV App Windows
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ktv-os/**"
+      - ".github/workflows/ktv-app-windows.yml"
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r ktv-os/requirements-windows.txt
+      - name: Package desktop app
+        working-directory: ktv-os
+        run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name KTV-App --collect-all webview --add-data "app;app" --add-data "iptv_free_catalog.json;." ktv_app.py
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: KTV-App-Windows
+          path: ktv-os/dist/KTV-App/
+          if-no-files-found: error
+          retention-days: 14
