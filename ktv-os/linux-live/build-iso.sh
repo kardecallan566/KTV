@@ -78,7 +78,8 @@ mkdir -p config/includes.chroot/opt/ktv-os
 cp "$PROJECT_DIR/ktv-os/launcher.py" config/includes.chroot/opt/ktv-os/launcher.py
 cp "$PROJECT_DIR/ktv-os/player.py" config/includes.chroot/opt/ktv-os/player.py
 cp "$PROJECT_DIR/ktv-os/player_watchdog.py" config/includes.chroot/opt/ktv-os/player_watchdog.py
-cp "$PROJECT_DIR/ktv-os/stability_engine.py" config/includes.chroot/opt/ktv-os/stability_engine.py\ncp "$PROJECT_DIR/ktv-os/performance_monitor.py" config/includes.chroot/opt/ktv-os/performance_monitor.py
+cp "$PROJECT_DIR/ktv-os/stability_engine.py" config/includes.chroot/opt/ktv-os/stability_engine.py
+cp "$PROJECT_DIR/ktv-os/performance_monitor.py" config/includes.chroot/opt/ktv-os/performance_monitor.py
 cp "$PROJECT_DIR/ktv-os/remote_control.py" config/includes.chroot/opt/ktv-os/remote_control.py
 cp "$PROJECT_DIR/ktv-os/stream_urls.py" config/includes.chroot/opt/ktv-os/stream_urls.py
 cp "$PROJECT_DIR/ktv-os/channel_store.py" config/includes.chroot/opt/ktv-os/channel_store.py
