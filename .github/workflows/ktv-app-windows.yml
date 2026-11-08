@@ -17,11 +17,23 @@ jobs:
         run: python -m pip install -r ktv-os/requirements-windows.txt
       - name: Package desktop app
         working-directory: ktv-os
-        run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name KTV-App --collect-all webview --add-data "app;app" --add-data "iptv_free_catalog.json;." ktv_app.py
-      - name: Upload Windows build
+        run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name KTV-App --collect-all webview --collect-all clr_loader --add-data "app;app" --add-data "iptv_free_catalog.json;." ktv_app.py
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+      - name: Compile Windows installer
+        working-directory: ktv-os
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows\KTV-App.iss'
+      - name: Upload Windows app folder
         uses: actions/upload-artifact@v4
         with:
           name: KTV-App-Windows
           path: ktv-os/dist/KTV-App/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: KTV-App-Setup
+          path: ktv-os/installer-output/KTV-App-Setup.exe
           if-no-files-found: error
           retention-days: 14
