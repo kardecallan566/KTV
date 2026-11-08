@@ -10,7 +10,7 @@ O KTV App é a versão desktop do KTV OS: abre a interface existente em uma jane
 
 ## Gerar o executável
 
-Execute `build_windows.bat`. O PyInstaller cria `dist/KTV-App/KTV-App.exe` e os arquivos auxiliares da pasta. Distribua **a pasta completa**, não somente o EXE.
+Execute `build_windows.bat`. O PyInstaller cria `dist/KTV-App/KTV-App.exe` e os arquivos auxiliares da pasta. Se Inno Setup (`ISCC`) estiver instalado, o script também gera `installer-output/KTV-App-Setup.exe`. Distribua o Setup ou **a pasta completa**, não somente o EXE. O script `windows/KTV-App.iss` define atalhos e instalação por usuário.
 
 ## Player
 
