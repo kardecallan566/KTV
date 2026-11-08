@@ -24,35 +24,7 @@ jobs:
         shell: pwsh
         run: |
           $release = Invoke-RestMethod -Uri "https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest"
-          $asset = $release.assets | Where-Object { $_.name -match '^mpv-x86_64-.*\.7z      - name: Bundle MPV with KTV App
-        shell: pwsh
-        run: |
-          if (-not $env:MPV_SOURCE_DIR) { throw "Diretório do MPV não foi definido." }
-          $target = Join-Path $env:GITHUB_WORKSPACE "ktv-os\dist\KTV-App\mpv"
-          New-Item -ItemType Directory -Path $target -Force | Out-Null
-          Copy-Item -Path (Join-Path $env:MPV_SOURCE_DIR "*") -Destination $target -Recurse -Force
-          if (-not (Test-Path (Join-Path $target "mpv.exe"))) { throw "Falha ao preparar o MPV junto ao KTV App." }
-          & (Join-Path $target "mpv.exe") --version
-      - name: Install Inno Setup
-        run: choco install innosetup --yes --no-progress
-      - name: Compile Windows installer
-        working-directory: ktv-os
-        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows\KTV-App.iss'
-      - name: Upload Windows app folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: KTV-App-Windows
-          path: ktv-os/dist/KTV-App/
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload Windows installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: KTV-App-Setup
-          path: ktv-os/windows/installer-output/KTV-App-Setup.exe
-          if-no-files-found: error
-          retention-days: 14
- -and $_.name -notmatch '-v3-' } | Select-Object -First 1
+          $asset = $release.assets | Where-Object { $_.name -like "mpv-x86_64-*.7z" -and $_.name -notlike "*-v3-*" } | Select-Object -First 1
           if (-not $asset) { throw "Não foi encontrado um pacote MPV x86_64 compatível na última versão." }
           $archive = Join-Path $env:RUNNER_TEMP $asset.name
           $extract = Join-Path $env:RUNNER_TEMP "mpv-windows"
