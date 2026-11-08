@@ -42,16 +42,6 @@
   var nativeAvailable = false;
   var nativeActive = false;
   var pendingVideoToken = null;
-  el('poweroff-button').addEventListener('click',function(){
-    if(!window.confirm('Desligar o computador que está executando o KTV OS? A Samsung continuará ligada. Salve suas alterações antes de prosseguir.'))return;
-    fetch('/api/system/poweroff',{method:'POST',headers:{
-      'Content-Type':'application/json','X-KTV-System-Action':'confirmed'
-    },body:'{}',cache:'no-store'}).then(function(r){return r.json().then(function(data){
-      if(!r.ok)throw new Error(data.error||('HTTP '+r.status));return data;
-    });}).then(function(){
-      dialog('Desligamento solicitado','O Linux recebeu a solicitação de desligamento. Se a tela permanecer ligada, pode haver uma restrição de permissão do sistema. A TV Samsung não será desligada.');
-    }).catch(function(e){dialog('Falha ao desligar','Não foi possível solicitar o desligamento: '+e.message);});
-  });
   var pendingVideoTimer = null;
   var discoveredDisplays = [];
   function el(id) { return document.getElementById(id); }
