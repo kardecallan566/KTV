@@ -1,0 +1,3 @@
+# Dependencies for running KTV App from source on Windows
+pywebview>=5.0,<7
+pyinstaller>=6.0,<7
