@@ -44,6 +44,7 @@ from reidos_guide import ReiGuide, DiscoveryError
 from system_actions import SystemActions, SystemActionError
 from remote_control import RemoteControl
 from stability_engine import detect_playback_profile
+from performance_monitor import PerformanceMonitor
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path(os.environ.get('KTV_STATE_DIR', str(Path.home() / '.config' / 'ktv-os'))).expanduser()  # USB opcional
@@ -179,6 +180,7 @@ class KTVOSServer(ThreadingHTTPServer):
         self.network = network if network is not None else NetworkManager()
         self.system_actions = system_actions if system_actions is not None else SystemActions()
         self.remote = RemoteControl()
+        self.performance = PerformanceMonitor()
         self.channels = ChannelStore(self.state_dir)
         self.persistence = PersistenceManager(self.channels, self.pluto_favorites)
         self._persistence_stop = Event()
@@ -286,6 +288,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                                    'persistence': self.server.persistence.status(usb_mounts())})
         if path == '/api/system/status':
             return self.send_json({'system': self.server.system_actions.status()})
+        if path == '/api/performance':
+            return self.send_json({'performance': self.server.performance.status()})
         if path == '/api/network/status':
             return self.send_json({'network': self.server.network.status()})
         if path == '/api/network/wifi':
