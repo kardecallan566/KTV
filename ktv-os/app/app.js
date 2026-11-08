@@ -1157,6 +1157,10 @@
     el('connection').textContent=err?'Servidor indisponível':'Sistema local conectado';
     if(!err){
       nativeAvailable=!!(data.player&&data.player.available);
+      if(data.playback_profile&&data.playback_profile.name==='raspberry-pi-3'){
+        el('quality-profile').value='economy';
+        el('quality-telemetry').textContent='Perfil inicial econômico ativado para Raspberry Pi 3; HLS prioriza a variante menor. Você pode mudar manualmente.';
+      }
       el('server-detail').textContent='KTV OS '+data.version+' · '+data.host+' · Player: '+(nativeAvailable?'mpv nativo pronto':'navegador (mpv não encontrado)')+' · Acesso local.';
       var remote=data.remote||{};
       el('remote-url').textContent=remote.url||'Não foi possível identificar o IP da rede';
