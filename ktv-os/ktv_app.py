@@ -48,7 +48,7 @@ def main():
             raise RuntimeError("O servidor local do KTV não iniciou.")
         window = webview.create_window(
             APP_NAME, f"http://{HOST}:{app_port}/",
-            width=1280, height=720, min_size=(800, 500), fullscreen=True,
+            width=1280, height=720, min_size=(800, 500), resizable=True, fullscreen=False,
             background_color="#10131a",
         )
         webview.start()
