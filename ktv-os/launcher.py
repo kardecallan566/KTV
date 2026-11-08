@@ -285,7 +285,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_json({'version': VERSION, 'host': '127.0.0.1', 'remote': self.server.remote_info(),
                                    'usb_direct_tv': self.server.antenna.available(), 'player': self.server.player.status(),
                                    'pluto_recovery': self.server.pluto_recovery.status(),
-                                   'persistence': self.server.persistence.status(usb_mounts())})
+                                   'persistence': self.server.persistence.status(usb_mounts()),
+                                   'playback_profile': detect_playback_profile()})
         if path == '/api/system/status':
             return self.send_json({'system': self.server.system_actions.status()})
         if path == '/api/performance':
