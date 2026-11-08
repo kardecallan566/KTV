@@ -33,7 +33,7 @@ class PerformanceMonitorTests(unittest.TestCase):
             if path == '/sys/class/thermal/thermal_zone0/temp':
                 return '82000'
             raise OSError
-        with mock.patch.object(Path, 'read_text', side_effect=read), \
+        with mock.patch.object(Path, 'read_text', autospec=True, side_effect=read), \
              mock.patch.object(m.shutil, 'which', return_value=None):
             self.assertIsNone(monitor._cpu_percent())
             self.assertEqual(monitor._cpu_percent(), 75.0)
