@@ -273,3 +273,9 @@ img,video,iframe{max-width:100%}
 
 
 .remote-home-panel{margin-top:24px;border:1px solid #28536c;background:linear-gradient(145deg,#102b43,#0b1c2e);padding:24px;border-radius:20px}.remote-home-code{display:flex;flex-direction:column;gap:6px;align-items:center;padding:18px;margin:16px 0;border:1px dashed #3c718c;border-radius:15px;background:#071827}.remote-home-code span{font-size:11px;letter-spacing:1.6px;color:#8eb1c9;font-weight:800}.remote-home-code strong{font-size:clamp(32px,5vw,48px);letter-spacing:9px;color:#68e6d8;font-variant-numeric:tabular-nums}.remote-home-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:12px 18px;border-radius:12px;font-weight:800}.remote-home-panel .hero-actions{gap:12px;flex-wrap:wrap}.remote-home-panel .small-note{overflow-wrap:anywhere;margin-top:12px}
+
+/* Raspberry Pi performance panel */
+.performance-summary{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0;}
+.performance-summary span{display:flex;flex-direction:column;gap:4px;min-width:130px;padding:12px 14px;border:1px solid var(--line,#26384b);border-radius:12px;background:rgba(255,255,255,.025);}
+.performance-summary strong{font-size:1.15rem;color:var(--text,#eaf2ff);}
+#perf-throttle[data-state="hot"],#perf-throttle[data-state="critical"]{color:#ffb36b;}
