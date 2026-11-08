@@ -25,6 +25,7 @@ class PerformanceMonitorTests(unittest.TestCase):
         cpu_lines = iter([
             'cpu 100 0 50 850 0 0 0 0',
             'cpu 200 0 100 900 0 0 0 0',
+            'cpu 250 0 125 925 0 0 0 0',
         ])
         def read(path):
             path = str(path)
