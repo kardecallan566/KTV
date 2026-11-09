@@ -61,6 +61,9 @@ class NativePlayer:
         self.quality = None
         self.decode = None
         self.last_exit_code = None
+        self.last_error = None
+        self.log_dir = None
+        self.log_path = None
         self.ipc_dir = None
         self.ipc_path = None
 
@@ -73,6 +76,29 @@ class NativePlayer:
             shutil.rmtree(self.ipc_dir, ignore_errors=True)
         self.ipc_dir = None
         self.ipc_path = None
+
+    def _read_log_error(self):
+        """Return a short, credential-safe MPV diagnostic for the UI."""
+        if not self.log_path:
+            return None
+        try:
+            with open(self.log_path, 'r', encoding='utf-8', errors='replace') as log:
+                lines = log.readlines()[-160:]
+        except OSError:
+            return None
+        candidates = []
+        for line in lines:
+            lower = line.lower()
+            if any(marker in lower for marker in (
+                    'error', 'failed', 'forbidden', 'timed out', 'not found',
+                    'unsupported', 'denied', 'no such')):
+                # Never expose signed query strings, which may contain tokens.
+                line = __import__('re').sub(
+                    r'https?://[^\s\]"\']+', '[URL ocultada]', line.strip())
+                line = line[:260]
+                if line and line not in candidates:
+                    candidates.append(line)
+        return ' | '.join(candidates[-3:])[:700] or None
 
     def _read_video_state(self):
         if not self.ipc_path or not hasattr(socket, 'AF_UNIX'):
@@ -174,6 +200,7 @@ class NativePlayer:
             if not playing:
                 if self.process is not None:
                     self.last_exit_code = code
+                    self.last_error = self._read_log_error()
                 self.process = None
                 self.current = None
                 self.quality = None
@@ -186,6 +213,7 @@ class NativePlayer:
                 'quality': self.quality if playing else None,
                 'decode': self.decode if playing else None,
                 'exit_code': None if playing else self.last_exit_code,
+                'error': None if playing else self.last_error,
                 'video': self._read_video_state() if playing else None,
             }
 
@@ -234,9 +262,15 @@ class NativePlayer:
         if type(decode) is not str or decode not in ('default', 'compatible'):
             raise ValueError('Modo de decodificacao invalido')
         self.stop()
+        # Keep a private per-session MPV log. The previous build discarded stderr
+        # and used --really-quiet, hiding HTTP/playlist/decoder failures.
+        self.log_dir = tempfile.mkdtemp(prefix='ktv-mpv-log-')
+        self.log_path = os.path.join(self.log_dir, 'mpv.log')
+        self.last_error = None
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
-            '--force-window=yes', '--ontop=yes', '--ontop-level=system', '--really-quiet',
+            '--force-window=yes', '--ontop=yes', '--ontop-level=system',
+            '--log-file=' + self.log_path, '--msg-level=all=warn',
             '--cache=yes', '--cache-secs=' + str(QUALITY_PROFILES[quality]['cache_secs']),
             '--demuxer-readahead-secs=' + str(QUALITY_PROFILES[quality]['readahead_secs']),
             '--demuxer-max-bytes=' + QUALITY_PROFILES[quality]['forward'],
@@ -322,6 +356,7 @@ class NativePlayer:
             self.decode = decode
             self.backend = 'mpv'
             self.last_exit_code = None
+            self.last_error = None
             return self.status()
 
     def close(self):
