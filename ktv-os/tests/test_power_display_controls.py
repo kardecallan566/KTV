@@ -127,10 +127,10 @@ class PowerTests(unittest.TestCase):
         self.assertFalse(received[0][1]['check'])
         self.assertNotIn('shell',received[0][1])
 
-    def test_ui_has_power_without_fullscreen_control(self):
+    def test_ui_hides_power_button_and_has_no_fullscreen_control(self):
         html=(ROOT/'app/index.html').read_text()
         js=(ROOT/'app/app.js').read_text()
-        self.assertIn('id="poweroff-button"',html)
+        self.assertNotIn('id="poweroff-button"',html)
         self.assertNotIn('data-action="fullscreen"',html)
         self.assertNotIn('requestFullscreen',js)
         self.assertIn('X-KTV-System-Action',js)
