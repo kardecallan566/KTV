@@ -61,6 +61,7 @@ class NativePlayerTests(unittest.TestCase):
                     referrer='https://example.com/')
         self.assertIn('--user-agent=KTV-Test/1.0', calls[0])
         self.assertIn('--referrer=https://example.com/', calls[0])
+        self.assertIn('--http-header-fields=User-Agent: KTV-Test/1.0,Referer: https://example.com/', calls[0])
         player.stop()
 
     def test_catalog_headers_reject_invalid_values(self):
