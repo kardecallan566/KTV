@@ -44,6 +44,16 @@ class NativePlayerTests(unittest.TestCase):
         self.assertTrue(player.stop())
         self.assertFalse(player.status()['playing'])
 
+    def test_windows_does_not_receive_macos_only_mpv_options(self):
+        calls = []
+        player = m.NativePlayer(executable='mpv.exe',
+                               popen=lambda argv, **kw: (calls.append(argv) or MockProcess()))
+        with mock.patch.object(m.os, 'name', 'nt'):
+            player.play('https://example.com/test.m3u8', 'Canal')
+        self.assertNotIn('--ontop-level=system', calls[0])
+        self.assertNotIn('--opengl-swapinterval=1', calls[0])
+        player.stop()
+
     def test_catalog_headers_are_passed_as_mpv_arguments(self):
         calls = []
         player = m.NativePlayer(executable='/usr/bin/mpv', popen=lambda argv, **kw: (calls.append(argv) or MockProcess()))
