@@ -260,7 +260,7 @@
         if(!err && nativeActive && data.player && !data.player.playing){
           nativeActive=false;
           playerStop.hidden=true;
-          if(!overlay.hidden)el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code?' (código '+data.player.exit_code+')':'')+'. O stream pode ter terminado, travado ou exigido um codec/DRM indisponível. Experimente Tentar modo compatível ou um player integrado disponível.';
+          if(!overlay.hidden){var reason=data.player.error?'\nDiagnóstico do MPV: '+data.player.error:'';el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code!==null?' (código '+data.player.exit_code+')':'')+'.'+reason+'\nVerifique se a fonte está online e autorizada para reprodução direta. Você também pode tentar o modo compatível.';}
           if(lastNativeRequest && lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
           if(!overlay.hidden && lastNativeRequest)updateSmartOptions();
         }
