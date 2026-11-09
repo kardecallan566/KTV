@@ -310,6 +310,16 @@ class NativePlayer:
             if not valid_referrer:
                 raise ValueError('Referer de transmissao invalido')
             args.append('--referrer=' + referrer)
+        # Explicit libavformat headers are more reliable for HLS playlists and
+        # their child segments (Windows builds especially); keep the dedicated
+        # mpv switches too for compatibility with direct HTTP streams.
+        if user_agent is not None or referrer is not None:
+            http_headers = []
+            if user_agent is not None:
+                http_headers.append('User-Agent: ' + user_agent)
+            if referrer is not None:
+                http_headers.append('Referer: ' + referrer)
+            args.append('--http-header-fields=' + ','.join(http_headers))
         if decode == 'compatible':
             # Manual fallback for audio-only/black picture or buggy GPU drivers.
             # Software decoding + X11 output is slower: never enable by default.
