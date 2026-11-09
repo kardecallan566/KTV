@@ -267,9 +267,11 @@ class NativePlayer:
         self.log_dir = tempfile.mkdtemp(prefix='ktv-mpv-log-')
         self.log_path = os.path.join(self.log_dir, 'mpv.log')
         self.last_error = None
+        # Keep playback options portable. ontop-level is macOS-only; passing
+        # it on Windows can prevent MPV from starting before opening any stream.
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
-            '--force-window=yes', '--ontop=yes', '--ontop-level=system',
+            '--force-window=yes', '--ontop=yes',
             '--log-file=' + self.log_path, '--msg-level=all=warn',
             '--cache=yes', '--cache-secs=' + str(QUALITY_PROFILES[quality]['cache_secs']),
             '--demuxer-readahead-secs=' + str(QUALITY_PROFILES[quality]['readahead_secs']),
@@ -277,9 +279,11 @@ class NativePlayer:
             '--demuxer-max-back-bytes=' + QUALITY_PROFILES[quality]['back'],
             '--demuxer-thread=yes', '--audio-buffer=1.0', '--video-sync=audio', '--framedrop=vo',
             '--vd-lavc-threads=1', '--network-timeout=25',
-            '--audio-pitch-correction=yes', '--interpolation=no', '--opengl-swapinterval=1',
+            '--audio-pitch-correction=yes', '--interpolation=no',
             '--hr-seek=no', '--force-seekable=no',
         ]
+        if os.name != 'nt':
+            args.append('--opengl-swapinterval=1')
         is_pluto = (urlsplit(source).hostname == 'ipv4.pluto.tv'
                     and urlsplit(source).path.endswith('/master.m3u8'))
         if is_pluto:
