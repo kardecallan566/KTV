@@ -370,7 +370,7 @@ class NativePlayer:
                     'stderr': subprocess.DEVNULL,
                 }
                 if os.name == 'nt':
-                    popen_options['cwd'] = str(Path(self.executable).resolve().parent)
+                    popen_options['cwd'] = os.path.dirname(os.path.abspath(self.executable))
                 self.process = self.popen(args, **popen_options)
             except OSError as exc:
                 self._clear_ipc()
