@@ -52,6 +52,8 @@ class NativePlayerTests(unittest.TestCase):
             player.play('https://example.com/test.m3u8', 'Canal')
         self.assertNotIn('--ontop-level=system', calls[0])
         self.assertNotIn('--opengl-swapinterval=1', calls[0])
+        self.assertIn('--vo=gpu', calls[0])
+        self.assertIn('--gpu-api=d3d11', calls[0])
         player.stop()
 
     def test_catalog_headers_are_passed_as_mpv_arguments(self):
