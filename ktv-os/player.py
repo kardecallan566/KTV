@@ -284,6 +284,10 @@ class NativePlayer:
         ]
         if os.name != 'nt':
             args.append('--opengl-swapinterval=1')
+        else:
+            # On Windows, launch MPV from its bundled directory so its DLLs,
+            # codecs and runtime data resolve consistently in the PyInstaller app.
+            args.extend(('--vo=gpu', '--gpu-api=d3d11'))
         is_pluto = (urlsplit(source).hostname == 'ipv4.pluto.tv'
                     and urlsplit(source).path.endswith('/master.m3u8'))
         if is_pluto:
@@ -360,8 +364,14 @@ class NativePlayer:
         args.extend(('--', source))
         with self.lock:
             try:
-                self.process = self.popen(args, stdin=subprocess.DEVNULL,
-                                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                popen_options = {
+                    'stdin': subprocess.DEVNULL,
+                    'stdout': subprocess.DEVNULL,
+                    'stderr': subprocess.DEVNULL,
+                }
+                if os.name == 'nt':
+                    popen_options['cwd'] = str(Path(self.executable).resolve().parent)
+                self.process = self.popen(args, **popen_options)
             except OSError as exc:
                 self._clear_ipc()
                 raise RuntimeError('Nao foi possivel iniciar mpv: {}'.format(exc))
