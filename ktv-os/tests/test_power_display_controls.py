@@ -133,7 +133,8 @@ class PowerTests(unittest.TestCase):
         self.assertNotIn('id="poweroff-button"',html)
         self.assertNotIn('data-action="fullscreen"',html)
         self.assertNotIn('requestFullscreen',js)
-        launcher=(ROOT/'launcher.py').read_text()\n        self.assertIn('X-KTV-System-Action',launcher)
+        launcher=(ROOT/'launcher.py').read_text()
+        self.assertIn('X-KTV-System-Action',launcher)
         self.assertIn('display-layout-apply',html)
 
 class Stub:
