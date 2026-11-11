@@ -264,15 +264,24 @@ class NativePlayer:
         self.stop()
         # Keep a private per-session MPV log. The previous build discarded stderr
         # and used --really-quiet, hiding HTTP/playlist/decoder failures.
-        self.log_dir = tempfile.mkdtemp(prefix='ktv-mpv-log-')
-        self.log_path = os.path.join(self.log_dir, 'mpv.log')
+        if os.name == 'nt':
+            # Keep Windows diagnostics accessible after the app closes; temp dirs
+            # are difficult for users to locate when a stream fails.
+            log_root = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')),
+                                    'KTV', 'logs')
+            os.makedirs(log_root, exist_ok=True)
+            self.log_dir = log_root
+            self.log_path = os.path.join(log_root, 'mpv.log')
+        else:
+            self.log_dir = tempfile.mkdtemp(prefix='ktv-mpv-log-')
+            self.log_path = os.path.join(self.log_dir, 'mpv.log')
         self.last_error = None
         # Keep playback options portable. ontop-level is macOS-only; passing
         # it on Windows can prevent MPV from starting before opening any stream.
         args = [
             self.executable, '--no-config', '--no-ytdl', '--fullscreen',
             '--force-window=yes', '--ontop=yes',
-            '--log-file=' + self.log_path, '--msg-level=all=warn',
+            '--log-file=' + self.log_path, '--msg-level=all=info',
             '--cache=yes', '--cache-secs=' + str(QUALITY_PROFILES[quality]['cache_secs']),
             '--demuxer-readahead-secs=' + str(QUALITY_PROFILES[quality]['readahead_secs']),
             '--demuxer-max-bytes=' + QUALITY_PROFILES[quality]['forward'],
