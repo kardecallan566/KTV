@@ -9,6 +9,7 @@
 .channel-editor form input:focus-visible,.backup-controls select:focus-visible{outline:3px solid #73efe0}
 .channel-editor form .hero-actions{margin:13px 0 3px}
 .channel-card{min-height:212px}
+.channel-card .channel-logo{width:58px;height:58px;object-fit:contain;border-radius:8px;background:#0b1b2c;padding:5px}
 .channel-card .channel-title{font-size:21px;font-weight:700;overflow-wrap:anywhere}
 .channel-card .channel-subtitle{font-size:13px;color:#b5cfe2}
 .channel-card .channel-buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}
