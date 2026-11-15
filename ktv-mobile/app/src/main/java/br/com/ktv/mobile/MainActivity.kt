@@ -404,6 +404,8 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
  }
  val appContext = context.applicationContext
  var playerError by remember(channel.streamUrl) { mutableStateOf<String?>(null) }
+ var retryCount by remember(channel.streamUrl) { mutableIntStateOf(0) }
+ var retryScheduled by remember(channel.streamUrl) { mutableStateOf(false) }
  var isBuffering by remember(channel.streamUrl) { mutableStateOf(true) }
  var dlnaDevices by remember { mutableStateOf<List<DLNACast.Device>>(emptyList()) }
  var showDlnaPicker by remember { mutableStateOf(false) }
@@ -416,6 +418,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
   onDispose { DLNACast.cleanup() }
  }
 
+ LaunchedEffect(channel.streamUrl) { KtvDiagnostics.add("Abrindo canal '${channel.name}' | URL=${channel.streamUrl}") }
  val mediaItem = remember(channel.streamUrl, channel.name, channel.category, channel.logo) {
   val metadata = MediaMetadata.Builder()
    .setTitle(channel.name)
@@ -449,18 +452,51 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
     setHandleAudioBecomingNoisy(true)
     addListener(object : Player.Listener {
      override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-      val detail = error.cause?.localizedMessage
-       ?.takeIf { it.isNotBlank() }
-       ?: error.localizedMessage
-       ?: error.errorCodeName
-      playerError = "Não foi possível reproduzir este canal. $detail".take(260)
-      isBuffering = false
+      KtvDiagnostics.add("Erro playback '${channel.name}' code=${error.errorCodeName} codeInt=${error.errorCode} message=${error.message}", error)
+      val detail = error.cause?.localizedMessage?.takeIf { it.isNotBlank() } ?: error.localizedMessage ?: error.errorCodeName
+      playerError = "Falha no canal. Reconexão automática ${retryCount + 1}/4. $detail".take(260)
+      isBuffering = true
+      if (!retryScheduled && retryCount < 4) {
+       retryScheduled = true
+       retryCount++
+       playerScope.launch {
+        kotlinx.coroutines.delay((1000L * retryCount).coerceAtMost(5000L))
+        runCatching {
+         KtvDiagnostics.add("Reconexão automática ${retryCount}/4 para '${channel.name}'")
+         prepare()
+         playWhenReady = true
+        }.onFailure { KtvDiagnostics.add("Falha ao preparar reconexão automática", it) }
+        retryScheduled = false
+       }
+      } else if (retryCount >= 4) {
+       playerError = "Canal não recuperado após 4 tentativas. Tente novamente ou compartilhe os logs."
+       isBuffering = false
+      }
      }
 
      override fun onPlaybackStateChanged(playbackState: Int) {
-      isBuffering = playerError == null &&
-       (playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_IDLE)
-      if (playbackState == Player.STATE_READY) playerError = null
+      val stateName = when (playbackState) {
+       Player.STATE_IDLE -> "IDLE"
+       Player.STATE_BUFFERING -> "BUFFERING"
+       Player.STATE_READY -> "READY"
+       Player.STATE_ENDED -> "ENDED"
+       else -> playbackState.toString()
+      }
+      KtvDiagnostics.add("Estado '${channel.name}': $stateName | playWhenReady=$playWhenReady")
+      isBuffering = playbackState == Player.STATE_BUFFERING || (playbackState == Player.STATE_IDLE && playerError == null)
+      if (playbackState == Player.STATE_READY) {
+       playerError = null
+       retryCount = 0
+       retryScheduled = false
+      }
+      if (playbackState == Player.STATE_ENDED && playWhenReady && !retryScheduled) {
+       KtvDiagnostics.add("Stream encerrou inesperadamente: '${channel.name}', tentando reiniciar")
+       playerScope.launch { runCatching { seekTo(0); prepare(); playWhenReady = true }.onFailure { KtvDiagnostics.add("Falha ao reiniciar stream encerrado", it) } }
+      }
+     }
+
+     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+      KtvDiagnostics.add("playWhenReady '${channel.name}'=$playWhenReady reason=$reason")
      }
     })
     setMediaItem(mediaItem)
@@ -473,7 +509,8 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
  val castPlayer = remember(localPlayer) {
   try {
    CastPlayer.Builder(context).setLocalPlayer(localPlayer).build()
-  } catch (_: RuntimeException) {
+  } catch (error: Exception) {
+   KtvDiagnostics.add("CastPlayer indisponível; continuando com player local", error)
    null
   }
  }
@@ -605,6 +642,9 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
      Text("Falha na transmissão", color = Color(0xFFFFB4C2), fontWeight = FontWeight.Bold)
      Text(playerError!!, color = Color(0xFFFFCDD5), fontSize = 12.sp)
      OutlinedButton(onClick = {
+      KtvDiagnostics.add("Usuário acionou tentar novamente em '${channel.name}'")
+      retryCount = 0
+      retryScheduled = false
       playerError = null
       isBuffering = true
       localPlayer.stop()
