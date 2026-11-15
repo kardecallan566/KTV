@@ -367,7 +367,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error':str(exc)},400)
         if path == '/api/iptv-free/favorites':
             try:
-                valid_ids = {item['id'] for item in validated_iptv_free_catalog()}
+                valid_ids = {item['id'] for item in validated_iptv_free_catalog(self.server.state_dir / 'iptv_free_catalog.json')}
                 ids = [ident for ident in self.server.iptv_free_favorites.load() if ident in valid_ids]
                 return self.send_json({'ids': ids})
             except (IPTVFreeFavoritesError, IPTVFreeCatalogError) as exc:
@@ -377,7 +377,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'enabled': False, 'channels': [],
                                        'warning': 'Playlist externa disponivel somente no KTV Windows.'})
             try:
-                channels = validated_iptv_free_catalog()
+                channels = validated_iptv_free_catalog(self.server.state_dir / 'iptv_free_catalog.json')
                 public_items = [{'id': item['id'], 'name': item['name'],
                                  'category': item['category'], 'categories': item['categories'],
                                  'tvg_id': item['tvg_id'], 'playable': False}
@@ -639,7 +639,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             if sys.platform != 'win32':
                 return self.send_json({'error': 'Atualizacao da Playlist externa esta habilitada somente no KTV Windows.'}, 403)
             try:
-                channels = refresh_iptv_free_catalog()
+                channels = refresh_iptv_free_catalog(self.server.state_dir / 'iptv_free_catalog.json')
                 return self.send_json({'ok': True, 'count': len(channels),
                                        'message': 'Metadados atualizados; URLs de transmissao foram descartadas.'})
             except IPTVFreeCatalogError as exc:
@@ -648,7 +648,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         if path == '/api/iptv-free/favorites/toggle':
             try:
                 ident = payload.get('id')
-                if ident not in {item['id'] for item in validated_iptv_free_catalog()}:
+                if ident not in {item['id'] for item in validated_iptv_free_catalog(self.server.state_dir / 'iptv_free_catalog.json')}:
                     raise IPTVFreeFavoritesError('Canal IPTV externo nao reconhecido')
                 ids = self.server.iptv_free_favorites.toggle(ident)
                 return self.send_json({'ok': True, 'ids': ids})
@@ -691,7 +691,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             self.server.antenna.stop()
             user_agent = referrer = None
             if kind == 'iptv_free':
-                entry = iptv_free_channel(payload.get('id'))
+                entry = iptv_free_channel(payload.get('id'), self.server.state_dir / 'iptv_free_catalog.json')
                 if entry is None:
                     raise ValueError('Canal da playlist externa nao reconhecido')
                 raise ValueError('Canal cadastrado apenas como metadado. Configure uma fonte de reproducao autorizada para habilitar o player.')
