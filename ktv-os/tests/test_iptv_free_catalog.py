@@ -59,7 +59,7 @@ http://localhost/private.m3u8
             def geturl(self):
                 return SOURCE_URL
             def read(self, limit):
-                return b'#EXTM3U\\n#EXTINF:-1 tvg-id="demo.br" group-title="Teste",Canal Demo\\nhttps://stream.example.org/live.m3u8\\n'
+                return b'#EXTM3U\n#EXTINF:-1 tvg-id="demo.br" group-title="Teste",Canal Demo\nhttps://stream.example.org/live.m3u8\n'
 
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp) / "state" / "iptv_free_catalog.json"
