@@ -57,7 +57,7 @@ def parse_m3u_metadata(content):
             continue
         category = _clean_label(attrs.get("group-title", "Outros")) or "Outros"
         tvg_id = attrs.get("tvg-id", "").strip()
-        key = tvg_id.lower() if tvg_id else name.lower()
+        key = (tvg_id.lower() + "|" + name.lower()) if tvg_id else name.lower()
         item = channels.get(key)
         if item is None:
             item = {"id": _channel_id(key), "name": name[:100], "category": category[:60],
