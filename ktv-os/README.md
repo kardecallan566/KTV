@@ -48,9 +48,9 @@ Edite esse arquivo e entre em "Canais" novamente. Somente URLs HTTP/HTTPS direta
 
 **Limite do MVP:** a lista exibe streams HLS, mas navegadores desktop geralmente não tocam \`.m3u8\` diretamente. A integração com um player nativo ou HLS.js é checkpoint posterior; não confunda cadastro com reprodução.
 
-## Playlist externa — 155 canais
+## Playlist externa — catálogo de metadados M3U
 
-A Alpha inclui um snapshot separado da playlist de terceiros [Kaiollio-cpu/iptv_free](https://github.com/Kaiollio-cpu/iptv_free/blob/main/main.m3u), em `iptv_free_catalog.json`. Consulte também [docs/IPTV_EXTERNAL_CATALOG.md](../docs/IPTV_EXTERNAL_CATALOG.md). A seção **Playlist externa** aparece em Canais e permite filtrar por categoria, pesquisar, exibir logos e marcar favoritos persistentes (botão ★). O filtro **Só favoritos** usa o arquivo separado `~/.config/ktv-os/iptv_free_favorites.json`; não interfere nos canais pessoais. Ela não altera `~/.config/ktv-os/channels.json`, não substitui os canais pessoais ou o catálogo público e não consulta a origem remota automaticamente.
+A seção **Playlist externa** usa `iptv_free_catalog.py` para ler somente os metadados `#EXTINF` de uma M3U: nome, `tvg-id` e categorias. O snapshot atual contém 975 canais únicos em 53 categorias. Linhas de reprodução, URLs de logos, credenciais e cabeçalhos são descartados; nenhum endereço de transmissão é enviado ao MPV. A atualização manual da fonte M3U está habilitada somente no KTV Windows e pode receber outro endereço HTTPS de `raw.githubusercontent.com` pela variável de ambiente `KTV_EXTERNAL_PLAYLIST_METADATA_URL`. Os favoritos permanecem em `~/.config/ktv-os/iptv_free_favorites.json`, separados dos canais pessoais. Consulte [docs/IPTV_EXTERNAL_CATALOG.md](../docs/IPTV_EXTERNAL_CATALOG.md).
 
 - 155 entradas em 7 categorias (Esportes, Filmes e Séries, Canais Abertos, Variedades, Notícias, Infantil e Religiosos).
 - A reprodução usa mpv com os cabeçalhos fixos User-Agent/Referer definidos pela própria lista, sem permitir que o navegador forneça comandos ou headers arbitrários.
