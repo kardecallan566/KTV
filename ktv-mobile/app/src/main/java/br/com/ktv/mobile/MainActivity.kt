@@ -58,6 +58,7 @@ import androidx.media3.ui.PlayerView
 import androidx.mediarouter.app.MediaRouteButton
 import coil.compose.AsyncImage
 import com.yinnho.upnpcast.DLNACast
+import com.yinnho.upnpcast.CastOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -68,6 +69,34 @@ private const val DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio
 private const val PREFS = "ktv_mobile"
 private const val KEY_PLAYLISTS = "playlist_urls"
 private const val KEY_FAVORITES = "favorite_streams"
+
+private fun streamMimeType(url: String): String? {
+ val path = runCatching { Uri.parse(url).path.orEmpty().lowercase() }.getOrDefault("")
+ return when {
+  path.endsWith(".m3u8") || url.contains("format=m3u8", true) -> MimeTypes.APPLICATION_M3U8
+  path.endsWith(".mpd") -> "application/dash+xml"
+  path.endsWith(".mp4") || path.endsWith(".m4v") -> MimeTypes.VIDEO_MP4
+  path.endsWith(".ts") || path.endsWith(".mpegts") -> MimeTypes.VIDEO_MP2T
+  path.endsWith(".mp3") -> MimeTypes.AUDIO_MPEG
+  path.endsWith(".aac") -> MimeTypes.AUDIO_AAC
+  path.endsWith(".webm") -> MimeTypes.VIDEO_WEBM
+  else -> null
+ }
+}
+
+private fun dlnaMimeType(url: String): String? {
+ val path = runCatching { Uri.parse(url).path.orEmpty().lowercase() }.getOrDefault("")
+ return when {
+  path.endsWith(".m3u8") || url.contains("format=m3u8", true) -> "application/vnd.apple.mpegurl"
+  path.endsWith(".mpd") -> "application/dash+xml"
+  path.endsWith(".mp4") || path.endsWith(".m4v") -> "video/mp4"
+  path.endsWith(".ts") || path.endsWith(".mpegts") -> "video/mp2t"
+  path.endsWith(".mp3") -> "audio/mpeg"
+  path.endsWith(".aac") -> "audio/aac"
+  path.endsWith(".webm") -> "video/webm"
+  else -> null
+ }
+}
 private val Background = Color(0xFF080B14)
 private val SurfaceDark = Color(0xFF111827)
 private val Accent = Color(0xFF6C63FF)
@@ -435,8 +464,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
    .setUri(channel.streamUrl)
    .setMediaMetadata(metadata)
    .apply {
-    val path = channel.streamUrl.substringBefore('?').lowercase()
-    if (path.endsWith(".m3u8")) setMimeType(MimeTypes.APPLICATION_M3U8)
+    streamMimeType(channel.streamUrl)?.let(::setMimeType)
    }
    .build()
  }
@@ -450,8 +478,11 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
   val dataSourceFactory = DefaultDataSource.Factory(appContext, httpFactory)
   val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
   val loadControl = DefaultLoadControl.Builder()
-   .setBufferDurationsMs(30_000, 120_000, 2_500, 7_000)
-   .setPrioritizeTimeOverSizeThresholds(true)
+   // Buffer adaptativo com teto de memória: evita acumular minutos de mídia
+   // e mantém uma reserva suficiente para oscilações curtas da rede.
+   .setBufferDurationsMs(20_000, 60_000, 2_500, 5_000)
+   .setTargetBufferBytes(64 * 1024 * 1024)
+   .setPrioritizeTimeOverSizeThresholds(false)
    .build()
 
   ExoPlayer.Builder(appContext)
@@ -468,13 +499,15 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
       isBuffering = true
       if (!retryScheduled) {
        retryScheduled = true
-       retryCount++
+       retryCount = (retryCount + 1).coerceAtMost(6)
+       val resumePosition = currentPosition
        val retryDelay = (1_000L * (1L shl retryCount.coerceAtMost(5))).coerceAtMost(30_000L)
        playerScope.launch {
         kotlinx.coroutines.delay(retryDelay)
         runCatching {
-         KtvDiagnostics.add("Reconexão automática #$retryCount após erro em '${channel.name}'")
-         setMediaItem(mediaItem, currentPosition)
+         KtvDiagnostics.add("Reconexão automática #$retryCount após erro em '${channel.name}' na posição ${resumePosition}ms; mantendo o mesmo item")
+         // Reprepara a fonte atual. Não substitui o MediaItem nem zera a timeline,
+         // evitando voltar ao início de segmentos já exibidos.
          prepare()
          playWhenReady = true
         }.onFailure { KtvDiagnostics.add("Falha ao preparar reconexão automática", it) }
@@ -520,40 +553,34 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
    }
  }
 
- // Monitora o avanço real do buffer. Se a rede parar de entregar dados,
- // recupera a mesma instância do player, preservando a tela e a posição atual.
+ // Watchdog conservador: não reposiciona a mídia nem recria o MediaItem.
+ // Só solicita novo prepare após um buffering prolongado, preservando a timeline.
  LaunchedEffect(localPlayer) {
-  var lastBufferedPosition = localPlayer.bufferedPosition
-  var lastAdvanceAt = SystemClock.elapsedRealtime()
+  var bufferingSince: Long? = null
   while (true) {
    kotlinx.coroutines.delay(5_000)
    val now = SystemClock.elapsedRealtime()
-   val buffered = localPlayer.bufferedPosition
-   if (buffered > lastBufferedPosition + 250L) {
-    lastBufferedPosition = buffered
-    lastAdvanceAt = now
-   }
-   if (localPlayer.playWhenReady && localPlayer.playbackState == Player.STATE_BUFFERING &&
-       now - lastAdvanceAt >= 30_000L && !retryScheduled) {
-    retryScheduled = true
-    retryCount++
-    val resumePosition = localPlayer.currentPosition
-    val retryDelay = (1_000L shl retryCount.coerceAtMost(5)).coerceAtMost(30_000L)
-    playerError = "O recebimento do buffer foi interrompido. Reconectando sem sair do player…"
-    KtvDiagnostics.add("Buffer sem avanço por 30s em '${channel.name}'; reconexão #$retryCount")
-    kotlinx.coroutines.delay(retryDelay)
-    runCatching {
-     localPlayer.setMediaItem(mediaItem, resumePosition)
-     localPlayer.prepare()
-     localPlayer.playWhenReady = true
-     lastBufferedPosition = 0L
-     lastAdvanceAt = SystemClock.elapsedRealtime()
-    }.onFailure { KtvDiagnostics.add("Falha na recuperação de buffer", it) }
-    retryScheduled = false
-   }
-   if (localPlayer.playbackState == Player.STATE_READY) {
-    lastBufferedPosition = localPlayer.bufferedPosition
-    lastAdvanceAt = now
+   if (localPlayer.playWhenReady && localPlayer.playbackState == Player.STATE_BUFFERING) {
+    if (bufferingSince == null) bufferingSince = now
+    val stalledFor = now - (bufferingSince ?: now)
+    if (stalledFor >= 75_000L && !retryScheduled) {
+     retryScheduled = true
+     retryCount = (retryCount + 1).coerceAtMost(6)
+     val retryDelay = (1_000L shl retryCount.coerceAtMost(5)).coerceAtMost(30_000L)
+     KtvDiagnostics.add("Buffering prolongado por ${stalledFor}ms em '${channel.name}'; nova tentativa sem reposicionar")
+     playerError = "Conexão demorando a responder. Tentando recuperar sem voltar o vídeo…"
+     kotlinx.coroutines.delay(retryDelay)
+     runCatching {
+      if (localPlayer.playWhenReady && localPlayer.playbackState == Player.STATE_BUFFERING) {
+       localPlayer.prepare()
+       localPlayer.playWhenReady = true
+      }
+     }.onFailure { KtvDiagnostics.add("Falha na recuperação de buffer", it) }
+     retryScheduled = false
+     bufferingSince = SystemClock.elapsedRealtime()
+    }
+   } else {
+    bufferingSince = null
    }
   }
  }
@@ -676,8 +703,15 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
          dlnaCasting = true
          dlnaMessage = "Conectando a ${device.name}…"
          try {
-          val sent = DLNACast.castToDevice(device, channel.streamUrl, channel.name)
-          dlnaMessage = if (sent) "Reproduzindo em ${device.name}. O vídeo agora é enviado diretamente à TV." else "A TV ${device.name} não aceitou este stream. Ela pode não suportar o formato/URL."
+          val mimeType = dlnaMimeType(channel.streamUrl)
+          KtvDiagnostics.add("DLNA: enviando '${channel.name}' para ${device.name} com MIME=${mimeType ?: "automático"}")
+          val options = CastOptions(mimeType = mimeType, upnpClass = "object.item.videoItem")
+          val sent = DLNACast.castToDevice(device, channel.streamUrl, channel.name, options)
+          dlnaMessage = if (sent) {
+           "Solicitação enviada para ${device.name}. Se a TV não iniciar, ela pode não suportar o protocolo ou os codecs deste canal."
+          } else {
+           "A TV ${device.name} recusou a URL. O KTV enviou o tipo de mídia ${mimeType ?: "detectado automaticamente"}, mas a TV também precisa suportar o protocolo e os codecs do canal."
+          }
          } catch (e: Exception) {
           dlnaMessage = "Não foi possível transmitir para ${device.name}: ${e.message ?: "falha DLNA"}"
          } finally { dlnaCasting = false }
