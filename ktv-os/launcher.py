@@ -34,7 +34,8 @@ from hardware import HardwareManager, HardwareError
 from cec_bridge import CECBridge, CECError
 from network import NetworkManager, NetworkError
 from public_channels import validated_catalog, public_channel
-from iptv_free_catalog import (validated_catalog as validated_iptv_free_catalog,\n                               iptv_free_channel, refresh_catalog as refresh_iptv_free_catalog)
+from iptv_free_catalog import (validated_catalog as validated_iptv_free_catalog,
+                               iptv_free_channel, refresh_catalog as refresh_iptv_free_catalog)
 from iptv_free_catalog import IPTVFreeCatalogError
 from iptv_free_favorites import IPTVFreeFavorites, IPTVFreeFavoritesError
 from pluto_catalog import PlutoCatalog, PlutoError
