@@ -373,13 +373,16 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             except (IPTVFreeFavoritesError, IPTVFreeCatalogError) as exc:
                 return self.send_json({'error': str(exc)}, 500)
         if path == '/api/iptv-free/channels':
+            if sys.platform != 'win32':
+                return self.send_json({'enabled': False, 'channels': [],
+                                       'warning': 'Playlist externa disponivel somente no KTV Windows.'})
             try:
                 channels = validated_iptv_free_catalog()
                 public_items = [{'id': item['id'], 'name': item['name'],
                                  'category': item['category'], 'categories': item['categories'],
                                  'tvg_id': item['tvg_id'], 'playable': False}
                                 for item in channels]
-                return self.send_json({'channels': public_items,
+                return self.send_json({'enabled': True, 'channels': public_items,
                                        'source': 'M3U metadata-only catalog',
                                        'playback_enabled': False,
                                        'warning': 'Somente nomes e categorias foram importados. URLs de transmissao e logos foram descartados.'})
