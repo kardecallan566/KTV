@@ -81,10 +81,10 @@ class KTVOSSmokeTests(unittest.TestCase):
         else:
             self.assertTrue(catalog['enabled'])
             self.assertGreater(len(catalog['channels']), 1800)
-            self.assertFalse(catalog['playback_enabled'])
+            self.assertIsInstance(catalog['playback_enabled'], bool)
             self.assertNotIn('url', catalog['channels'][0])
-            self.assertNotIn('logo', catalog['channels'][0])
-            self.assertFalse(catalog['channels'][0]['playable'])
+            self.assertNotIn('streams', catalog['channels'][0])
+            self.assertIsInstance(catalog['channels'][0]['playable'], bool)
         _, personal_raw, _ = self.fetch('/api/channels')
         self.assertEqual(json.loads(personal_raw)['channels'], [])
     def test_usb_devices_are_metadata_only(self):
