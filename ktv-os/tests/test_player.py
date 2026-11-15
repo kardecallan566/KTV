@@ -119,7 +119,7 @@ class NativePlayerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as dirname, mock.patch.object(m.os, 'name', 'nt'), mock.patch.dict(m.os.environ, {'LOCALAPPDATA': dirname}):
             player.play('https://example.com/live.m3u8', 'Canal')
             with open(player.log_path, 'w', encoding='utf-8') as log:
-                log.write('[curl] error: Could not resolve hostname https://example.com/live.m3u8?token=secret\\n')
+                log.write('[curl] error: Could not resolve hostname https://example.com/live.m3u8?token=secret\n')
             status = player.status()
             self.assertEqual(status['error_category'], 'dns')
             self.assertIn('Falha de DNS', status['error_message'])
