@@ -390,7 +390,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
 
  val localPlayer = remember(channel.streamUrl) {
   val httpFactory = DefaultHttpDataSource.Factory()
-   .setUserAgent("KTV-Mobile/0.4.1")
+   .setUserAgent("KTV-Mobile/0.5.0")
    .setConnectTimeoutMs(15_000)
    .setReadTimeoutMs(30_000)
    .setAllowCrossProtocolRedirects(true)
