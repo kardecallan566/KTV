@@ -76,6 +76,37 @@ class WatchdogTests(unittest.TestCase):
         self.assertEqual(calls, [])
         monitor.close()
 
+    def test_unexpected_player_exit_retries_registered_live_stream(self):
+        clock, player = Clock(), FakePlayer()
+        player.info = {"playing": False, "exit_code": 1, "video": None}
+        calls = []
+        monitor = PlayerWatchdog(
+            player, clock=clock, threaded=False,
+            recover=lambda session: calls.append(session) or True
+        )
+        monitor.set_session("https://example.com/live.m3u8", "Canal M3U",
+                            "balanced", "default", recoverable=True)
+        status = monitor.tick()
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1], "Canal M3U")
+        self.assertEqual(status["state"], "recovering")
+        self.assertEqual(status["recovery_attempts"], 1)
+        monitor.close()
+
+    def test_user_close_code_does_not_trigger_reconnect(self):
+        clock, player = Clock(), FakePlayer()
+        player.info = {"playing": False, "exit_code": 77, "video": None}
+        calls = []
+        monitor = PlayerWatchdog(
+            player, clock=clock, threaded=False,
+            recover=lambda session: calls.append(session) or True
+        )
+        monitor.set_session("https://example.com/live.m3u8", "Canal M3U",
+                            "balanced", "default", recoverable=True)
+        self.assertEqual(monitor.tick()["state"], "idle")
+        self.assertEqual(calls, [])
+        monitor.close()
+
     def test_idle_player_clears_monitor(self):
         clock, player = Clock(), FakePlayer()
         monitor = PlayerWatchdog(player, clock=clock, threaded=False)
