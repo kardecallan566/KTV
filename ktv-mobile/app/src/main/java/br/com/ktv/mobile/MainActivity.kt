@@ -161,8 +161,12 @@ private fun CastRouteButton() {
  val context = LocalContext.current
  AndroidView(
   factory = { ctx ->
-   MediaRouteButton(ctx).apply {
-    MediaRouteButtonFactory.setUpMediaRouteButton(context, this)
+   // MediaRouter calcula contraste com os atributos do tema do Context.
+   // Use um tema dedicado com colorBackground explicitamente opaco.
+   val castContext = android.view.ContextThemeWrapper(ctx, R.style.KtvMediaRouterTheme)
+   MediaRouteButton(castContext).apply {
+    MediaRouteButtonFactory.setUpMediaRouteButton(castContext, this)
+    contentDescription = "Transmitir para dispositivo"
    }
   },
   modifier = Modifier.size(48.dp)
