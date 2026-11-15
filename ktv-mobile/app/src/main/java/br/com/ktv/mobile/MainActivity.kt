@@ -114,18 +114,26 @@ fun KtvMobileApp() {
 
  MaterialTheme(colorScheme = darkColorScheme(primary = Accent, background = Background, surface = SurfaceDark)) {
   Scaffold(containerColor = Background, bottomBar = {
-   NavigationBar(containerColor = SurfaceDark) {
-    NavigationBarItem(selectedTab == 0, { selectedTab = 0; selectedChannel = null }, icon = { Icon(Icons.Default.LiveTv, null) }, label = { Text("Canais") })
-    NavigationBarItem(selectedTab == 1, { selectedTab = 1; selectedChannel = null }, icon = { Icon(Icons.Default.Favorite, null) }, label = { Text("Favoritos") })
-    NavigationBarItem(selectedTab == 2, { selectedTab = 2; selectedChannel = null }, icon = { Icon(Icons.Default.Settings, null) }, label = { Text("Ajustes") })
+   NavigationBar(containerColor = Color(0xFF0D1220), tonalElevation = 0.dp) {
+    NavigationBarItem(selectedTab == 0, { selectedTab = 0; selectedChannel = null }, icon = { Icon(Icons.Default.LiveTv, null) }, label = { Text("Início") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, indicatorColor = Accent.copy(alpha = 0.32f), selectedTextColor = Color.White, unselectedIconColor = TextMuted, unselectedTextColor = TextMuted))
+    NavigationBarItem(selectedTab == 1, { selectedTab = 1; selectedChannel = null }, icon = { Icon(Icons.Default.Favorite, null) }, label = { Text("Favoritos") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, indicatorColor = Accent.copy(alpha = 0.32f), selectedTextColor = Color.White, unselectedIconColor = TextMuted, unselectedTextColor = TextMuted))
+    NavigationBarItem(selectedTab == 2, { selectedTab = 2; selectedChannel = null }, icon = { Icon(Icons.Default.Settings, null) }, label = { Text("Ajustes") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, indicatorColor = Accent.copy(alpha = 0.32f), selectedTextColor = Color.White, unselectedIconColor = TextMuted, unselectedTextColor = TextMuted))
    }
   }) { padding ->
-   Column(Modifier.fillMaxSize().padding(padding).background(Brush.verticalGradient(listOf(Color(0xFF15152B), Background))).padding(horizontal = 20.dp)) {
-    Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+   Column(Modifier.fillMaxSize().padding(padding).background(Brush.verticalGradient(listOf(Color(0xFF17172F), Color(0xFF0B1020), Background))).padding(horizontal = 18.dp)) {
+    Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
      Column(Modifier.weight(1f)) {
-      Text("KTV", fontSize = 30.sp, fontWeight = FontWeight.Black, color = Color.White)
-      Text("ENTRETENIMENTO SEM LIMITES", fontSize = 9.sp, color = TextMuted, letterSpacing = 2.sp)
+      Text("KTV", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Color.White, letterSpacing = (-1).sp)
+      Text("SUA CENTRAL DE ENTRETENIMENTO", fontSize = 9.sp, color = TextMuted, letterSpacing = 1.5.sp)
      }
+     Surface(color = Color(0xFF1C2340), shape = RoundedCornerShape(14.dp)) {
+      Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+       Box(Modifier.size(7.dp).background(Color(0xFF4ADE80), RoundedCornerShape(50)))
+       Spacer(Modifier.width(7.dp))
+       Text("AO VIVO", color = Color(0xFFB9F6CA), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+      }
+     }
+     Spacer(Modifier.width(8.dp))
      CastRouteButton()
     }
     when {
@@ -171,20 +179,34 @@ private fun HomeScreen(
  val filtered = remember(channels, query, category) {
   channels.filter { (category == "Todos" || it.category.equals(category, true)) && it.name.contains(query, true) }
  }
- Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-  OutlinedTextField(value = query, onValueChange = onQuery, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Buscar canais…", color = TextMuted) }, leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true, shape = RoundedCornerShape(16.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = Color(0xFF293044), focusedTextColor = Color.White, unfocusedTextColor = Color.White))
-  Row(verticalAlignment = Alignment.CenterVertically) {
-   Column(Modifier.weight(1f)) {
-    Text("TV ao vivo", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-    Text(if (loading) "Atualizando listas…" else "${channels.size} canais disponíveis", color = TextMuted, fontSize = 12.sp)
+ Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+  Surface(color = Color(0xFF171D35), shape = RoundedCornerShape(20.dp)) {
+   Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+     Text("EXPLORE", color = Color(0xFFA5A0FF), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+     Text("TV ao vivo", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
+     Text(if (loading) "Sincronizando suas listas…" else "${channels.size} canais na sua programação", color = TextMuted, fontSize = 12.sp)
+    }
+    Box(Modifier.size(48.dp).background(Accent.copy(alpha = 0.18f), RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) {
+     Icon(Icons.Default.LiveTv, null, tint = Color(0xFFA5A0FF), modifier = Modifier.size(26.dp))
+    }
    }
+  }
+  OutlinedTextField(value = query, onValueChange = onQuery, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Buscar canal ou programação…", color = TextMuted) }, leadingIcon = { Icon(Icons.Default.Search, null, tint = TextMuted) }, singleLine = true, shape = RoundedCornerShape(15.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = Color(0xFF293044), focusedTextColor = Color.White, unfocusedTextColor = Color.White, cursorColor = Accent))
+  Row(verticalAlignment = Alignment.CenterVertically) {
+   Text("Categorias", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
    IconButton(onClick = onReload, enabled = !loading) {
-    if (loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+    if (loading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
     else Icon(Icons.Default.Refresh, "Atualizar playlists", tint = Accent)
    }
   }
-  LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 2.dp)) {
-   items(categories) { item -> FilterChip(selected = category == item, onClick = { onCategory(item) }, label = { Text(item, maxLines = 1) }) }
+  
+   LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 2.dp)) {
+   items(categories) { item -> FilterChip(selected = category == item, onClick = { onCategory(item) }, label = { Text(item, maxLines = 1, fontWeight = if (category == item) FontWeight.Bold else FontWeight.Normal) }, shape = RoundedCornerShape(12.dp), colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Accent, selectedLabelColor = Color.White, containerColor = Color(0xFF151C2D), labelColor = TextMuted)) }
+  }
+  Row(verticalAlignment = Alignment.CenterVertically) {
+   Text("Canais disponíveis", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+   Text("${filtered.size} resultados", color = TextMuted, fontSize = 11.sp)
   }
   if (error != null) {
    Surface(color = Color(0xFF351B27), shape = RoundedCornerShape(14.dp)) {
@@ -210,21 +232,25 @@ private fun HomeScreen(
 
 @Composable
 private fun ChannelRow(channel: TvChannel, favorite: Boolean, onFavorite: () -> Unit, onClick: () -> Unit) {
- Surface(color = SurfaceDark, shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth().clickable { onClick() }) {
-  Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-   if (!channel.logo.isNullOrBlank()) {
-    AsyncImage(model = channel.logo, contentDescription = channel.name, modifier = Modifier.size(46.dp), contentScale = androidx.compose.ui.layout.ContentScale.Fit)
-   } else {
-    Box(Modifier.size(46.dp).background(Color(0xFF272442), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.LiveTv, null, tint = Accent) }
+ Surface(color = Color(0xFF131B2B), shape = RoundedCornerShape(17.dp), modifier = Modifier.fillMaxWidth().clickable { onClick() }, border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF222C42))) {
+  Row(Modifier.padding(horizontal = 13.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+   Box(Modifier.size(52.dp).background(Color(0xFF202944), RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
+    if (!channel.logo.isNullOrBlank()) {
+     AsyncImage(model = channel.logo, contentDescription = channel.name, modifier = Modifier.size(42.dp), contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+    } else {
+     Icon(Icons.Default.LiveTv, null, tint = Color(0xFFA5A0FF), modifier = Modifier.size(25.dp))
+    }
    }
-   Spacer(Modifier.width(12.dp))
-   Column(Modifier.weight(1f)) {
-    Text(channel.name, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1)
-    Text(channel.category, color = TextMuted, fontSize = 12.sp, maxLines = 1)
+   Spacer(Modifier.width(13.dp))
+   Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Text(channel.name, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
+    Text(channel.category.ifBlank { "TV • Ao vivo" }, color = TextMuted, fontSize = 11.sp, maxLines = 1)
    }
-   IconButton(onClick = onFavorite) { Icon(Icons.Default.Favorite, null, tint = if (favorite) Color(0xFFFF6B91) else TextMuted) }
-   Surface(color = Color(0xFF3A1C29), shape = RoundedCornerShape(6.dp)) {
-    Text("LIVE", color = Color(0xFFFF849A), fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp))
+   Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+    IconButton(onClick = onFavorite, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Favorite, null, tint = if (favorite) Color(0xFFFF6B91) else Color(0xFF667085), modifier = Modifier.size(20.dp)) }
+    Surface(color = Color(0xFF3A1C29), shape = RoundedCornerShape(6.dp)) {
+     Text("LIVE", color = Color(0xFFFF91A6), fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp))
+    }
    }
   }
  }
@@ -232,10 +258,20 @@ private fun ChannelRow(channel: TvChannel, favorite: Boolean, onFavorite: () -> 
 
 @Composable
 private fun FavoritesScreen(channels: List<TvChannel>, onOpen: (TvChannel) -> Unit, onRemove: (TvChannel) -> Unit) {
- Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-  Text("Seus favoritos", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+ Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+  Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+   Text("SUA SELEÇÃO", color = Color(0xFFA5A0FF), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+   Text("Seus favoritos", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+   Text("Seus canais salvos em um só lugar", color = TextMuted, fontSize = 12.sp)
+  }
   if (channels.isEmpty()) {
-   Text("Toque no coração de um canal para salvá-lo aqui.", color = TextMuted)
+   Surface(color = SurfaceDark, shape = RoundedCornerShape(18.dp)) {
+    Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+     Icon(Icons.Default.Favorite, null, tint = Color(0xFFFF6B91), modifier = Modifier.size(32.dp))
+     Text("Sua lista está vazia", color = Color.White, fontWeight = FontWeight.Bold)
+     Text("Toque no coração de um canal para salvá-lo aqui.", color = TextMuted, fontSize = 12.sp)
+    }
+   }
   } else {
    LazyColumn(verticalArrangement = Arrangement.spacedBy(9.dp)) {
     items(channels, key = { it.streamUrl }) { channel ->
@@ -248,8 +284,12 @@ private fun FavoritesScreen(channels: List<TvChannel>, onOpen: (TvChannel) -> Un
 
 @Composable
 private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave: () -> Unit, castMessage: String) {
- Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-  Text("Configurações", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+ Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+  Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+   Text("PERSONALIZE", color = Color(0xFFA5A0FF), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+   Text("Configurações", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+   Text("Gerencie suas fontes e conexões", color = TextMuted, fontSize = 12.sp)
+  }
   Surface(color = SurfaceDark, shape = RoundedCornerShape(18.dp)) {
    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
     Text("Playlists de canais", color = Color.White, fontWeight = FontWeight.SemiBold)
