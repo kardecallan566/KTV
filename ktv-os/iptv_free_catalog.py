@@ -13,7 +13,9 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-CATALOG_PATH = Path(__file__).with_name("iptv_free_catalog.json")
+BUNDLED_CATALOG_PATH = Path(__file__).with_name("iptv_free_catalog.json")
+DEFAULT_STATE_DIR = Path(os.environ.get("KTV_STATE_DIR", str(Path.home() / ".config" / "ktv-os"))).expanduser()
+STATE_CATALOG_PATH = DEFAULT_STATE_DIR / "iptv_free_catalog.json"
 # M3U document URL only; channel playback URLs are never stored.
 SOURCE_URL = os.environ.get("KTV_EXTERNAL_PLAYLIST_METADATA_URL", "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u")
 MAX_SOURCE_BYTES = 8 * 1024 * 1024
@@ -79,9 +81,12 @@ def _validate_source_url(source_url):
     return source_url
 
 
-def load_catalog(path=CATALOG_PATH):
+def load_catalog(path=None):
+    target = Path(path) if path is not None else (STATE_CATALOG_PATH if STATE_CATALOG_PATH.is_file() else BUNDLED_CATALOG_PATH)
+    if path is not None and not target.is_file():
+        target = BUNDLED_CATALOG_PATH
     try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        data = json.loads(target.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise IPTVFreeCatalogError("Catalogo de metadados IPTV indisponivel ou invalido") from exc
     if not isinstance(data, dict) or data.get("schema") != "ktv-iptv-metadata-v2" or data.get("playback_urls_included") is not False:
@@ -112,7 +117,7 @@ def load_catalog(path=CATALOG_PATH):
     return result
 
 
-def refresh_catalog(path=CATALOG_PATH, source_url=None):
+def refresh_catalog(path=None, source_url=None):
     """Fetch an M3U document and atomically store only its EXTINF metadata."""
     source_url = _validate_source_url(source_url or SOURCE_URL)
     request = Request(source_url, headers={"User-Agent": "KTV-OS-Metadata-Importer/1.0"})
@@ -132,7 +137,7 @@ def refresh_catalog(path=CATALOG_PATH, source_url=None):
     channels = parse_m3u_metadata(content)
     if not channels:
         raise IPTVFreeCatalogError("A fonte M3U nao contem canais validos")
-    target = Path(path)
+    target = Path(path) if path is not None else STATE_CATALOG_PATH
     target.parent.mkdir(parents=True, exist_ok=True)
     data = {"schema": "ktv-iptv-metadata-v2", "generated_from": "M3U metadata only",
             "playback_urls_included": False, "channels": channels}
@@ -152,11 +157,11 @@ def refresh_catalog(path=CATALOG_PATH, source_url=None):
     return load_catalog(target)
 
 
-def validated_catalog():
-    return load_catalog()
+def validated_catalog(path=None):
+    return load_catalog(path)
 
 
-def iptv_free_channel(identifier):
+def iptv_free_channel(identifier, path=None):
     if not isinstance(identifier, str):
         return None
-    return next((item for item in load_catalog() if item["id"] == identifier), None)
+    return next((item for item in load_catalog(path) if item["id"] == identifier), None)
