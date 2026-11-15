@@ -377,15 +377,26 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'enabled': False, 'channels': [],
                                        'warning': 'Playlist externa disponivel somente no KTV Windows.'})
             try:
-                channels = validated_iptv_free_catalog(self.server.state_dir / 'iptv_free_catalog.json')
+                catalog_path = self.server.state_dir / 'iptv_free_catalog.json'
+                channels = validated_iptv_free_catalog(catalog_path)
+                # First launch upgrades the bundled metadata snapshot by fetching
+                # the live playlist. A failed refresh never destroys the last cache.
+                if not any(item.get('streams') for item in channels):
+                    try:
+                        channels = refresh_iptv_free_catalog(catalog_path)
+                    except IPTVFreeCatalogError:
+                        pass
                 public_items = [{'id': item['id'], 'name': item['name'],
                                  'category': item['category'], 'categories': item['categories'],
-                                 'tvg_id': item['tvg_id'], 'playable': False}
+                                 'tvg_id': item['tvg_id'], 'logo': item.get('logo'),
+                                 'formats': [stream['format'] for stream in item.get('streams', [])],
+                                 'playable': bool(item.get('streams'))}
                                 for item in channels]
+                playable = sum(1 for item in public_items if item['playable'])
                 return self.send_json({'enabled': True, 'channels': public_items,
-                                       'source': 'M3U metadata-only catalog',
-                                       'playback_enabled': False,
-                                       'warning': 'Somente nomes e categorias foram importados. URLs de transmissao e logos foram descartados.'})
+                                       'source': 'GitHub M3U', 'playback_enabled': playable > 0,
+                                       'playable_count': playable,
+                                       'warning': '' if playable else 'Playlist ainda nao atualizada; mantendo o catalogo local ate a conexao voltar.'})
             except IPTVFreeCatalogError as exc:
                 return self.send_json({'error': str(exc)}, 503)
         if path == '/api/public-channels':
@@ -640,8 +651,9 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error': 'Atualizacao da Playlist externa esta habilitada somente no KTV Windows.'}, 403)
             try:
                 channels = refresh_iptv_free_catalog(self.server.state_dir / 'iptv_free_catalog.json')
-                return self.send_json({'ok': True, 'count': len(channels),
-                                       'message': 'Metadados atualizados; URLs de transmissao foram descartadas.'})
+                playable = sum(1 for item in channels if item.get('streams'))
+                return self.send_json({'ok': True, 'count': len(channels), 'playable_count': playable,
+                                       'message': 'Playlist M3U atualizada com canais e variantes de transmissao.'})
             except IPTVFreeCatalogError as exc:
                 return self.send_json({'error': str(exc)}, 502)
 
@@ -694,7 +706,16 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 entry = iptv_free_channel(payload.get('id'), self.server.state_dir / 'iptv_free_catalog.json')
                 if entry is None:
                     raise ValueError('Canal da playlist externa nao reconhecido')
-                raise ValueError('Canal cadastrado apenas como metadado. Configure uma fonte de reproducao autorizada para habilitar o player.')
+                variants = entry.get('streams') or []
+                requested_format = payload.get('format')
+                chosen = next((stream for stream in variants if stream['format'] == requested_format), None)
+                if chosen is None:
+                    chosen = next((stream for stream in variants if stream['format'] == 'hls'), None)
+                if chosen is None and variants:
+                    chosen = variants[0]
+                if chosen is None:
+                    raise ValueError('Este canal ainda nao possui um endereco de transmissao valido na playlist.')
+                source, title = chosen['url'], entry['name']
             elif kind == 'public':
                 entry = public_channel(payload.get('id'))
                 if entry is None:
