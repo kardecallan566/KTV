@@ -110,13 +110,13 @@
 
           <div class="community-section iptv-free-section">
             <h2 class="section-title">Playlist externa</h2>
-            <p class="small-note">Catálogo M3U de metadados: importa nomes, identificadores e categorias para preparar futuras integrações. Endereços de transmissão, logos e credenciais não são armazenados nem utilizados. A reprodução permanece desativada até configurar uma fonte de teste ou autorizada.</p>
+            <p class="small-note">Playlist M3U sincronizada automaticamente com o GitHub. Canais, categorias, logos e variantes HLS/TS são atualizados ao abrir esta seção. Os endereços de transmissão ficam protegidos no armazenamento local do KTV e são enviados diretamente ao MPV; os canais e fontes já existentes permanecem separados.</p>
             <div class="channel-actions pluto-toolbar">
               <label for="iptv-free-category">Categoria</label>
               <select id="iptv-free-category" class="focusable"><option value="all">Todas</option></select>
               <label for="iptv-free-search">Buscar</label>
               <input id="iptv-free-search" class="focusable" type="search" maxlength="80" placeholder="Nome do canal...">
-              <button class="ghost focusable" id="iptv-free-refresh" type="button">Atualizar metadados</button>
+              <button class="ghost focusable" id="iptv-free-refresh" type="button">Atualizar playlist</button>
               <button class="ghost focusable" id="iptv-free-favorites" type="button">★ Só favoritos</button>
               <span id="iptv-free-count" class="chip">Carregando catálogo…</span>
             </div>
