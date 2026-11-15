@@ -260,7 +260,7 @@
         if(!err && nativeActive && data.player && !data.player.playing){
           nativeActive=false;
           playerStop.hidden=true;
-          if(!overlay.hidden){var reason=data.player.error?'\nDiagnóstico do MPV: '+data.player.error:'';var logPath=data.player.log_file?'\nLog completo: '+data.player.log_file:'';el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code!==null?' (código '+data.player.exit_code+')':'')+'.'+reason+logPath+'\nVerifique se a fonte está online e autorizada para reprodução direta. Você também pode tentar o modo compatível.';}
+          if(!overlay.hidden){var reason=data.player.error_message?'\n'+data.player.error_message:'';if(data.player.error)reason+='\nDetalhes: '+data.player.error;var logPath=data.player.log_file?'\nLog completo: '+data.player.log_file:'';el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code!==null?' (código '+data.player.exit_code+')':'')+'.'+reason+logPath+'\nVerifique se a fonte está online e autorizada para reprodução direta. Você também pode tentar o modo compatível.';}
           if(lastNativeRequest && lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
           if(!overlay.hidden && lastNativeRequest)updateSmartOptions();
         }
