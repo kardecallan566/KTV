@@ -1,45 +1,48 @@
-# Catálogo IPTV externo (snapshot)
+# Catálogo externo M3U — somente metadados
 
-**Origem:** [Kaiollio-cpu/iptv_free/main.m3u](https://github.com/Kaiollio-cpu/iptv_free/blob/main/main.m3u)  
-**Snapshot incorporado:** 2026-11-06  
-**Quantidade:** 155 entradas, 7 grupos
+**Fonte de metadados padrão:** repositório M3U configurado em `SOURCE_URL` no módulo `ktv-os/iptv_free_catalog.py`.  
+**Snapshot atual:** 975 canais únicos em 53 categorias.  
+**Formato:** `ktv-iptv-metadata-v2`.
 
-## O que foi integrado
+## O que é importado
 
-O KTV OS mantém o catálogo em \`ktv-os/iptv_free_catalog.json\`, carregado por \`iptv_free_catalog.py\`. Ele aparece na tela **Canais** em uma seção independente chamada **Playlist externa**, com busca, filtro de categoria e paginação.
+O parser lê somente os campos de cada linha `#EXTINF`:
 
-| Grupo | Entradas |
-|---|---:|
-| Esportes | 70 |
-| Filmes e Séries | 30 |
-| Canais Abertos | 16 |
-| Variedades | 17 |
-| Notícias | 5 |
-| Infantil | 10 |
-| Religiosos | 7 |
-| **Total** | **155** |
+- Nome do canal (texto após a vírgula).
+- `tvg-id`, quando disponível, para identificação/EPG.
+- `group-title`, normalizado como categoria.
+- Categorias adicionais quando um mesmo canal aparece em mais de um grupo.
 
-A reprodução é solicitada por um identificador de catálogo, nunca por URL enviada pelo navegador. O servidor resolve o ID em uma lista validada; os hosts de stream aceitos estão em allowlist. O mpv recebe os dois cabeçalhos fixos que constavam na playlist (User-Agent e Referer) apenas para esta fonte.
+Os sufixos técnicos `[M3U8]` e `[TS]` são removidos do nome e da categoria. Registros repetidos com o mesmo `tvg-id` são agrupados para evitar duplicatas.
 
-## Separação e preservação
+## O que é descartado
 
-- Não altera \`~/.config/ktv-os/channels.json\` nem os canais pessoais já cadastrados.
-- Não substitui os catálogos públicos institucionais, comunitários ou Pluto TV.
-- Não importa os 155 canais automaticamente para a lista pessoal.
-- Não faz download da playlist no boot; o snapshot é local e versionado.
-- Se o catálogo externo falhar, os demais canais e recursos do KTV OS continuam disponíveis.
+As linhas seguintes de cada entrada, que contêm endereços de reprodução, não são guardadas. Também são descartados:
 
-## Direitos, procedência e disponibilidade
+- URLs de stream HLS e MPEG-TS.
+- URLs de logos.
+- User-Agent, Referer e outros cabeçalhos.
+- Credenciais e parâmetros presentes nos endereços.
 
-O arquivo contém nomes de serviços de assinatura e canais comerciais. O nome \`iptv_free\` da origem não comprova que todas as transmissões sejam gratuitas ou autorizadas. A origem, direitos de retransmissão, região, estabilidade e funcionamento dos streams não foram verificados pelo projeto.
+O JSON versionado contém somente identificadores, nomes, categorias e o campo `playable: false`. A API não devolve URLs de reprodução e a rota de player rejeita esses canais até que uma fonte de teste sintética ou autorizada seja configurada.
 
-**Use somente conteúdo que você tem autorização para assistir.** A inclusão do snapshot não representa endosso, certificação de licença ou garantia de que os links continuarão ativos.
+## Atualização no Windows
 
-## Atualização futura
+A interface **Canais → Playlist externa → Atualizar metadados** chama a rota local `POST /api/iptv-free/refresh`. A rota só executa no Windows. O módulo usa a variável:
 
-1. Baixar uma nova versão da playlist a partir da origem informada.
-2. Revisar mudanças de categorias, IDs, hosts e cabeçalhos.
-3. Validar todas as URLs com \`stream_urls.py\` e atualizar a allowlist apenas após revisão.
-4. Regenerar o JSON preservando IDs estáveis e sem duplicatas.
-5. Executar os testes de catálogo, player, API, interface e a regressão completa do GitHub Actions.
-6. Integrar somente depois de confirmar que os canais pessoais e catálogos existentes permanecem intactos.
+```python
+SOURCE_URL = os.environ.get(
+    "KTV_EXTERNAL_PLAYLIST_METADATA_URL",
+    "https://raw.githubusercontent.com/owner/repo/branch/list.m3u",
+)
+```
+
+Por segurança, a fonte precisa ser HTTPS em `raw.githubusercontent.com`, a resposta é limitada a 8 MB e o redirecionamento para outro host é rejeitado. A atualização grava o novo catálogo atomicamente; se a busca ou validação falhar, o snapshot anterior permanece intacto.
+
+## Isolamento
+
+- Não altera canais pessoais nem `channels.json`.
+- Não altera os catálogos público, comunitário ou Pluto TV.
+- Favoritos continuam em arquivo separado e são preservados.
+- Não habilita reprodução nem tenta resolver links M3U.
+- O parser tem testes que verificam que URLs e credenciais de exemplo não aparecem no catálogo final.
