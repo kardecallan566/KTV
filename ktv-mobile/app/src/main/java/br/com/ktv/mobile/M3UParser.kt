@@ -49,7 +49,7 @@ object M3UParser {
  }
 
  private fun attribute(source: String, key: String): String? {
-  val pattern = Regex("""(?:^|\\s)${Regex.escape(key)}=["']([^"']*)["']""", RegexOption.IGNORE_CASE)
+  val pattern = Regex("""(?:^|\s)${Regex.escape(key)}=["']([^"']*)["']""", RegexOption.IGNORE_CASE)
   return pattern.find(source)?.groupValues?.getOrNull(1)
  }
 }
