@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -86,11 +87,10 @@ class NativePlayerTests(unittest.TestCase):
                                popen=lambda argv, **kw: (calls.append(argv) or MockProcess()))
         with tempfile.TemporaryDirectory() as dirname, mock.patch.object(m.os, 'name', 'nt'), mock.patch.dict(m.os.environ, {'LOCALAPPDATA': dirname}):
             player.play('https://example.com/live.m3u8', 'Canal')
-            Path(player.log_path).write_text(
-                '[ffmpeg] HTTP error 403 https://example.com/live.m3u8?token=secret\n',
-                encoding='utf-8')
+            with open(player.log_path, 'w', encoding='utf-8') as log:
+                log.write('[ffmpeg] HTTP error 403 https://example.com/live.m3u8?token=secret\n')
             status = player.status()
-            self.assertEqual(status['log_file'], str(Path(dirname) / 'KTV' / 'logs' / 'mpv.log'))
+            self.assertEqual(status['log_file'], os.path.join(dirname, 'KTV', 'logs', 'mpv.log'))
             self.assertIn('HTTP error 403', status['diagnostic'])
             self.assertNotIn('secret', status['diagnostic'])
             self.assertNotIn('example.com', status['diagnostic'])
