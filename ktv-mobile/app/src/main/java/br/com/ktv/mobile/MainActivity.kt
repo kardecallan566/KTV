@@ -85,7 +85,7 @@ private object KtvDiagnostics {
   val line = "${System.currentTimeMillis()} | $message" + (error?.let { " | ${it.javaClass.simpleName}: ${it.message}" } ?: "")
   entries.addLast(line)
   while (entries.size > 250) entries.removeFirst()
-  prefs?.edit()?.putString("events", entries.joinToString("\\n"))?.apply()
+  prefs?.edit()?.putString("events", entries.joinToString("\n"))?.apply()
   if (error != null) Log.e(TAG, message, error) else Log.i(TAG, message)
  }
  @Synchronized fun report(): String = buildString {
