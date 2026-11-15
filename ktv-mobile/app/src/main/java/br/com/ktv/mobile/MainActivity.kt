@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.util.Log
+import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.util.Log
 import android.os.Bundle
 import android.net.Uri
 import androidx.fragment.app.FragmentActivity
@@ -189,7 +192,7 @@ fun KtvMobileApp() {
      else -> SettingsScreen(playlistUrls, { playlistUrls = it }, {
       prefs.edit().putString(KEY_PLAYLISTS, playlistUrls).apply()
       scope.launch { loadPlaylist() }
-     }, castMessage)
+     }, castMessage, { shareDiagnostics(context) })
     }
    }
   }
@@ -348,7 +351,7 @@ private fun FavoritesScreen(channels: List<TvChannel>, onOpen: (TvChannel) -> Un
 }
 
 @Composable
-private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave: () -> Unit, castMessage: String) {
+private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave: () -> Unit, castMessage: String, onShareLogs: () -> Unit) {
  Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
   Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
    Text("PERSONALIZE", color = Color(0xFFA5A0FF), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
@@ -369,6 +372,13 @@ private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave:
     Text("Toque no ícone de transmissão no topo do aplicativo para procurar Chromecast, Google TV e receptores compatíveis com Google Cast na mesma rede Wi-Fi.", color = TextMuted, fontSize = 13.sp)
     Text(castMessage, color = TextMuted, fontSize = 12.sp)
     CastRouteButton()
+   }
+  }
+  Surface(color = Color(0xFF251B32), shape = RoundedCornerShape(16.dp)) {
+   Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Text("Diagnóstico e suporte", color = Color.White, fontWeight = FontWeight.Bold)
+    Text("Se o player travar ou o app fechar, compartilhe os registros recentes para análise.", color = TextMuted, fontSize = 12.sp)
+    Button(onClick = onShareLogs, modifier = Modifier.fillMaxWidth()) { Text("Compartilhar logs do KTV") }
    }
   }
   Text("KTV Mobile • canais, favoritos e transmissão", color = TextMuted, fontSize = 12.sp)
