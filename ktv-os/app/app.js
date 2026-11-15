@@ -260,7 +260,9 @@
       // Otherwise the UI would stop monitoring on the first exited MPV process
       // and hide the stop control before the automatic retry completes.
       if(!err && data.player && !data.player.playing && data.watchdog &&
-         (data.watchdog.state==='recovering' || data.watchdog.recovery_in_progress)){
+         (data.watchdog.state==='recovering' || data.watchdog.recovery_in_progress ||
+          (data.watchdog.state==='stalled' && data.watchdog.recovery_available &&
+           data.watchdog.recovery_attempts<3))){
         nativeActive=true;
         playerStop.hidden=false;
         el('quality-telemetry').textContent='A transmissão foi interrompida; reconectando automaticamente…';
