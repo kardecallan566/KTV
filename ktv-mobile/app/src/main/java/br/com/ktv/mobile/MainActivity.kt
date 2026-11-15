@@ -53,6 +53,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.mediarouter.app.MediaRouteButton
 import coil.compose.AsyncImage
+import com.yinnho.upnpcast.DLNACast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -359,6 +360,16 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
  val appContext = context.applicationContext
  var playerError by remember(channel.streamUrl) { mutableStateOf<String?>(null) }
  var isBuffering by remember(channel.streamUrl) { mutableStateOf(true) }
+ var dlnaDevices by remember { mutableStateOf<List<DLNACast.Device>>(emptyList()) }
+ var showDlnaPicker by remember { mutableStateOf(false) }
+ var dlnaSearching by remember { mutableStateOf(false) }
+ var dlnaCasting by remember { mutableStateOf(false) }
+ var dlnaMessage by remember { mutableStateOf<String?>(null) }
+ val playerScope = rememberCoroutineScope()
+ DisposableEffect(appContext) {
+  DLNACast.init(appContext)
+  onDispose { DLNACast.cleanup() }
+ }
 
  val mediaItem = remember(channel.streamUrl, channel.name, channel.category, channel.logo) {
   val metadata = MediaMetadata.Builder()
@@ -484,6 +495,64 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
     }
    }
   }
+  Surface(color = Color(0xFF151C2D), shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF293044))) {
+   Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Icon(Icons.Default.Cast, null, tint = Color(0xFFA5A0FF))
+    Spacer(Modifier.width(8.dp))
+    Column(Modifier.weight(1f)) {
+     Text("Smart TV (DLNA)", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+     Text("Samsung, LG e TVs compatíveis na mesma rede", color = TextMuted, fontSize = 10.sp)
+    }
+    OutlinedButton(enabled = !dlnaSearching && !dlnaCasting, onClick = {
+     playerScope.launch {
+      dlnaSearching = true
+      dlnaMessage = "Procurando TVs na rede Wi-Fi…"
+      try {
+       dlnaDevices = DLNACast.search(timeout = 6000)
+       showDlnaPicker = true
+       dlnaMessage = if (dlnaDevices.isEmpty()) "Nenhuma TV DLNA encontrada. Verifique se celular e TV estão na mesma rede e se o DLNA está ativado." else null
+      } catch (e: Exception) {
+       dlnaMessage = "Falha ao procurar TVs: ${e.message ?: "erro de rede"}"
+      } finally { dlnaSearching = false }
+     }
+    }) {
+     if (dlnaSearching) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+     else Text("Buscar TV", fontSize = 11.sp)
+    }
+   }
+  }
+  if (dlnaCasting) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Accent)
+  if (dlnaMessage != null) Text(dlnaMessage!!, color = if (dlnaMessage!!.startsWith("Reproduzindo")) Color(0xFF9BE7B1) else TextMuted, fontSize = 11.sp)
+  if (showDlnaPicker) AlertDialog(
+   onDismissRequest = { showDlnaPicker = false },
+   title = { Text("Escolher Smart TV", color = Color.White) },
+   text = {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+     if (dlnaDevices.isEmpty()) Text(dlnaMessage ?: "Nenhum dispositivo DLNA encontrado.", color = TextMuted)
+     else dlnaDevices.forEach { device ->
+      OutlinedButton(
+       modifier = Modifier.fillMaxWidth(),
+       enabled = !dlnaCasting,
+       onClick = {
+        showDlnaPicker = false
+        playerScope.launch {
+         dlnaCasting = true
+         dlnaMessage = "Conectando a ${device.name}…"
+         try {
+          val sent = DLNACast.castToDevice(device, channel.streamUrl, channel.name)
+          dlnaMessage = if (sent) "Reproduzindo em ${device.name}. O vídeo agora é enviado diretamente à TV." else "A TV ${device.name} não aceitou este stream. Ela pode não suportar o formato/URL."
+         } catch (e: Exception) {
+          dlnaMessage = "Não foi possível transmitir para ${device.name}: ${e.message ?: "falha DLNA"}"
+         } finally { dlnaCasting = false }
+        }
+       }
+      ) { Text(device.name, color = Color.White); Spacer(Modifier.width(8.dp)); Text(device.address, color = TextMuted, fontSize = 10.sp) }
+     }
+    }
+   },
+   confirmButton = { TextButton(onClick = { showDlnaPicker = false }) { Text("Fechar") } },
+   containerColor = SurfaceDark
+  )
   if (playerError != null) {
    Surface(color = Color(0xFF351B27), shape = RoundedCornerShape(15.dp)) {
     Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
