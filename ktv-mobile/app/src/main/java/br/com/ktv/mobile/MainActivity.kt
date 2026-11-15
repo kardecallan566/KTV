@@ -32,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.MediaRouteButtonFactory
@@ -139,7 +144,7 @@ fun KtvMobileApp() {
     when {
      selectedChannel != null && selectedTab == 0 -> PlayerScreen(selectedChannel!!, { selectedChannel = null })
      selectedTab == 0 -> HomeScreen(query, { query = it }, channels, loading, playlistError, selectedCategory, { selectedCategory = it }, { scope.launch { loadPlaylist() } }, favorites, { toggleFavorite(it, favorites, prefs) { favorites = it } }, { selectedChannel = it })
-     selectedTab == 1 -> FavoritesScreen(channels.filter { it.streamUrl in favorites }, { selectedChannel = it }, { toggleFavorite(it, favorites, prefs) { favorites = it } })
+     selectedTab == 1 -> FavoritesScreen(channels.filter { it.streamUrl in favorites }, { selectedTab = 0; selectedChannel = it }, { toggleFavorite(it, favorites, prefs) { favorites = it } })
      else -> SettingsScreen(playlistUrls, { playlistUrls = it }, {
       prefs.edit().putString(KEY_PLAYLISTS, playlistUrls).apply()
       scope.launch { loadPlaylist() }
@@ -158,15 +163,23 @@ private fun toggleFavorite(channel: TvChannel, current: Set<String>, prefs: andr
 
 @Composable
 private fun CastRouteButton() {
- val context = LocalContext.current
  AndroidView(
   factory = { ctx ->
-   // MediaRouter calcula contraste com os atributos do tema do Context.
-   // Use um tema dedicado com colorBackground explicitamente opaco.
-   val castContext = android.view.ContextThemeWrapper(ctx, R.style.KtvMediaRouterTheme)
-   MediaRouteButton(castContext).apply {
-    MediaRouteButtonFactory.setUpMediaRouteButton(castContext, this)
-    contentDescription = "Transmitir para dispositivo"
+   try {
+    val themedContext = android.view.ContextThemeWrapper(ctx, R.style.KtvMediaRouterTheme)
+    MediaRouteButton(themedContext).apply {
+     MediaRouteButtonFactory.setUpMediaRouteButton(themedContext, this)
+     contentDescription = "Transmitir para dispositivo"
+    }
+   } catch (error: RuntimeException) {
+    // A ausência/falha do Google Cast não pode impedir a abertura do KTV.
+    android.widget.TextView(ctx).apply {
+     text = "TV"
+     gravity = android.view.Gravity.CENTER
+     setTextColor(android.graphics.Color.WHITE)
+     contentDescription = "Transmissão indisponível neste dispositivo"
+     isEnabled = false
+    }
    }
   },
   modifier = Modifier.size(48.dp)
@@ -317,27 +330,71 @@ private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave:
 @Composable
 private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
  val context = LocalContext.current
+ val appContext = context.applicationContext
  var playerError by remember(channel.streamUrl) { mutableStateOf<String?>(null) }
  var isBuffering by remember(channel.streamUrl) { mutableStateOf(true) }
+
+ val mediaItem = remember(channel.streamUrl) {
+  MediaItem.Builder()
+   .setUri(channel.streamUrl)
+   .apply {
+    val path = channel.streamUrl.substringBefore('?').lowercase()
+    if (path.endsWith(".m3u8")) setMimeType(MimeTypes.APPLICATION_M3U8)
+   }
+   .build()
+ }
+
  val localPlayer = remember(channel.streamUrl) {
-  ExoPlayer.Builder(context).build().apply {
-   addListener(object : androidx.media3.common.Player.Listener {
-    override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-     playerError = "Não foi possível reproduzir este canal. A transmissão pode estar offline ou indisponível neste dispositivo."
-     isBuffering = false
-    }
-    override fun onPlaybackStateChanged(playbackState: Int) {
-     isBuffering = playbackState == androidx.media3.common.Player.STATE_BUFFERING || playbackState == androidx.media3.common.Player.STATE_IDLE
-     if (playbackState == androidx.media3.common.Player.STATE_READY) playerError = null
-    }
-   })
-   setMediaItem(MediaItem.fromUri(channel.streamUrl))
-   prepare()
-   playWhenReady = true
+  val httpFactory = DefaultHttpDataSource.Factory()
+   .setUserAgent("KTV-Mobile/0.4.1")
+   .setConnectTimeoutMs(15_000)
+   .setReadTimeoutMs(30_000)
+   .setAllowCrossProtocolRedirects(true)
+  val dataSourceFactory = DefaultDataSource.Factory(appContext, httpFactory)
+  val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+
+  ExoPlayer.Builder(appContext)
+   .setMediaSourceFactory(mediaSourceFactory)
+   .build()
+   .apply {
+    setHandleAudioBecomingNoisy(true)
+    addListener(object : Player.Listener {
+     override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+      val detail = error.cause?.localizedMessage
+       ?.takeIf { it.isNotBlank() }
+       ?: error.localizedMessage
+       ?: error.errorCodeName
+      playerError = "Não foi possível reproduzir este canal. $detail".take(260)
+      isBuffering = false
+     }
+
+     override fun onPlaybackStateChanged(playbackState: Int) {
+      isBuffering = playerError == null &&
+       (playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_IDLE)
+      if (playbackState == Player.STATE_READY) playerError = null
+     }
+    })
+    setMediaItem(mediaItem)
+    prepare()
+    playWhenReady = true
+   }
+ }
+
+ // Se o Google Play Services/Cast falhar, o player local continua funcionando.
+ val castPlayer = remember(localPlayer) {
+  try {
+   CastPlayer.Builder(context).setLocalPlayer(localPlayer).build()
+  } catch (_: RuntimeException) {
+   null
   }
  }
- val player = remember(localPlayer) { CastPlayer.Builder(context).setLocalPlayer(localPlayer).build() }
- DisposableEffect(localPlayer) { onDispose { localPlayer.release() } }
+ val playbackPlayer: Player = castPlayer ?: localPlayer
+
+ DisposableEffect(castPlayer, localPlayer) {
+  onDispose {
+   if (castPlayer != null) castPlayer.release() else localPlayer.release()
+  }
+ }
 
  Column(Modifier.fillMaxSize().background(Background).padding(bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -349,8 +406,6 @@ private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
      Text("AO VIVO", color = Color(0xFFFFA1AE), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
     }
    }
-   Spacer(Modifier.width(8.dp))
-   CastRouteButton()
   }
   Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
    Text("ASSISTINDO AGORA", color = Color(0xFFA5A0FF), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
@@ -361,12 +416,12 @@ private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
    Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f), contentAlignment = Alignment.Center) {
     AndroidView(
      factory = { ctx -> PlayerView(ctx).apply {
-      this.player = player
+      this.player = playbackPlayer
       useController = true
-      setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+      setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
       keepScreenOn = true
      } },
-     update = { it.player = player },
+     update = { it.player = playbackPlayer },
      modifier = Modifier.fillMaxSize()
     )
     if (isBuffering && playerError == null) {
@@ -382,7 +437,8 @@ private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
      OutlinedButton(onClick = {
       playerError = null
       isBuffering = true
-      localPlayer.seekTo(0)
+      localPlayer.stop()
+      localPlayer.setMediaItem(mediaItem)
       localPlayer.prepare()
       localPlayer.playWhenReady = true
      }) {
