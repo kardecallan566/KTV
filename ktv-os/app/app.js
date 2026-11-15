@@ -878,7 +878,7 @@
     get('/api/iptv-free/channels',function(err,data){
       if(err){el('iptv-free-status').textContent='Playlist externa indisponível: '+err.message+'; a última cópia local será mantida.';if(onComplete)onComplete();return;}
       var section=document.querySelector('.iptv-free-section');
-      if(data.enabled===false){if(section)section.hidden=true;return;}
+      if(data.enabled===false){if(section)section.hidden=true;if(onComplete)onComplete();return;}
       if(section)section.hidden=false;
       iptvFreeCache=data.channels||[];
       get('/api/iptv-free/favorites',function(favErr,favData){
