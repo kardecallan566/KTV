@@ -6,7 +6,7 @@ plugins {
 android {
  namespace = "br.com.ktv.mobile"
  compileSdk = 35
- defaultConfig { applicationId = "br.com.ktv.mobile"; minSdk = 23; targetSdk = 35; versionCode = 3; versionName = "0.4.0" }
+ defaultConfig { applicationId = "br.com.ktv.mobile"; minSdk = 23; targetSdk = 35; versionCode = 4; versionName = "0.4.1" }
  buildFeatures { compose = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
@@ -21,6 +21,8 @@ dependencies {
  implementation("androidx.compose.material:material-icons-extended")
  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
  implementation("androidx.media3:media3-exoplayer:1.9.0")
+ implementation("androidx.media3:media3-exoplayer-hls:1.9.0")
+ implementation("androidx.media3:media3-exoplayer-rtsp:1.9.0")
  implementation("androidx.media3:media3-ui:1.9.0")
  implementation("androidx.media3:media3-cast:1.9.0")
  implementation("io.coil-kt:coil-compose:2.7.0")
