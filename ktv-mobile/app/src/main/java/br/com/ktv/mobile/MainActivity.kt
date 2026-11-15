@@ -154,7 +154,6 @@ private fun CastRouteButton() {
  AndroidView(
   factory = { ctx ->
    MediaRouteButton(ctx).apply {
-    setRouteSelector(androidx.mediarouter.media.MediaRouteSelector.EMPTY)
     MediaRouteButtonFactory.setUpMediaRouteButton(context, this)
    }
   },
