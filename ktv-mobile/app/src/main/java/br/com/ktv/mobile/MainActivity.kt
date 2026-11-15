@@ -447,6 +447,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
      this.player = playbackPlayer
      useController = true
      setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+     setMediaRouteButtonViewProvider(MediaRouteButtonViewProvider())
      keepScreenOn = true
     } },
     update = { it.player = playbackPlayer },
