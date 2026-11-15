@@ -16,7 +16,7 @@ from iptv_free_catalog import (
 class IPTVFreeCatalogTests(unittest.TestCase):
     def test_snapshot_contains_metadata_only_catalog(self):
         channels = validated_catalog()
-        self.assertGreater(len(channels), 900)
+        self.assertGreater(len(channels), 1800)
         self.assertEqual(len({item["id"] for item in channels}), len(channels))
         self.assertTrue(all(item["playable"] is False for item in channels))
         self.assertTrue(all("url" not in item and "logo" not in item for item in channels))
