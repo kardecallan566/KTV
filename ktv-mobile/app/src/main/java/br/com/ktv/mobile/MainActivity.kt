@@ -470,7 +470,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
       if (!retryScheduled) {
        retryScheduled = true
        retryCount++
-       val retryDelay = (1_000L shl retryCount.coerceAtMost(5)).coerceAtMost(30_000L)
+       val retryDelay = (1_000L * (1L shl retryCount.coerceAtMost(5))).coerceAtMost(30_000L)
        playerScope.launch {
         kotlinx.coroutines.delay(retryDelay)
         runCatching {
