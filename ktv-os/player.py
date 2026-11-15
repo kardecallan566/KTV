@@ -396,24 +396,25 @@ class NativePlayer:
             ))
             if is_hls:
                 args.append('--hls-bitrate=' + chosen['hls_bitrate'])
-        # Keep a private per-session directory for MPV controls on every OS.
-        # Explicit Q/CLOSE_WIN exits use code 77 so the watchdog can distinguish
-        # a user closing the player from an unexpected stream/process exit.
-        self.ipc_dir = tempfile.mkdtemp(prefix='ktv-mpv-')
-        bindings = os.path.join(self.ipc_dir, 'ktv-keys.conf')
-        try:
-            with open(bindings, 'w', encoding='ascii', newline='\n') as config:
-                config.write('q quit 77\nQ quit 77\nCLOSE_WIN quit 77\n')
-            if os.name == 'posix':
-                os.chmod(bindings, 0o600)
-            args.append('--input-conf=' + bindings)
-            # MPV IPC is a local diagnostic socket, never a public TCP endpoint.
-            if os.name == 'posix' and hasattr(socket, 'AF_UNIX'):
-                self.ipc_path = os.path.join(self.ipc_dir, 'control.sock')
-                args.append('--input-ipc-server=' + self.ipc_path)
-        except OSError:
-            self._clear_ipc()
-            raise
+        # Live HLS/TS sessions need a distinct exit code so the watchdog can
+        # tell an unexpected process exit from an intentional user close.
+        # Finite files (MP4, WebM, etc.) keep MPV's native key handling.
+        if is_hls or is_ts:
+            self.ipc_dir = tempfile.mkdtemp(prefix='ktv-mpv-')
+            bindings = os.path.join(self.ipc_dir, 'ktv-keys.conf')
+            try:
+                with open(bindings, 'w', encoding='ascii', newline='\\n') as config:
+                    config.write('q quit 77\\nQ quit 77\\nCLOSE_WIN quit 77\\n')
+                if os.name == 'posix':
+                    os.chmod(bindings, 0o600)
+                args.append('--input-conf=' + bindings)
+                # MPV IPC is a local diagnostic socket, never a public TCP endpoint.
+                if os.name == 'posix' and hasattr(socket, 'AF_UNIX'):
+                    self.ipc_path = os.path.join(self.ipc_dir, 'control.sock')
+                    args.append('--input-ipc-server=' + self.ipc_path)
+            except OSError:
+                self._clear_ipc()
+                raise
         args.extend(('--', source))
         with self.lock:
             try:
