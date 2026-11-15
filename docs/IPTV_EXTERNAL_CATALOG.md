@@ -21,7 +21,7 @@ Entradas repetidas do mesmo canal são agrupadas pelo identificador e nome norma
 
 Os endereços de transmissão ficam no arquivo local `iptv_free_catalog.json`, dentro do diretório de estado do KTV. A interface web recebe apenas o ID do canal e os formatos disponíveis; não recebe as URLs de transmissão. Quando o usuário escolhe um formato, o servidor resolve o ID no catálogo local e entrega a URL diretamente ao MPV.
 
-As URLs passam pela validação de `stream_urls.py`: somente HTTP(S), portas web permitidas, hosts públicos e formatos diretos suportados. O cabeçalho M3U/EPG não é usado como endereço de reprodução. Os links de transmissão não são copiados para logs ou respostas da API.
+As URLs passam pela validação de `stream_urls.py`: somente HTTP(S), portas web permitidas, hosts públicos e formatos diretos suportados. O cabeçalho M3U/EPG não é usado como endereço de reprodução. Os endereços não são devolvidos pela API nem expostos à interface web. Como o MPV mantém diagnósticos locais, o arquivo de log pode registrar a fonte atualmente aberta; revise-o antes de compartilhá-lo.
 
 ## Configuração e limites
 
