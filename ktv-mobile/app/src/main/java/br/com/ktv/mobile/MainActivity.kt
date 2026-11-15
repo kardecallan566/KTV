@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -28,6 +29,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -44,6 +52,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun KtvMobileApp() {
  var selectedTab by remember { mutableIntStateOf(0) }
+ var selectedChannel by remember { mutableStateOf<TvChannel?>(null) }
+ val scope = rememberCoroutineScope()
  var query by remember { mutableStateOf("") }
  var castMessage by remember { mutableStateOf("Nenhuma TV conectada") }
  var channels by remember { mutableStateOf<List<TvChannel>>(emptyList()) }
@@ -87,7 +97,7 @@ fun KtvMobileApp() {
      IconButton(onClick = { castMessage = "A conexão será ativada em uma próxima etapa"; selectedTab = 2 }) { Icon(Icons.Default.Cast, "Transmitir", tint = Color.White) }
     }
     when(selectedTab) {
-     0 -> HomeScreen(query, { query = it }, channels, loading, playlistError, selectedCategory, { selectedCategory = it }, { loadPlaylist() }, castMessage)
+     0 -> if (selectedChannel != null) PlayerScreen(selectedChannel!!, { selectedChannel = null }) else HomeScreen(query, { query = it }, channels, loading, playlistError, selectedCategory, { selectedCategory = it }, { scope.launch { loadPlaylist() } }, castMessage, { selectedChannel = it })
      1 -> EmptyState()
      else -> SettingsScreen(castMessage) { castMessage = it }
     }
@@ -99,7 +109,7 @@ fun KtvMobileApp() {
 @Composable
 private fun HomeScreen(
  query: String, onQuery: (String) -> Unit, channels: List<TvChannel>, loading: Boolean, error: String?,
- category: String, onCategory: (String) -> Unit, onReload: () -> Unit, castMessage: String
+ category: String, onCategory: (String) -> Unit, onReload: () -> Unit, castMessage: String, onChannelClick: (TvChannel) -> Unit
 ) {
  val categories = remember(channels) { listOf("Todos") + channels.map { it.category }.distinct().sorted() }
  val filtered = remember(channels, query, category) {
@@ -121,7 +131,7 @@ private fun HomeScreen(
   } else {
    LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
     items(filtered, key = { it.streamUrl }) { channel ->
-     ChannelRow(channel)
+     ChannelRow(channel, onChannelClick)
     }
    }
   }
@@ -130,8 +140,8 @@ private fun HomeScreen(
 }
 
 @Composable
-private fun ChannelRow(channel: TvChannel) {
- Surface(color = SurfaceDark, shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth()) {
+private fun ChannelRow(channel: TvChannel, onClick: (TvChannel) -> Unit) {
+ Surface(color = SurfaceDark, shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth().clickable { onClick(channel) }) {
   Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
    Box(Modifier.size(42.dp).background(Color(0xFF272442), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.LiveTv, null, tint = Accent) }
    Spacer(Modifier.width(12.dp))
@@ -147,3 +157,24 @@ private fun ChannelRow(channel: TvChannel) {
  Spacer(Modifier.height(20.dp)); Text("Sobre o KTV Mobile", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold); Text("Versão 0.2.0 • Playlist integrada", color = TextMuted)
 }
 @Composable private fun EmptyState() { Column(Modifier.fillMaxWidth().padding(top = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) { Icon(Icons.Default.Favorite, null, tint = Accent, modifier = Modifier.size(48.dp)); Spacer(Modifier.height(12.dp)); Text("Seus favoritos", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold); Text("Favoritos serão habilitados em breve.", color = TextMuted) } }
+
+@Composable
+private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
+ val context = LocalContext.current
+ val player = remember(channel.streamUrl) {
+  ExoPlayer.Builder(context).build().apply {
+   setMediaItem(MediaItem.fromUri(channel.streamUrl))
+   prepare()
+   playWhenReady = true
+  }
+ }
+ DisposableEffect(player) { onDispose { player.release() } }
+ Column(Modifier.fillMaxSize().background(Background).padding(16.dp)) {
+  Text("‹  Voltar aos canais", color = Color.White, modifier = Modifier.clickable { onBack() }.padding(vertical = 12.dp))
+  Text(channel.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+  Text(channel.category, color = TextMuted, modifier = Modifier.padding(bottom = 12.dp))
+  AndroidView(factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true } }, modifier = Modifier.fillMaxWidth().aspectRatio(16f/9f))
+  Spacer(Modifier.height(12.dp))
+  Text("Reprodução ao vivo • KTV", color = TextMuted, fontSize = 12.sp)
+ }
+}
