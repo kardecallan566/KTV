@@ -2,6 +2,9 @@ package br.com.ktv.mobile
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.util.Log
 import android.os.Bundle
 import android.net.Uri
 import androidx.fragment.app.FragmentActivity
@@ -68,6 +71,33 @@ private val Background = Color(0xFF080B14)
 private val SurfaceDark = Color(0xFF111827)
 private val Accent = Color(0xFF6C63FF)
 private val TextMuted = Color(0xFF9CA3AF)
+
+private object KtvDiagnostics {
+ private const val TAG = "KTVPlayer"
+ private val entries = ArrayDeque<String>()
+ @Synchronized fun add(message: String, error: Throwable? = null) {
+  val line = "${java.time.Instant.now()} | $message" + (error?.let { " | ${it.javaClass.simpleName}: ${it.message}" } ?: "")
+  entries.addLast(line)
+  while (entries.size > 250) entries.removeFirst()
+  if (error != null) Log.e(TAG, message, error) else Log.i(TAG, message)
+ }
+ @Synchronized fun report(): String = buildString {
+  appendLine("KTV Mobile diagnostics")
+  appendLine("Android: ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})")
+  appendLine("Device: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
+  appendLine("---- eventos recentes ----")
+  entries.forEach { appendLine(it) }
+ }
+}
+private fun shareDiagnostics(context: Context) {
+ val intent = Intent(Intent.ACTION_SEND).apply {
+  type = "text/plain"
+  putExtra(Intent.EXTRA_SUBJECT, "KTV Mobile - relatório de diagnóstico")
+  putExtra(Intent.EXTRA_TEXT, KtvDiagnostics.report())
+ }
+ runCatching { context.startActivity(Intent.createChooser(intent, "Enviar logs do KTV")) }
+  .onFailure { KtvDiagnostics.add("Falha ao abrir compartilhamento de logs", it) }
+}
 
 class MainActivity : FragmentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) {
