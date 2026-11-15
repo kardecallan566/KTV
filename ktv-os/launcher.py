@@ -734,11 +734,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             # Compatibility with simple mocked players used in old regression suites.
             from player import NativePlayer
             if isinstance(self.server.player, NativePlayer):
-                if kind == 'iptv_free':
-                    info = self.server.player.play(source, title, quality=quality, decode=decode,
-                                                  user_agent=user_agent, referrer=referrer)
-                else:
-                    info = self.server.player.play(source, title, quality=quality, decode=decode)
+                info = self.server.player.play(source, title, quality=quality, decode=decode)
             else:
                 info = self.server.player.play(source, title)
             self.server.player_watchdog.reset()
