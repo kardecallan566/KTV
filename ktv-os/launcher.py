@@ -740,8 +740,11 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             self.server.player_watchdog.reset()
             self.server.player_watchdog.set_session(
                 source, title, quality, decode, user_agent, referrer,
+                # Only live transport sources are eligible for automatic
+                # relaunch. Finite MP4/WebM files must end normally.
                 recoverable=(kind != 'pluto' and kind != 'antenna' and
-                            source.startswith(('http://', 'https://'))))
+                            source.startswith(('http://', 'https://')) and
+                            urlsplit(source).path.lower().endswith(('.m3u8', '.ts'))))
             if kind == 'pluto':
                 self.server.pluto_recovery.activate(payload.get('id'),quality,decode)
         except (ValueError, OSError) as exc:
