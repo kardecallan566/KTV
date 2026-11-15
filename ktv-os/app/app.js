@@ -819,7 +819,8 @@
   }
   el('public-channel-filter').addEventListener('change',renderPublicChannels);
 
-  // External playlist: metadata only. Playback URLs and logo URLs are never used.
+  // Windows external M3U playlist. Playback URLs remain server-side;
+  // the browser sends only a stable channel ID and an optional format.
   var iptvFreeCache=[],iptvFreeVisible=36,iptvFreeLoaded=false,iptvFreeFavorites=[],iptvFreeFavoritesOnly=false;
   function renderIptvFreeChannels(){
     var container=el('iptv-free-channels'),category=el('iptv-free-category').value;
@@ -835,11 +836,18 @@
     if(!selected.length){message(container,'Nenhum canal corresponde ao filtro.');return;}
     selected.slice(0,iptvFreeVisible).forEach(function(c){
       var card=document.createElement('div');card.className='info-card channel-card';
-      var icon=document.createElement('span');icon.className='card-icon';icon.textContent='▣';
+      if(c.logo){
+        var logo=document.createElement('img');logo.className='channel-logo';logo.alt='';
+        logo.loading='lazy';logo.referrerPolicy='no-referrer';logo.src=c.logo;
+        logo.onerror=function(){logo.remove();};card.appendChild(logo);
+      }else{
+        var icon=document.createElement('span');icon.className='card-icon';icon.textContent='▣';card.appendChild(icon);
+      }
       var title=document.createElement('strong');title.className='channel-title';title.textContent=c.name;
       var groups=c.categories||[c.category];
+      var formats=c.formats||[];
       var label=document.createElement('small');label.className='channel-subtitle';
-      label.textContent=groups.join(' · ')+' · metadados';
+      label.textContent=groups.join(' · ')+' · '+(formats.length?formats.map(function(x){return x.toUpperCase();}).join(' / '):'fonte indisponível');
       var controls=document.createElement('div');controls.className='channel-buttons';
       controls.appendChild(miniButton(iptvFreeFavorites.indexOf(c.id)!==-1?'★ Favorito':'☆ Favoritar',function(){
         post('/api/iptv-free/favorites/toggle',{id:c.id},function(err,data){
@@ -847,17 +855,28 @@
           iptvFreeFavorites=data.ids||[];renderIptvFreeChannels();
         });
       },false));
-      controls.appendChild(miniButton('Fonte não configurada',function(){
-        dialog(c.name,'Este canal foi cadastrado apenas com nome e categoria. Nenhum endereço M3U foi armazenado ou enviado ao MPV. A reprodução será habilitada quando uma fonte autorizada for configurada.');
-      },false));
-      card.appendChild(icon);card.appendChild(title);card.appendChild(label);card.appendChild(controls);
+      if(c.playable&&formats.length){
+        formats.forEach(function(format){
+          controls.appendChild(miniButton('▶ Assistir '+format.toUpperCase(),function(){
+            nativePlay({kind:'iptv_free',id:c.id,format:format},c.name,function(){
+              dialog(c.name,'O MPV não conseguiu iniciar esta variante. Tente a outra opção de formato ou verifique a disponibilidade da transmissão.');
+            });
+          },true));
+        });
+      }else{
+        controls.appendChild(miniButton('Fonte indisponível',function(){
+          dialog(c.name,'Este canal ainda não possui uma transmissão válida na última versão da playlist. Tente atualizar quando a fonte estiver disponível.');
+        },false));
+      }
+      card.appendChild(title);card.appendChild(label);card.appendChild(controls);
       container.appendChild(card);
     });
     el('iptv-free-more').hidden=iptvFreeVisible>=selected.length;
   }
   function loadIptvFreeChannels(){
+    el('iptv-free-status').textContent='Sincronizando playlist M3U do GitHub…';
     get('/api/iptv-free/channels',function(err,data){
-      if(err){el('iptv-free-status').textContent='Playlist externa indisponível: '+err.message;return;}
+      if(err){el('iptv-free-status').textContent='Playlist externa indisponível: '+err.message+'; a última cópia local será mantida.';return;}
       var section=document.querySelector('.iptv-free-section');
       if(data.enabled===false){if(section)section.hidden=true;return;}
       if(section)section.hidden=false;
@@ -877,7 +896,8 @@
       categories.sort().forEach(function(category){var option=document.createElement('option');option.value=category;option.textContent=category;select.appendChild(option);});
       select.value=categories.indexOf(previous)!==-1?previous:'all';
       iptvFreeLoaded=true;iptvFreeVisible=36;
-      el('iptv-free-status').textContent=(data.warning||'')+' Catálogo de '+iptvFreeCache.length+' canais; reprodução desativada até configurar fontes autorizadas.';
+      var playable=Number(data.playable_count||0);
+      el('iptv-free-status').textContent=(data.warning||'')+' '+iptvFreeCache.length+' canais carregados; '+playable+' com transmissão. Atualização automática ao abrir esta seção.';
       renderIptvFreeChannels();
     });
   }
@@ -889,12 +909,9 @@
   });
   el('iptv-free-search').addEventListener('input',function(){iptvFreeVisible=36;renderIptvFreeChannels();});
   el('iptv-free-refresh').addEventListener('click',function(){
-    var button=this;button.disabled=true;el('iptv-free-status').textContent='Atualizando metadados M3U…';
-    post('/api/iptv-free/refresh',{},function(err){
-      button.disabled=false;
-      if(err){el('iptv-free-status').textContent='Falha ao atualizar metadados: '+err.message;return;}
-      loadIptvFreeChannels();
-    });
+    var button=this;button.disabled=true;el('iptv-free-status').textContent='Atualizando playlist M3U…';
+    loadIptvFreeChannels();
+    window.setTimeout(function(){button.disabled=false;},1000);
   });
   el('iptv-free-more').addEventListener('click',function(){iptvFreeVisible+=36;renderIptvFreeChannels();});
 
