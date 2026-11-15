@@ -260,7 +260,7 @@
         if(!err && nativeActive && data.player && !data.player.playing){
           nativeActive=false;
           playerStop.hidden=true;
-          if(!overlay.hidden){var reason=data.player.error?'\nDiagnóstico do MPV: '+data.player.error:'';el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code!==null?' (código '+data.player.exit_code+')':'')+'.'+reason+'\nVerifique se a fonte está online e autorizada para reprodução direta. Você também pode tentar o modo compatível.';}
+          if(!overlay.hidden){var reason=data.player.error?'\nDiagnóstico do MPV: '+data.player.error:'';var logPath=data.player.log_file?'\nLog completo: '+data.player.log_file:'';el('dialog-message').textContent='Reprodução encerrada'+(data.player.exit_code!==null?' (código '+data.player.exit_code+')':'')+'.'+reason+logPath+'\nVerifique se a fonte está online e autorizada para reprodução direta. Você também pode tentar o modo compatível.';}
           if(lastNativeRequest && lastNativeRequest.decode!=='compatible')compatibleButton.hidden=false;
           if(!overlay.hidden && lastNativeRequest)updateSmartOptions();
         }
@@ -269,8 +269,9 @@
         return;
       }
       var v=data.player.video;
-      if(!v){el('quality-telemetry').textContent='Reproduzindo. Diagnóstico de vídeo indisponível neste dispositivo.';return;}
+      if(!v){var basic=['Reproduzindo. Diagnóstico de vídeo indisponível neste dispositivo.'];if(data.player.diagnostic)basic.push('MPV: '+data.player.diagnostic);if(data.player.log_file)basic.push('Log: '+data.player.log_file);el('quality-telemetry').textContent=basic.join(' · ');return;}
       var parts=[];
+      if(data.player.diagnostic)parts.push('MPV: '+data.player.diagnostic);
       if(data.watchdog){
         if(data.watchdog.state==='stalled')parts.push('ALERTA: possível travamento ('+data.watchdog.stall_seconds+' s)');
         else if(data.watchdog.state==='starting')parts.push('Monitor: estabilizando');
