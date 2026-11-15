@@ -53,7 +53,6 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.MediaRouteButtonFactory
-import androidx.media3.cast.MediaRouteButtonViewProvider
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.mediarouter.app.MediaRouteButton
@@ -583,7 +582,6 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
      this.player = playbackPlayer
      useController = true
      setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
-     setMediaRouteButtonViewProvider(MediaRouteButtonViewProvider())
      keepScreenOn = true
     } },
     update = { it.player = playbackPlayer },
@@ -620,8 +618,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
       this.player = playbackPlayer
       useController = true
       setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
-      setMediaRouteButtonViewProvider(MediaRouteButtonViewProvider())
-      keepScreenOn = true
+       keepScreenOn = true
      } },
      update = { it.player = playbackPlayer },
      modifier = Modifier.fillMaxSize()
