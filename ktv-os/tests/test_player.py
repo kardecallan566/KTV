@@ -54,6 +54,7 @@ class NativePlayerTests(unittest.TestCase):
         self.assertNotIn('--opengl-swapinterval=1', calls[0])
         self.assertIn('--vo=gpu', calls[0])
         self.assertIn('--gpu-api=d3d11', calls[0])
+        self.assertIn('--gpu-context=d3d11', calls[0])
         player.stop()
 
     def test_catalog_headers_are_passed_as_mpv_arguments(self):
@@ -65,6 +66,36 @@ class NativePlayerTests(unittest.TestCase):
         self.assertIn('--referrer=https://example.com/', calls[0])
         self.assertIn('--http-header-fields=User-Agent: KTV-Test/1.0,Referer: https://example.com/', calls[0])
         player.stop()
+
+
+    def test_hls_streams_enable_reconnect_and_variant_selection(self):
+        calls = []
+        player = m.NativePlayer(executable='mpv',
+                               popen=lambda argv, **kw: (calls.append(argv) or MockProcess()))
+        player.play('https://example.com/live.m3u8?token=example', 'Canal',
+                    quality='best')
+        args = calls[0]
+        self.assertIn('--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_at_eof=1', args)
+        self.assertIn('--hls-bitrate=max', args)
+        self.assertIn('--network-timeout=25', args)
+        player.stop()
+
+    def test_status_exposes_log_location_and_redacted_live_diagnostics(self):
+        calls = []
+        player = m.NativePlayer(executable='mpv',
+                               popen=lambda argv, **kw: (calls.append(argv) or MockProcess()))
+        with tempfile.TemporaryDirectory() as dirname, mock.patch.object(m.os, 'name', 'nt'), \\
+             mock.patch.dict(m.os.environ, {'LOCALAPPDATA': dirname}):
+            player.play('https://example.com/live.m3u8', 'Canal')
+            Path(player.log_path).write_text(
+                '[ffmpeg] HTTP error 403 https://example.com/live.m3u8?token=secret\\n',
+                encoding='utf-8')
+            status = player.status()
+            self.assertEqual(status['log_file'], str(Path(dirname) / 'KTV' / 'logs' / 'mpv.log'))
+            self.assertIn('HTTP error 403', status['diagnostic'])
+            self.assertNotIn('secret', status['diagnostic'])
+            self.assertNotIn('example.com', status['diagnostic'])
+            player.stop()
 
     def test_catalog_headers_reject_invalid_values(self):
         player = m.NativePlayer(executable='/usr/bin/mpv', popen=lambda *a, **kw: MockProcess())
