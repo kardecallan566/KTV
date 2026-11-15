@@ -314,15 +314,22 @@ private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave:
 }
 
 @OptIn(UnstableApi::class)
+@OptIn(UnstableApi::class)
 @Composable
 private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
  val context = LocalContext.current
  var playerError by remember(channel.streamUrl) { mutableStateOf<String?>(null) }
+ var isBuffering by remember(channel.streamUrl) { mutableStateOf(true) }
  val localPlayer = remember(channel.streamUrl) {
   ExoPlayer.Builder(context).build().apply {
    addListener(object : androidx.media3.common.Player.Listener {
     override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
      playerError = "Não foi possível reproduzir este canal. A transmissão pode estar offline ou indisponível neste dispositivo."
+     isBuffering = false
+    }
+    override fun onPlaybackStateChanged(playbackState: Int) {
+     isBuffering = playbackState == androidx.media3.common.Player.STATE_BUFFERING || playbackState == androidx.media3.common.Player.STATE_IDLE
+     if (playbackState == androidx.media3.common.Player.STATE_READY) playerError = null
     }
    })
    setMediaItem(MediaItem.fromUri(channel.streamUrl))
@@ -332,18 +339,75 @@ private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
  }
  val player = remember(localPlayer) { CastPlayer.Builder(context).setLocalPlayer(localPlayer).build() }
  DisposableEffect(localPlayer) { onDispose { localPlayer.release() } }
- Column(Modifier.fillMaxSize().background(Background).padding(12.dp)) {
+
+ Column(Modifier.fillMaxSize().background(Background).padding(bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-   Text("‹  Voltar", color = Color.White, modifier = Modifier.weight(1f).clickable { onBack() }.padding(vertical = 12.dp))
+   Text("‹  Voltar aos canais", color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).clickable { onBack() }.padding(vertical = 12.dp))
+   Surface(color = Color(0xFF1C2340), shape = RoundedCornerShape(12.dp)) {
+    Row(Modifier.padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+     Box(Modifier.size(7.dp).background(Color(0xFFFF5368), RoundedCornerShape(50)))
+     Spacer(Modifier.width(6.dp))
+     Text("AO VIVO", color = Color(0xFFFFA1AE), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+    }
+   }
+   Spacer(Modifier.width(8.dp))
    CastRouteButton()
   }
-  Text(channel.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-  Text(channel.category, color = TextMuted, modifier = Modifier.padding(bottom = 12.dp))
-  AndroidView(factory = { ctx -> PlayerView(ctx).apply { this.player = player; useController = true } }, update = { it.player = player }, modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+  Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+   Text("ASSISTINDO AGORA", color = Color(0xFFA5A0FF), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+   Text(channel.name, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2)
+   Text(channel.category.ifBlank { "Televisão ao vivo" }, color = TextMuted, fontSize = 13.sp)
+  }
+  Surface(color = Color.Black, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth(), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF293044))) {
+   Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f), contentAlignment = Alignment.Center) {
+    AndroidView(
+     factory = { ctx -> PlayerView(ctx).apply {
+      this.player = player
+      useController = true
+      setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+      keepScreenOn = true
+     } },
+     update = { it.player = player },
+     modifier = Modifier.fillMaxSize()
+    )
+    if (isBuffering && playerError == null) {
+     CircularProgressIndicator(color = Accent, modifier = Modifier.size(34.dp), strokeWidth = 3.dp)
+    }
+   }
+  }
   if (playerError != null) {
-   Text(playerError!!, color = Color(0xFFFFB4C2), modifier = Modifier.padding(top = 12.dp))
+   Surface(color = Color(0xFF351B27), shape = RoundedCornerShape(15.dp)) {
+    Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+     Text("Falha na transmissão", color = Color(0xFFFFB4C2), fontWeight = FontWeight.Bold)
+     Text(playerError!!, color = Color(0xFFFFCDD5), fontSize = 12.sp)
+     OutlinedButton(onClick = {
+      playerError = null
+      isBuffering = true
+      localPlayer.seekTo(0)
+      localPlayer.prepare()
+      localPlayer.playWhenReady = true
+     }) {
+      Icon(Icons.Default.Refresh, null)
+      Spacer(Modifier.width(7.dp))
+      Text("Tentar novamente")
+     }
+    }
+   }
   } else {
-   Text("Reprodução ao vivo • KTV", color = TextMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp))
+   Surface(color = Color(0xFF131B2B), shape = RoundedCornerShape(15.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF222C42))) {
+    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+     Box(Modifier.size(42.dp).background(Color(0xFF202944), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+      if (!channel.logo.isNullOrBlank()) AsyncImage(model = channel.logo, contentDescription = channel.name, modifier = Modifier.size(34.dp), contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+      else Icon(Icons.Default.LiveTv, null, tint = Color(0xFFA5A0FF))
+     }
+     Spacer(Modifier.width(12.dp))
+     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+      Text("Transmissão ao vivo", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+      Text("Reprodução pelo KTV Mobile", color = TextMuted, fontSize = 11.sp)
+     }
+     Text("KTV", color = Color(0xFFA5A0FF), fontSize = 16.sp, fontWeight = FontWeight.Black)
+    }
+   }
   }
  }
 }
