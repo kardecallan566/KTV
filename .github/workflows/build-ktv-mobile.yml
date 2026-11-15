@@ -27,8 +27,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Install Android SDK
+      - name: Install Android SDK command-line tools
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version:  latest
       - name: Install Android platform and build tools
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - name: Setup Gradle
