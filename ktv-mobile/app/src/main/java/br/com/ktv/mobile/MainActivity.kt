@@ -392,10 +392,15 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
  val activity = context as? Activity
  BackHandler(enabled = isFullscreen) { onFullscreenChange(false) }
  DisposableEffect(activity, isFullscreen) {
+  if (isFullscreen) activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+  else activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
   val window = activity?.window
   val controller = window?.let { WindowInsetsControllerCompat(it, it.decorView) }
   if (isFullscreen) controller?.hide(WindowInsetsCompat.Type.systemBars()) else controller?.show(WindowInsetsCompat.Type.systemBars())
-  onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+  onDispose {
+   controller?.show(WindowInsetsCompat.Type.systemBars())
+   activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+  }
  }
  val appContext = context.applicationContext
  var playerError by remember(channel.streamUrl) { mutableStateOf<String?>(null) }
