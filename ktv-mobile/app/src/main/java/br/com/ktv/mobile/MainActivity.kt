@@ -314,7 +314,6 @@ private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave:
 }
 
 @OptIn(UnstableApi::class)
-@OptIn(UnstableApi::class)
 @Composable
 private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
  val context = LocalContext.current
