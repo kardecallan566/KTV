@@ -172,6 +172,7 @@ class PlayerWatchdog:
                 return
             self.recovery_attempts += 1
             self.last_recovery = self.clock()
+            result = False
             try:
                 buffer = self.metrics.get("buffer_seconds")
                 trend = self.metrics.get("frame_trend", {})
