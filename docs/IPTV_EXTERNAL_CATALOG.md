@@ -1,7 +1,7 @@
 # Catálogo externo M3U — somente metadados
 
 **Fonte de metadados padrão:** repositório M3U configurado em `SOURCE_URL` no módulo `ktv-os/iptv_free_catalog.py`.  
-**Snapshot atual:** 975 canais únicos em 53 categorias.  
+**Snapshot atual:** 1.834 variantes de canais em 53 categorias.  
 **Formato:** `ktv-iptv-metadata-v2`.
 
 ## O que é importado
@@ -13,7 +13,7 @@ O parser lê somente os campos de cada linha `#EXTINF`:
 - `group-title`, normalizado como categoria.
 - Categorias adicionais quando um mesmo canal aparece em mais de um grupo.
 
-Os sufixos técnicos `[M3U8]` e `[TS]` são removidos do nome e da categoria. Registros repetidos com o mesmo `tvg-id` são agrupados para evitar duplicatas.
+Os sufixos técnicos `[M3U8]` e `[TS]` são removidos do nome e da categoria. Registros com o mesmo `tvg-id` e nome normalizado são agrupados para remover duplicatas de transporte, preservando variantes distintas do mesmo canal (por exemplo, versões de qualidade ou distribuição diferentes).
 
 ## O que é descartado
 
