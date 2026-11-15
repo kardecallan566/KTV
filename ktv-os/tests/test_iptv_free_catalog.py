@@ -3,13 +3,14 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from iptv_free_catalog import (
     IPTVFreeCatalogError, load_catalog, parse_m3u_metadata, iptv_free_channel,
-    validated_catalog,
+    validated_catalog, refresh_catalog, SOURCE_URL,
 )
 
 
@@ -38,6 +39,27 @@ https://example.invalid/live.ts
         self.assertNotIn("url", item)
         self.assertNotIn("logo", item)
         self.assertNotIn("secret", json.dumps(item))
+
+    def test_refresh_saves_only_metadata_to_the_supplied_state_path(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+            def geturl(self):
+                return SOURCE_URL
+            def read(self, limit):
+                return b'#EXTM3U\\n#EXTINF:-1 tvg-id="demo.br" group-title="Teste",Canal Demo\\nhttps://user:secret@example.invalid/live.m3u8\\n'
+
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp) / "state" / "iptv_free_catalog.json"
+            with mock.patch("iptv_free_catalog.urlopen", return_value=FakeResponse()):
+                channels = refresh_catalog(target, SOURCE_URL)
+            self.assertEqual(channels[0]["name"], "Canal Demo")
+            stored = target.read_text(encoding="utf-8")
+            self.assertNotIn("example.invalid", stored)
+            self.assertNotIn("secret", stored)
+            self.assertNotIn('"url"', stored)
 
     def test_catalog_rejects_legacy_stream_schema(self):
         with tempfile.TemporaryDirectory() as temp:
