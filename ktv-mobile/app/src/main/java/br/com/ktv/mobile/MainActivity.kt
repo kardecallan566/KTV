@@ -75,10 +75,17 @@ private val TextMuted = Color(0xFF9CA3AF)
 private object KtvDiagnostics {
  private const val TAG = "KTVPlayer"
  private val entries = ArrayDeque<String>()
+ private var prefs: android.content.SharedPreferences? = null
+ @Synchronized fun init(context: Context) {
+  prefs = context.getSharedPreferences("ktv_diagnostics", Context.MODE_PRIVATE)
+  entries.clear()
+  prefs?.getString("events", "")?.lineSequence()?.filter { it.isNotBlank() }?.takeLast(250)?.forEach { entries.addLast(it) }
+ }
  @Synchronized fun add(message: String, error: Throwable? = null) {
   val line = "${System.currentTimeMillis()} | $message" + (error?.let { " | ${it.javaClass.simpleName}: ${it.message}" } ?: "")
   entries.addLast(line)
   while (entries.size > 250) entries.removeFirst()
+  prefs?.edit()?.putString("events", entries.joinToString("\\n"))?.apply()
   if (error != null) Log.e(TAG, message, error) else Log.i(TAG, message)
  }
  @Synchronized fun report(): String = buildString {
@@ -102,6 +109,7 @@ private fun shareDiagnostics(context: Context) {
 class MainActivity : FragmentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) {
   super.onCreate(savedInstanceState)
+  KtvDiagnostics.init(applicationContext)
   setContent { KtvMobileApp() }
  }
 }
@@ -415,7 +423,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
   onDispose { DLNACast.cleanup() }
  }
 
- LaunchedEffect(channel.streamUrl) { KtvDiagnostics.add("Abrindo canal '${channel.name}' | URL=${channel.streamUrl}") }
+ LaunchedEffect(channel.streamUrl) { KtvDiagnostics.add("Abrindo canal '${channel.name}' | URL=${channel.streamUrl.substringBefore("?") + if (channel.streamUrl.contains("?")) "?[parâmetros ocultados]" else ""}") }
  val mediaItem = remember(channel.streamUrl, channel.name, channel.category, channel.logo) {
   val metadata = MediaMetadata.Builder()
    .setTitle(channel.name)
