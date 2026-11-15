@@ -84,11 +84,10 @@ class NativePlayerTests(unittest.TestCase):
         calls = []
         player = m.NativePlayer(executable='mpv',
                                popen=lambda argv, **kw: (calls.append(argv) or MockProcess()))
-        with tempfile.TemporaryDirectory() as dirname, mock.patch.object(m.os, 'name', 'nt'), \\
-             mock.patch.dict(m.os.environ, {'LOCALAPPDATA': dirname}):
+        with tempfile.TemporaryDirectory() as dirname, mock.patch.object(m.os, 'name', 'nt'), mock.patch.dict(m.os.environ, {'LOCALAPPDATA': dirname}):
             player.play('https://example.com/live.m3u8', 'Canal')
             Path(player.log_path).write_text(
-                '[ffmpeg] HTTP error 403 https://example.com/live.m3u8?token=secret\\n',
+                '[ffmpeg] HTTP error 403 https://example.com/live.m3u8?token=secret\n',
                 encoding='utf-8')
             status = player.status()
             self.assertEqual(status['log_file'], str(Path(dirname) / 'KTV' / 'logs' / 'mpv.log'))
