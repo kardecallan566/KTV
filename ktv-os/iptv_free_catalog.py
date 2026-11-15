@@ -74,7 +74,7 @@ def _validate_source_url(source_url):
     try:
         parts = urlsplit(source_url)
         if (parts.scheme != "https" or parts.hostname != "raw.githubusercontent.com"
-                or parts.port not in (None, 443) or parts.username or parts.password):
+                or parts.port not in (None, 443) or parts.username or parts.password or parts.query or parts.fragment):
             raise ValueError
     except (TypeError, ValueError):
         raise IPTVFreeCatalogError("A fonte deve ser HTTPS no raw.githubusercontent.com")
