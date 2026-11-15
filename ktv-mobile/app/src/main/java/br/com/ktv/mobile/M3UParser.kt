@@ -29,7 +29,7 @@ object M3UParser {
         return result.distinctBy { it.streamUrl }
     }
     private fun attribute(source: String, key: String): String? {
-        val regex = Regex("(?:^|\\\\s)${Regex.escape(key)}=\\\"([^\\\"]*)\\\"", RegexOption.IGNORE_CASE)
+        val regex = Regex("""(?:^|\\s)${Regex.escape(key)}="([^"]*)"""", RegexOption.IGNORE_CASE)
         return regex.find(source)?.groupValues?.getOrNull(1)
     }
 }
