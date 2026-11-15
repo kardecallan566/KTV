@@ -382,10 +382,11 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 # Refresh on every app launch / catalogue load so playlist edits
                 # are picked up automatically. On network failure, keep the last
                 # successfully downloaded local catalogue.
+                refresh_failed = False
                 try:
                     channels = refresh_iptv_free_catalog(catalog_path)
                 except IPTVFreeCatalogError:
-                    pass
+                    refresh_failed = True
                 public_items = [{'id': item['id'], 'name': item['name'],
                                  'category': item['category'], 'categories': item['categories'],
                                  'tvg_id': item['tvg_id'], 'logo': item.get('logo'),
@@ -396,7 +397,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'enabled': True, 'channels': public_items,
                                        'source': 'GitHub M3U', 'playback_enabled': playable > 0,
                                        'playable_count': playable,
-                                       'warning': '' if playable else 'Playlist ainda nao atualizada; mantendo o catalogo local ate a conexao voltar.'})
+                                       'warning': ('Nao foi possivel atualizar agora; exibindo a ultima playlist salva.' if refresh_failed and playable
+                                                   else ('' if playable else 'Playlist ainda nao atualizada; mantendo o catalogo local ate a conexao voltar.'))})
             except IPTVFreeCatalogError as exc:
                 return self.send_json({'error': str(exc)}, 503)
         if path == '/api/public-channels':
