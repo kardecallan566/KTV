@@ -70,15 +70,36 @@ class PlayerWatchdog:
         now = self.clock()
         with self.lock:
             if not info.get("playing"):
+                exit_code = info.get("exit_code")
+                unexpected_exit = (
+                    self.session is not None and self.recover is not None
+                    and type(exit_code) is int and exit_code != 77
+                )
                 self.started = 0
                 self.last_pos = self.last_audio_pts = None
+                self.trend.reset()
+                self.metrics = {}
+                if unexpected_exit:
+                    if self.recovery_attempts < MAX_RECOVERY_ATTEMPTS:
+                        self.state = "recovering"
+                        self.message = "O player encerrou inesperadamente; tentando reabrir a transmissão."
+                        if (not self.recovery_in_progress
+                                and now - self.last_recovery >= RECOVERY_COOLDOWN):
+                            self.recovery_in_progress = True
+                            if self.thread is None:
+                                self._recover_session()
+                            else:
+                                threading.Thread(target=self._recover_session, daemon=True,
+                                                 name="ktv-watchdog-exit-recovery").start()
+                    else:
+                        self.state = "stalled"
+                        self.message = "A transmissão encerrou e atingiu o limite de três reconexões."
+                    return self.status_unlocked()
                 self.state = "idle"
                 self.message = "Nenhuma reprodução nativa ativa."
                 self.session = None
                 self.recovery_attempts = 0
                 self.recovery_in_progress = False
-                self.trend.reset()
-                self.metrics = {}
                 return self.status_unlocked()
             video = info.get("video")
             if not isinstance(video, dict):
@@ -180,6 +201,12 @@ class PlayerWatchdog:
             except Exception:
                 self.message = "Falha ao tentar recuperação automática."
             finally:
+                if not result and self.session:
+                    self.state = "stalled"
+                    if self.recovery_attempts >= MAX_RECOVERY_ATTEMPTS:
+                        self.message = "A transmissão não voltou após três tentativas de reconexão."
+                    else:
+                        self.message = "A reconexão falhou; o KTV tentará novamente se o player continuar encerrado."
                 self.recovery_in_progress = False
 
     def status_unlocked(self):
