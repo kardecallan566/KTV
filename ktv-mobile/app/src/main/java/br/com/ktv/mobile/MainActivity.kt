@@ -81,7 +81,7 @@ private object KtvDiagnostics {
  @Synchronized fun init(context: Context) {
   prefs = context.getSharedPreferences("ktv_diagnostics", Context.MODE_PRIVATE)
   entries.clear()
-  prefs?.getString("events", "")?.lineSequence().filter { it.isNotBlank() }.toList().takeLast(250).forEach { entries.addLast(it) }
+  prefs?.getString("events", "").orEmpty().lineSequence().filter { it.isNotBlank() }.toList().takeLast(250).forEach { entries.addLast(it) }
  }
  @Synchronized fun add(message: String, error: Throwable? = null) {
   val line = "${System.currentTimeMillis()} | $message" + (error?.let { " | ${it.javaClass.simpleName}: ${it.message}" } ?: "")
