@@ -32,6 +32,34 @@ VIDEO_PROPERTIES = (
 )
 
 
+def classify_playback_error(diagnostic):
+    """Map MPV/libavformat log text to a safe, user-facing failure category."""
+    if not isinstance(diagnostic, str) or not diagnostic:
+        return ('unknown', 'Não foi possível identificar a causa. Consulte o log do MPV.')
+    value = diagnostic.lower()
+    if any(term in value for term in (
+            'could not resolve hostname', 'name or service not known',
+            'temporary failure in name resolution', 'getaddrinfo failed',
+            'no address associated with hostname', 'nodename nor servname',
+            'failed to resolve')):
+        return ('dns', 'Falha de DNS: o endereço da transmissão não foi encontrado. Verifique a conexão e a disponibilidade da fonte.')
+    if any(term in value for term in ('http error 401', 'http error 403', 'forbidden', 'unauthorized')):
+        return ('http_auth', 'A fonte recusou a solicitação (HTTP 401/403). Verifique se a transmissão é autorizada e se o acesso ainda está válido.')
+    if any(term in value for term in ('http error 404', 'not found')):
+        return ('http_not_found', 'A transmissão não foi encontrada (HTTP 404). A emissora pode ter alterado ou removido o endereço.')
+    if any(term in value for term in ('http error 5', 'server returned 5', 'bad gateway', 'service unavailable', 'gateway timeout')):
+        return ('http_server', 'O servidor da transmissão apresentou uma falha (HTTP 5xx). Tente novamente mais tarde.')
+    if any(term in value for term in ('tls', 'ssl', 'certificate', 'handshake failure', 'wrong version number')):
+        return ('tls', 'Falha na conexão segura (TLS/SSL). Verifique a data do dispositivo e a disponibilidade do servidor.')
+    if any(term in value for term in ('decoder', 'failed to initialize video', 'failed to initialize audio',
+                                      'unsupported codec', 'could not find codec')):
+        return ('decode', 'O vídeo ou áudio não pôde ser decodificado. Tente o modo compatível ou outra qualidade.')
+    if any(term in value for term in ('timed out', 'timeout', 'connection refused', 'network is unreachable',
+                                      'connection reset', 'failed to connect')):
+        return ('network', 'Falha de conexão ou tempo esgotado. Verifique a rede e tente novamente.')
+    return ('unknown', 'Falha ao abrir a transmissão. Consulte o diagnóstico e o log do MPV.')
+
+
 def _number(value, maximum):
     """Clamp unreliable player metadata without inventing values."""
     if type(value) not in (int, float) or not math.isfinite(value):
@@ -217,6 +245,10 @@ class NativePlayer:
                 # Windows has no AF_UNIX IPC socket in this build. Expose a
                 # credential-redacted log summary and local log location.
                 'diagnostic': self._read_log_error() if playing else self.last_error,
+                'error_category': classify_playback_error(
+                    self._read_log_error() if playing else self.last_error)[0],
+                'error_message': classify_playback_error(
+                    self._read_log_error() if playing else self.last_error)[1],
                 'log_file': self.log_path,
                 'video': self._read_video_state() if playing else None,
             }
