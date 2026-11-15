@@ -5,9 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.util.Log
-import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.util.Log
 import android.os.Bundle
 import android.net.Uri
 import androidx.fragment.app.FragmentActivity
@@ -79,7 +76,7 @@ private object KtvDiagnostics {
  private const val TAG = "KTVPlayer"
  private val entries = ArrayDeque<String>()
  @Synchronized fun add(message: String, error: Throwable? = null) {
-  val line = "${java.time.Instant.now()} | $message" + (error?.let { " | ${it.javaClass.simpleName}: ${it.message}" } ?: "")
+  val line = "${System.currentTimeMillis()} | $message" + (error?.let { " | ${it.javaClass.simpleName}: ${it.message}" } ?: "")
   entries.addLast(line)
   while (entries.size > 250) entries.removeFirst()
   if (error != null) Log.e(TAG, message, error) else Log.i(TAG, message)
@@ -499,9 +496,15 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
       KtvDiagnostics.add("playWhenReady '${channel.name}'=$playWhenReady reason=$reason")
      }
     })
-    setMediaItem(mediaItem)
-    prepare()
-    playWhenReady = true
+    runCatching {
+     setMediaItem(mediaItem)
+     prepare()
+     playWhenReady = true
+    }.onFailure {
+     KtvDiagnostics.add("Exceção ao preparar canal '${channel.name}' URL=${channel.streamUrl}", it)
+     playerError = "Erro ao abrir este canal. Compartilhe os logs para análise."
+     isBuffering = false
+    }
    }
  }
 
