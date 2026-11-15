@@ -1,5 +1,6 @@
 package br.com.ktv.mobile
 
+import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
@@ -20,6 +21,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.viewinterop.AndroidView
@@ -31,6 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.activity.compose.BackHandler
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
@@ -81,7 +87,8 @@ fun KtvMobileApp() {
  var selectedCategory by remember { mutableStateOf("Todos") }
  var playlistUrls by remember { mutableStateOf(prefs.getString(KEY_PLAYLISTS, DEFAULT_PLAYLIST) ?: DEFAULT_PLAYLIST) }
  var favorites by remember { mutableStateOf(prefs.getStringSet(KEY_FAVORITES, emptySet())?.toSet() ?: emptySet()) }
- var castMessage by remember { mutableStateOf("Use o ícone de transmissão para localizar TVs compatíveis na mesma rede Wi-Fi.") }
+ var castMessage by remember { mutableStateOf("Toque no ícone de transmissão para procurar dispositivos na mesma rede Wi-Fi.") }
+ var isPlayerFullscreen by remember { mutableStateOf(false) }
  val scope = rememberCoroutineScope()
 
  suspend fun loadPlaylist() {
@@ -119,14 +126,14 @@ fun KtvMobileApp() {
 
  MaterialTheme(colorScheme = darkColorScheme(primary = Accent, background = Background, surface = SurfaceDark)) {
   Scaffold(containerColor = Background, bottomBar = {
-   NavigationBar(containerColor = Color(0xFF0D1220), tonalElevation = 0.dp) {
+   if (!isPlayerFullscreen) NavigationBar(containerColor = Color(0xFF0D1220), tonalElevation = 0.dp) {
     NavigationBarItem(selectedTab == 0, { selectedTab = 0; selectedChannel = null }, icon = { Icon(Icons.Default.LiveTv, null) }, label = { Text("Início") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, indicatorColor = Accent.copy(alpha = 0.32f), selectedTextColor = Color.White, unselectedIconColor = TextMuted, unselectedTextColor = TextMuted))
     NavigationBarItem(selectedTab == 1, { selectedTab = 1; selectedChannel = null }, icon = { Icon(Icons.Default.Favorite, null) }, label = { Text("Favoritos") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, indicatorColor = Accent.copy(alpha = 0.32f), selectedTextColor = Color.White, unselectedIconColor = TextMuted, unselectedTextColor = TextMuted))
     NavigationBarItem(selectedTab == 2, { selectedTab = 2; selectedChannel = null }, icon = { Icon(Icons.Default.Settings, null) }, label = { Text("Ajustes") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, indicatorColor = Accent.copy(alpha = 0.32f), selectedTextColor = Color.White, unselectedIconColor = TextMuted, unselectedTextColor = TextMuted))
    }
   }) { padding ->
-   Column(Modifier.fillMaxSize().padding(padding).background(Brush.verticalGradient(listOf(Color(0xFF17172F), Color(0xFF0B1020), Background))).padding(horizontal = 18.dp)) {
-    Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+   Column(Modifier.fillMaxSize().padding(padding).background(Brush.verticalGradient(listOf(Color(0xFF17172F), Color(0xFF0B1020), Background))).then(if (isPlayerFullscreen) Modifier else Modifier.padding(horizontal = 18.dp))) {
+    if (!isPlayerFullscreen) Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
      Column(Modifier.weight(1f)) {
       Text("KTV", fontSize = 32.sp, fontWeight = FontWeight.Black, color = Color.White, letterSpacing = (-1).sp)
       Text("SUA CENTRAL DE ENTRETENIMENTO", fontSize = 9.sp, color = TextMuted, letterSpacing = 1.5.sp)
@@ -139,9 +146,10 @@ fun KtvMobileApp() {
       }
      }
      Spacer(Modifier.width(8.dp))
+     CastRouteButton()
     }
     when {
-     selectedChannel != null && selectedTab == 0 -> PlayerScreen(selectedChannel!!, { selectedChannel = null })
+     selectedChannel != null && selectedTab == 0 -> PlayerScreen(selectedChannel!!, isPlayerFullscreen, { isPlayerFullscreen = it }, { selectedChannel = null })
      selectedTab == 0 -> HomeScreen(query, { query = it }, channels, loading, playlistError, selectedCategory, { selectedCategory = it }, { scope.launch { loadPlaylist() } }, favorites, { toggleFavorite(it, favorites, prefs) { favorites = it } }, { selectedChannel = it })
      selectedTab == 1 -> FavoritesScreen(channels.filter { it.streamUrl in favorites }, { selectedTab = 0; selectedChannel = it }, { toggleFavorite(it, favorites, prefs) { favorites = it } })
      else -> SettingsScreen(playlistUrls, { playlistUrls = it }, {
@@ -170,7 +178,7 @@ private fun CastRouteButton() {
      MediaRouteButtonFactory.setUpMediaRouteButton(themedContext, this)
      contentDescription = "Transmitir para dispositivo"
     }
-   } catch (error: RuntimeException) {
+   } catch (error: Exception) {
     // A ausência/falha do Google Cast não pode impedir a abertura do KTV.
     android.widget.TextView(ctx).apply {
      text = "TV"
@@ -317,7 +325,7 @@ private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave:
   Surface(color = SurfaceDark, shape = RoundedCornerShape(18.dp)) {
    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Cast, null, tint = Accent); Spacer(Modifier.width(8.dp)); Text("Transmissão pela rede Wi-Fi", color = Color.White, fontWeight = FontWeight.SemiBold) }
-    Text("Use o botão de transmissão no topo para procurar Chromecast, Google TV e outros receptores compatíveis com Google Cast na mesma rede Wi-Fi.", color = TextMuted, fontSize = 13.sp)
+    Text("Toque no ícone de transmissão no topo do aplicativo para procurar Chromecast, Google TV e receptores compatíveis com Google Cast na mesma rede Wi-Fi.", color = TextMuted, fontSize = 13.sp)
     Text(castMessage, color = TextMuted, fontSize = 12.sp)
     CastRouteButton()
    }
@@ -328,8 +336,16 @@ private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave:
 
 @OptIn(UnstableApi::class)
 @Composable
-private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
+private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreenChange: (Boolean) -> Unit, onBack: () -> Unit) {
  val context = LocalContext.current
+ val activity = context as? Activity
+ BackHandler(enabled = isFullscreen) { onFullscreenChange(false) }
+ DisposableEffect(activity, isFullscreen) {
+  val window = activity?.window
+  val controller = window?.let { WindowInsetsControllerCompat(it, it.decorView) }
+  if (isFullscreen) controller?.hide(WindowInsetsCompat.Type.systemBars()) else controller?.show(WindowInsetsCompat.Type.systemBars())
+  onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+ }
  val appContext = context.applicationContext
  var playerError by remember(channel.streamUrl) { mutableStateOf<String?>(null) }
  var isBuffering by remember(channel.streamUrl) { mutableStateOf(true) }
@@ -396,7 +412,27 @@ private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
   }
  }
 
- Column(Modifier.fillMaxSize().background(Background).padding(bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+ if (isFullscreen) {
+  Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+   AndroidView(
+    factory = { ctx -> PlayerView(ctx).apply {
+     this.player = playbackPlayer
+     useController = true
+     setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+     keepScreenOn = true
+    } },
+    update = { it.player = playbackPlayer },
+    modifier = Modifier.fillMaxSize()
+   )
+   if (isBuffering && playerError == null) CircularProgressIndicator(color = Accent, modifier = Modifier.size(38.dp), strokeWidth = 3.dp)
+   IconButton(onClick = { onFullscreenChange(false) }, modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color(0x99000000), RoundedCornerShape(14.dp))) {
+    Icon(Icons.Default.FullscreenExit, "Sair da tela cheia", tint = Color.White)
+   }
+   if (playerError != null) Surface(color = Color(0xEE351B27), shape = RoundedCornerShape(14.dp), modifier = Modifier.align(Alignment.BottomCenter).padding(18.dp)) {
+    Text(playerError!!, color = Color.White, fontSize = 12.sp, modifier = Modifier.padding(12.dp))
+   }
+  }
+ } else Column(Modifier.fillMaxSize().background(Background).padding(bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
    Text("‹  Voltar aos canais", color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).clickable { onBack() }.padding(vertical = 12.dp))
    Surface(color = Color(0xFF1C2340), shape = RoundedCornerShape(12.dp)) {
@@ -424,8 +460,9 @@ private fun PlayerScreen(channel: TvChannel, onBack: () -> Unit) {
      update = { it.player = playbackPlayer },
      modifier = Modifier.fillMaxSize()
     )
-    if (isBuffering && playerError == null) {
-     CircularProgressIndicator(color = Accent, modifier = Modifier.size(34.dp), strokeWidth = 3.dp)
+    if (isBuffering && playerError == null) CircularProgressIndicator(color = Accent, modifier = Modifier.size(34.dp), strokeWidth = 3.dp)
+    IconButton(onClick = { onFullscreenChange(true) }, modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp).background(Color(0x99000000), RoundedCornerShape(12.dp))) {
+     Icon(Icons.Default.Fullscreen, "Assistir em tela cheia", tint = Color.White)
     }
    }
   }
