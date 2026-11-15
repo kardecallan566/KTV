@@ -6,7 +6,7 @@ plugins {
 android {
  namespace = "br.com.ktv.mobile"
  compileSdk = 35
- defaultConfig { applicationId = "br.com.ktv.mobile"; minSdk = 23; targetSdk = 35; versionCode = 5; versionName = "0.4.2" }
+ defaultConfig { applicationId = "br.com.ktv.mobile"; minSdk = 24; targetSdk = 35; versionCode = 6; versionName = "0.5.0" }
  buildFeatures { compose = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
@@ -25,6 +25,7 @@ dependencies {
  implementation("androidx.media3:media3-exoplayer-rtsp:1.9.0")
  implementation("androidx.media3:media3-ui:1.9.0")
  implementation("androidx.media3:media3-cast:1.9.0")
+ implementation("com.github.yinnho:UPnPCast:v1.3.0")
  implementation("io.coil-kt:coil-compose:2.7.0")
  debugImplementation("androidx.compose.ui:ui-tooling")
 }
