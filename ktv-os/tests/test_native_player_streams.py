@@ -35,10 +35,26 @@ class NativePlayerStreamTests(unittest.TestCase):
         self.assertIn("--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=10", args)
         self.assertIn("--demuxer-max-bytes=64MiB", args)
         self.assertIn("--demuxer-max-back-bytes=16MiB", args)
-        self.assertIn("--cache-secs=40", args)
-        self.assertIn("--demuxer-readahead-secs=32", args)
+        self.assertIn("--cache-secs=60", args)
+        self.assertIn("--demuxer-readahead-secs=45", args)
         self.assertFalse(any(arg.startswith("--hls-bitrate=") for arg in args))
         self.assertFalse(any("reconnect_at_eof" in arg for arg in args))
+
+    def test_every_session_marks_manual_close_and_uses_private_input_config(self):
+        player = NativePlayer(executable="/usr/bin/mpv", popen=lambda *args, **kwargs: FakeProcess())
+        try:
+            args = []
+            player.popen = lambda argv, **kwargs: (args.extend(argv) or FakeProcess())
+            player.play("https://cdn.example.org/live/channel.m3u8", "Canal teste")
+            config_arg = next(arg for arg in args if arg.startswith("--input-conf="))
+            config_path = config_arg.split("=", 1)[1]
+            self.assertTrue(Path(config_path).is_file())
+            self.assertIn("q quit 77", Path(config_path).read_text(encoding="ascii"))
+            self.assertIn("CLOSE_WIN quit 77", Path(config_path).read_text(encoding="ascii"))
+        finally:
+            config_path = player.ipc_dir
+            player.stop()
+            self.assertFalse(Path(config_path).exists())
 
     def test_audio_delay_rejects_out_of_range_values(self):
         player = NativePlayer(executable="/usr/bin/mpv", popen=lambda *args, **kwargs: FakeProcess())
@@ -57,8 +73,8 @@ class NativePlayerStreamTests(unittest.TestCase):
         self.assertIn("--hls-bitrate=4000000", args)
         self.assertIn("--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=10,reconnect_at_eof=1", args)
         self.assertIn("--demuxer-max-bytes=32MiB", args)
-        self.assertIn("--cache-secs=30", args)
-        self.assertIn("--demuxer-readahead-secs=25", args)
+        self.assertIn("--cache-secs=45", args)
+        self.assertIn("--demuxer-readahead-secs=35", args)
 
 
 if __name__ == "__main__":
