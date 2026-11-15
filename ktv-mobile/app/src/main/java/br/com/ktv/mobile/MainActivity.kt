@@ -588,6 +588,9 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
     modifier = Modifier.fillMaxSize()
    )
    if (isBuffering && playerError == null) CircularProgressIndicator(color = Accent, modifier = Modifier.size(38.dp), strokeWidth = 3.dp)
+   Box(Modifier.align(Alignment.TopStart).padding(12.dp)) {
+    CastRouteButton()
+   }
    IconButton(onClick = { onFullscreenChange(false) }, modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color(0x99000000), RoundedCornerShape(14.dp))) {
     Icon(Icons.Default.FullscreenExit, "Sair da tela cheia", tint = Color.White)
    }
