@@ -72,17 +72,21 @@ class KTVOSSmokeTests(unittest.TestCase):
         self.assertEqual(len(content['channels']), 1)
         self.assertEqual(content['channels'][0]['name'], 'Canal proprio')
 
-    def test_external_iptv_catalog_is_metadata_only_and_separate(self):
+    def test_external_iptv_catalog_is_windows_only_and_separate(self):
         _, raw, _ = self.fetch('/api/iptv-free/channels')
         catalog = json.loads(raw)
-        self.assertGreater(len(catalog['channels']), 900)
-        self.assertFalse(catalog['playback_enabled'])
-        self.assertNotIn('url', catalog['channels'][0])
-        self.assertNotIn('logo', catalog['channels'][0])
-        self.assertFalse(catalog['channels'][0]['playable'])
+        if m.sys.platform != 'win32':
+            self.assertFalse(catalog['enabled'])
+            self.assertEqual(catalog['channels'], [])
+        else:
+            self.assertTrue(catalog['enabled'])
+            self.assertGreater(len(catalog['channels']), 900)
+            self.assertFalse(catalog['playback_enabled'])
+            self.assertNotIn('url', catalog['channels'][0])
+            self.assertNotIn('logo', catalog['channels'][0])
+            self.assertFalse(catalog['channels'][0]['playable'])
         _, personal_raw, _ = self.fetch('/api/channels')
         self.assertEqual(json.loads(personal_raw)['channels'], [])
-
     def test_usb_devices_are_metadata_only(self):
         _, raw, _ = self.fetch('/api/devices')
         self.assertIsInstance(json.loads(raw)['devices'], list)
