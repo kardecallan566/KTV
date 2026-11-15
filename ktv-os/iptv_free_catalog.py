@@ -8,6 +8,7 @@ import json
 import os
 import re
 import tempfile
+import unicodedata
 from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
@@ -31,7 +32,8 @@ def _clean_label(value):
 
 
 def _channel_id(key):
-    slug = re.sub(r"[^a-z0-9]+", "-", key.lower()).strip("-")[:48] or "canal"
+    normalized = "".join(ch for ch in unicodedata.normalize("NFKD", key.lower()) if not unicodedata.combining(ch))
+    slug = re.sub(r"[^a-z0-9]+", "-", normalized).strip("-")[:48] or "canal"
     value = 2166136261
     for byte in key.encode("utf-8"):
         value = ((value ^ byte) * 16777619) & 0xffffffff
@@ -53,7 +55,7 @@ def parse_m3u_metadata(content):
             continue
         category = _clean_label(attrs.get("group-title", "Outros")) or "Outros"
         tvg_id = attrs.get("tvg-id", "").strip()
-        key = tvg_id.casefold() if tvg_id else name.casefold()
+        key = tvg_id.lower() if tvg_id else name.lower()
         item = channels.get(key)
         if item is None:
             item = {"id": _channel_id(key), "name": name[:100], "category": category[:60],
