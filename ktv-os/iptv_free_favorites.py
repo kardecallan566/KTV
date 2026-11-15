@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-MAX_FAVORITES = 155
+MAX_FAVORITES = 2000
 ID_RE = __import__("re").compile(r"^[a-z0-9][a-z0-9_-]{0,79}$")
 
 
