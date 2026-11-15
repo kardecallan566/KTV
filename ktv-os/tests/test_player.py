@@ -96,6 +96,36 @@ class NativePlayerTests(unittest.TestCase):
             self.assertNotIn('example.com', status['diagnostic'])
             player.stop()
 
+    def test_playback_error_classification(self):
+        cases = (
+            ('[curl] error: Could not resolve hostname', 'dns'),
+            ('[ffmpeg] HTTP error 403 Forbidden', 'http_auth'),
+            ('[ffmpeg] HTTP error 404 Not Found', 'http_not_found'),
+            ('[ffmpeg] HTTP error 503 Service Unavailable', 'http_server'),
+            ('TLS certificate verification failed', 'tls'),
+            ('Video decoder failed to initialize', 'decode'),
+            ('Connection timed out', 'network'),
+        )
+        for diagnostic, expected in cases:
+            with self.subTest(diagnostic=diagnostic):
+                category, message = m.classify_playback_error(diagnostic)
+                self.assertEqual(category, expected)
+                self.assertTrue(message)
+        self.assertEqual(m.classify_playback_error(None)[0], 'unknown')
+
+    def test_status_exposes_dns_category_and_safe_message(self):
+        player = m.NativePlayer(executable='mpv',
+                               popen=lambda argv, **kw: MockProcess())
+        with tempfile.TemporaryDirectory() as dirname, mock.patch.object(m.os, 'name', 'nt'), mock.patch.dict(m.os.environ, {'LOCALAPPDATA': dirname}):
+            player.play('https://example.com/live.m3u8', 'Canal')
+            with open(player.log_path, 'w', encoding='utf-8') as log:
+                log.write('[curl] error: Could not resolve hostname https://example.com/live.m3u8?token=secret\\n')
+            status = player.status()
+            self.assertEqual(status['error_category'], 'dns')
+            self.assertIn('Falha de DNS', status['error_message'])
+            self.assertNotIn('secret', status['diagnostic'])
+            player.stop()
+
     def test_catalog_headers_reject_invalid_values(self):
         player = m.NativePlayer(executable='/usr/bin/mpv', popen=lambda *a, **kw: MockProcess())
         with self.assertRaises(ValueError):
