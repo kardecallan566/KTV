@@ -34,7 +34,7 @@ from hardware import HardwareManager, HardwareError
 from cec_bridge import CECBridge, CECError
 from network import NetworkManager, NetworkError
 from public_channels import validated_catalog, public_channel
-from iptv_free_catalog import validated_catalog as validated_iptv_free_catalog, iptv_free_channel
+from iptv_free_catalog import (validated_catalog as validated_iptv_free_catalog,\n                               iptv_free_channel, refresh_catalog as refresh_iptv_free_catalog)
 from iptv_free_catalog import IPTVFreeCatalogError
 from iptv_free_favorites import IPTVFreeFavorites, IPTVFreeFavoritesError
 from pluto_catalog import PlutoCatalog, PlutoError
@@ -375,11 +375,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             try:
                 channels = validated_iptv_free_catalog()
                 public_items = [{'id': item['id'], 'name': item['name'],
-                                 'category': item['category'], 'logo': item['logo']}
+                                 'category': item['category'], 'categories': item['categories'],
+                                 'tvg_id': item['tvg_id'], 'playable': False}
                                 for item in channels]
                 return self.send_json({'channels': public_items,
-                                       'source': 'Kaiollio-cpu/iptv_free (snapshot)',
-                                       'warning': 'Fonte externa; direitos e disponibilidade nao verificados.'})
+                                       'source': 'M3U metadata-only catalog',
+                                       'playback_enabled': False,
+                                       'warning': 'Somente nomes e categorias foram importados. URLs de transmissao e logos foram descartados.'})
             except IPTVFreeCatalogError as exc:
                 return self.send_json({'error': str(exc)}, 503)
         if path == '/api/public-channels':
@@ -447,7 +449,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if not self._guard_lan_request(path, 'POST'):
             return
-        if path not in ('/api/tv/antenna/scan', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/iptv-free/favorites/toggle', '/api/player/play', '/api/player/stop', '/api/player/audio-delay', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
+        if path not in ('/api/tv/antenna/scan', '/api/input/virtual-toggle', '/api/browser/home', '/api/browser/search', '/api/channels/import-m3u', '/api/pluto/favorites/toggle', '/api/iptv-free/favorites/toggle', '/api/iptv-free/refresh', '/api/player/play', '/api/player/stop', '/api/player/audio-delay', '/api/channels/change', '/api/channels/usb-backup', '/api/channels/usb-restore', '/api/persistence/enable', '/api/persistence/disable',
                         '/api/hardware/video/preview', '/api/hardware/video/confirm',
                         '/api/hardware/video/cancel', '/api/hardware/video/layout-preview', '/api/hardware/audio/output',
                         '/api/hardware/audio/volume', '/api/hardware/audio/mute',
@@ -629,6 +631,16 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             except (ChannelError, OSError) as exc:
                 return self.send_json({'error': str(exc)}, 400)
 
+        if path == '/api/iptv-free/refresh':
+            if sys.platform != 'win32':
+                return self.send_json({'error': 'Atualizacao da Playlist externa esta habilitada somente no KTV Windows.'}, 403)
+            try:
+                channels = refresh_iptv_free_catalog()
+                return self.send_json({'ok': True, 'count': len(channels),
+                                       'message': 'Metadados atualizados; URLs de transmissao foram descartadas.'})
+            except IPTVFreeCatalogError as exc:
+                return self.send_json({'error': str(exc)}, 502)
+
         if path == '/api/iptv-free/favorites/toggle':
             try:
                 ident = payload.get('id')
@@ -678,8 +690,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 entry = iptv_free_channel(payload.get('id'))
                 if entry is None:
                     raise ValueError('Canal da playlist externa nao reconhecido')
-                source, title = entry['url'], entry['name']
-                user_agent, referrer = entry['user_agent'], entry['referrer']
+                raise ValueError('Canal cadastrado apenas como metadado. Configure uma fonte de reproducao autorizada para habilitar o player.')
             elif kind == 'public':
                 entry = public_channel(payload.get('id'))
                 if entry is None:
