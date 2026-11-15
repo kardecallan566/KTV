@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.util.Log
 import android.os.Bundle
+import android.os.SystemClock
 import android.net.Uri
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
@@ -48,6 +49,7 @@ import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.MediaRouteButtonFactory
@@ -79,7 +81,7 @@ private object KtvDiagnostics {
  @Synchronized fun init(context: Context) {
   prefs = context.getSharedPreferences("ktv_diagnostics", Context.MODE_PRIVATE)
   entries.clear()
-  prefs?.getString("events", "")?.lineSequence()?.filter { it.isNotBlank() }?.takeLast(250)?.forEach { entries.addLast(it) }
+  prefs?.getString("events", "")?.lineSequence().filter { it.isNotBlank() }.toList().takeLast(250).forEach { entries.addLast(it) }
  }
  @Synchronized fun add(message: String, error: Throwable? = null) {
   val line = "${System.currentTimeMillis()} | $message" + (error?.let { " | ${it.javaClass.simpleName}: ${it.message}" } ?: "")
@@ -99,7 +101,6 @@ private object KtvDiagnostics {
 private fun shareDiagnostics(context: Context) {
  val intent = Intent(Intent.ACTION_SEND).apply {
   type = "text/plain"
-  putExtra(Intent.EXTRA_SUBJECT, "KTV Mobile - relatório de diagnóstico")
   putExtra(Intent.EXTRA_TEXT, KtvDiagnostics.report())
  }
  runCatching { context.startActivity(Intent.createChooser(intent, "Enviar logs do KTV")) }
@@ -382,8 +383,8 @@ private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave:
   Surface(color = Color(0xFF251B32), shape = RoundedCornerShape(16.dp)) {
    Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     Text("Diagnóstico e suporte", color = Color.White, fontWeight = FontWeight.Bold)
-    Text("Se o player travar ou o app fechar, compartilhe os registros recentes para análise.", color = TextMuted, fontSize = 12.sp)
-    Button(onClick = onShareLogs, modifier = Modifier.fillMaxWidth()) { Text("Compartilhar logs do KTV") }
+    Text("Envie somente o texto do relatório de diagnóstico para análise.", color = TextMuted, fontSize = 12.sp)
+    Button(onClick = onShareLogs, modifier = Modifier.fillMaxWidth()) { Text("Compartilhar relatório em texto") }
    }
   }
   Text("KTV Mobile • canais, favoritos e transmissão", color = TextMuted, fontSize = 12.sp)
@@ -449,8 +450,13 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
    .setAllowCrossProtocolRedirects(true)
   val dataSourceFactory = DefaultDataSource.Factory(appContext, httpFactory)
   val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+  val loadControl = DefaultLoadControl.Builder()
+   .setBufferDurationsMs(30_000, 120_000, 2_500, 7_000)
+   .setPrioritizeTimeOverSizeThresholds(true)
+   .build()
 
   ExoPlayer.Builder(appContext)
+   .setLoadControl(loadControl)
    .setMediaSourceFactory(mediaSourceFactory)
    .build()
    .apply {
@@ -459,23 +465,22 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
      override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
       KtvDiagnostics.add("Erro playback '${channel.name}' code=${error.errorCodeName} codeInt=${error.errorCode} message=${error.message}", error)
       val detail = error.cause?.localizedMessage?.takeIf { it.isNotBlank() } ?: error.localizedMessage ?: error.errorCodeName
-      playerError = "Falha no canal. Reconexão automática ${retryCount + 1}/4. $detail".take(260)
+      playerError = "Conexão instável. Tentando reconectar automaticamente… $detail".take(260)
       isBuffering = true
-      if (!retryScheduled && retryCount < 4) {
+      if (!retryScheduled) {
        retryScheduled = true
        retryCount++
+       val retryDelay = (1_000L shl retryCount.coerceAtMost(5)).coerceAtMost(30_000L)
        playerScope.launch {
-        kotlinx.coroutines.delay((1000L * retryCount).coerceAtMost(5000L))
+        kotlinx.coroutines.delay(retryDelay)
         runCatching {
-         KtvDiagnostics.add("Reconexão automática ${retryCount}/4 para '${channel.name}'")
+         KtvDiagnostics.add("Reconexão automática #$retryCount após erro em '${channel.name}'")
+         setMediaItem(mediaItem, currentPosition)
          prepare()
          playWhenReady = true
         }.onFailure { KtvDiagnostics.add("Falha ao preparar reconexão automática", it) }
         retryScheduled = false
        }
-      } else if (retryCount >= 4) {
-       playerError = "Canal não recuperado após 4 tentativas. Tente novamente ou compartilhe os logs."
-       isBuffering = false
       }
      }
 
@@ -514,6 +519,44 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
      isBuffering = false
     }
    }
+ }
+
+ // Monitora o avanço real do buffer. Se a rede parar de entregar dados,
+ // recupera a mesma instância do player, preservando a tela e a posição atual.
+ LaunchedEffect(localPlayer) {
+  var lastBufferedPosition = localPlayer.bufferedPosition
+  var lastAdvanceAt = SystemClock.elapsedRealtime()
+  while (true) {
+   kotlinx.coroutines.delay(5_000)
+   val now = SystemClock.elapsedRealtime()
+   val buffered = localPlayer.bufferedPosition
+   if (buffered > lastBufferedPosition + 250L) {
+    lastBufferedPosition = buffered
+    lastAdvanceAt = now
+   }
+   if (localPlayer.playWhenReady && localPlayer.playbackState == Player.STATE_BUFFERING &&
+       now - lastAdvanceAt >= 30_000L && !retryScheduled) {
+    retryScheduled = true
+    retryCount++
+    val resumePosition = localPlayer.currentPosition
+    val retryDelay = (1_000L shl retryCount.coerceAtMost(5)).coerceAtMost(30_000L)
+    playerError = "O recebimento do buffer foi interrompido. Reconectando sem sair do player…"
+    KtvDiagnostics.add("Buffer sem avanço por 30s em '${channel.name}'; reconexão #$retryCount")
+    kotlinx.coroutines.delay(retryDelay)
+    runCatching {
+     localPlayer.setMediaItem(mediaItem, resumePosition)
+     localPlayer.prepare()
+     localPlayer.playWhenReady = true
+     lastBufferedPosition = 0L
+     lastAdvanceAt = SystemClock.elapsedRealtime()
+    }.onFailure { KtvDiagnostics.add("Falha na recuperação de buffer", it) }
+    retryScheduled = false
+   }
+   if (localPlayer.playbackState == Player.STATE_READY) {
+    lastBufferedPosition = localPlayer.bufferedPosition
+    lastAdvanceAt = now
+   }
+  }
  }
 
  // Se o Google Play Services/Cast falhar, o player local continua funcionando.
