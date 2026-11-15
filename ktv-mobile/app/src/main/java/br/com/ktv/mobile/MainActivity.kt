@@ -3,6 +3,7 @@ package br.com.ktv.mobile
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
+import android.net.Uri
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -38,6 +39,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.activity.compose.BackHandler
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
@@ -46,6 +48,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.MediaRouteButtonFactory
+import androidx.media3.cast.MediaRouteButtonViewProvider
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.mediarouter.app.MediaRouteButton
@@ -170,27 +173,34 @@ private fun toggleFavorite(channel: TvChannel, current: Set<String>, prefs: andr
 
 @Composable
 private fun CastRouteButton() {
- AndroidView(
-  factory = { ctx ->
-   try {
-    val themedContext = android.view.ContextThemeWrapper(ctx, R.style.KtvMediaRouterTheme)
-    MediaRouteButton(themedContext).apply {
-     MediaRouteButtonFactory.setUpMediaRouteButton(themedContext, this)
-     contentDescription = "Transmitir para dispositivo"
-    }
-   } catch (error: Exception) {
-    // A ausência/falha do Google Cast não pode impedir a abertura do KTV.
-    android.widget.TextView(ctx).apply {
-     text = "TV"
-     gravity = android.view.Gravity.CENTER
-     setTextColor(android.graphics.Color.WHITE)
-     contentDescription = "Transmissão indisponível neste dispositivo"
-     isEnabled = false
-    }
-   }
-  },
-  modifier = Modifier.size(48.dp)
- )
+ Surface(color = Color(0xFF28234D), shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF5147A8))) {
+  Row(Modifier.height(48.dp).padding(start = 7.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+   AndroidView(
+    factory = { ctx ->
+     val themedContext = android.view.ContextThemeWrapper(ctx, R.style.KtvMediaRouterTheme)
+     runCatching {
+      MediaRouteButton(themedContext).apply {
+       MediaRouteButtonFactory.setUpMediaRouteButton(themedContext, this)
+       contentDescription = "Abrir dispositivos para transmissão"
+       isFocusable = true
+       isClickable = true
+      }
+     }.getOrElse {
+      android.widget.TextView(ctx).apply {
+       text = "TV"
+       gravity = android.view.Gravity.CENTER
+       setTextColor(android.graphics.Color.WHITE)
+       contentDescription = "Google Cast indisponível"
+       isEnabled = false
+      }
+     }
+    },
+    modifier = Modifier.size(42.dp)
+   )
+   Spacer(Modifier.width(5.dp))
+   Text("Transmitir", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+  }
+ }
 }
 
 @Composable
@@ -350,9 +360,16 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
  var playerError by remember(channel.streamUrl) { mutableStateOf<String?>(null) }
  var isBuffering by remember(channel.streamUrl) { mutableStateOf(true) }
 
- val mediaItem = remember(channel.streamUrl) {
+ val mediaItem = remember(channel.streamUrl, channel.name, channel.category, channel.logo) {
+  val metadata = MediaMetadata.Builder()
+   .setTitle(channel.name)
+   .setArtist(channel.category.ifBlank { "TV ao vivo • KTV" })
+   .setMediaType(MediaMetadata.MEDIA_TYPE_TV)
+   .apply { if (!channel.logo.isNullOrBlank()) setArtworkUri(Uri.parse(channel.logo)) }
+   .build()
   MediaItem.Builder()
    .setUri(channel.streamUrl)
+   .setMediaMetadata(metadata)
    .apply {
     val path = channel.streamUrl.substringBefore('?').lowercase()
     if (path.endsWith(".m3u8")) setMimeType(MimeTypes.APPLICATION_M3U8)
@@ -455,6 +472,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
       this.player = playbackPlayer
       useController = true
       setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+      setMediaRouteButtonViewProvider(MediaRouteButtonViewProvider())
       keepScreenOn = true
      } },
      update = { it.player = playbackPlayer },
