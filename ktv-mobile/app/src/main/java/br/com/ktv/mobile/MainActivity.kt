@@ -139,7 +139,6 @@ fun KtvMobileApp() {
       }
      }
      Spacer(Modifier.width(8.dp))
-     CastRouteButton()
     }
     when {
      selectedChannel != null && selectedTab == 0 -> PlayerScreen(selectedChannel!!, { selectedChannel = null })
@@ -320,6 +319,7 @@ private fun SettingsScreen(urls: String, onUrlsChange: (String) -> Unit, onSave:
     Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Cast, null, tint = Accent); Spacer(Modifier.width(8.dp)); Text("Transmissão pela rede Wi-Fi", color = Color.White, fontWeight = FontWeight.SemiBold) }
     Text("Use o botão de transmissão no topo para procurar Chromecast, Google TV e outros receptores compatíveis com Google Cast na mesma rede Wi-Fi.", color = TextMuted, fontSize = 13.sp)
     Text(castMessage, color = TextMuted, fontSize = 12.sp)
+    CastRouteButton()
    }
   }
   Text("KTV Mobile • canais, favoritos e transmissão", color = TextMuted, fontSize = 12.sp)
