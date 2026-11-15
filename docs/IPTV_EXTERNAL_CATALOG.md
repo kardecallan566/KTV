@@ -6,7 +6,7 @@
 
 ## Funcionamento
 
-Ao abrir a seção **Canais → Playlist externa**, o KTV Windows baixa novamente a M3U do GitHub e atualiza o catálogo local. A atualização manual usa o mesmo fluxo. Se a rede ou a fonte estiver indisponível, o aplicativo mantém e apresenta a última cópia válida salva localmente.
+Ao abrir a seção **Canais → Playlist externa**, o KTV Windows baixa novamente a M3U do GitHub e atualiza o catálogo local. Enquanto o aplicativo permanece aberto, a fonte é consultada novamente a cada 30 minutos. A atualização manual usa o mesmo fluxo. Se a rede ou a fonte estiver indisponível, o aplicativo mantém e apresenta a última cópia válida salva localmente.
 
 O parser associa cada `#EXTINF` à linha de mídia seguinte e importa:
 
