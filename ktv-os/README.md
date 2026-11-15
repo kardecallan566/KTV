@@ -48,14 +48,13 @@ Edite esse arquivo e entre em "Canais" novamente. Somente URLs HTTP/HTTPS direta
 
 **Limite do MVP:** a lista exibe streams HLS, mas navegadores desktop geralmente não tocam \`.m3u8\` diretamente. A integração com um player nativo ou HLS.js é checkpoint posterior; não confunda cadastro com reprodução.
 
-## Playlist externa — catálogo de metadados M3U
+## Playlist externa — sincronização M3U no Windows
 
-A seção **Playlist externa** usa `iptv_free_catalog.py` para ler somente os metadados `#EXTINF` de uma M3U: nome, `tvg-id` e categorias. O snapshot atual contém 1.834 variantes de canais em 53 categorias. Linhas de reprodução, URLs de logos, credenciais e cabeçalhos são descartados; nenhum endereço de transmissão é enviado ao MPV. A atualização manual da fonte M3U está habilitada somente no KTV Windows e pode receber outro endereço HTTPS de `raw.githubusercontent.com` pela variável de ambiente `KTV_EXTERNAL_PLAYLIST_METADATA_URL`. Os favoritos permanecem em `~/.config/ktv-os/iptv_free_favorites.json`, separados dos canais pessoais. Consulte [docs/IPTV_EXTERNAL_CATALOG.md](../docs/IPTV_EXTERNAL_CATALOG.md).
+A seção **Playlist externa** sincroniza automaticamente a playlist M3U do GitHub ao abrir a área de canais. A fonte padrão é configurada em `ktv-os/iptv_free_catalog.py`. O parser associa cada registro `#EXTINF` ao endereço de transmissão seguinte e preserva nome, categoria, identificador, logo e variantes HLS (`.m3u8`) e TS (`.ts`). A playlist observada contém 1.834 canais únicos em 53 categorias, com 3.662 variantes de transmissão.
 
-- 155 entradas em 7 categorias (Esportes, Filmes e Séries, Canais Abertos, Variedades, Notícias, Infantil e Religiosos).
-- A reprodução usa mpv com os cabeçalhos fixos User-Agent/Referer definidos pela própria lista, sem permitir que o navegador forneça comandos ou headers arbitrários.
-- A fonte é externa: direitos de retransmissão, estabilidade, região e funcionamento de cada stream não foram verificados. A lista contém marcas de serviços de assinatura; use somente conteúdo autorizado. Os links podem parar de funcionar a qualquer momento.
-- Atualizar o snapshot exige revisar a nova versão da playlist e validar os canais novamente; o KTV não faz download automático no boot.
+Os endereços ficam no catálogo local do usuário; a interface web envia ao servidor somente o ID do canal e o formato selecionado. O servidor resolve o endereço e o entrega ao MPV. Se a playlist não puder ser atualizada, a última cópia válida continua disponível. Os canais pessoais e os catálogos público, comunitário e Pluto permanecem separados. A integração é habilitada somente no KTV Windows.
+
+A variável opcional `KTV_EXTERNAL_PLAYLIST_URL` permite apontar para outro arquivo HTTPS hospedado em `raw.githubusercontent.com`. Consulte [docs/IPTV_EXTERNAL_CATALOG.md](../docs/IPTV_EXTERNAL_CATALOG.md) para detalhes do parser, armazenamento local, validação e reprodução. Use apenas transmissões às quais você tenha autorização de acesso.
 
 ## TV aberta, HDMI e controle remoto
 
