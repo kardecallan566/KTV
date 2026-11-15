@@ -214,6 +214,10 @@ class NativePlayer:
                 'decode': self.decode if playing else None,
                 'exit_code': None if playing else self.last_exit_code,
                 'error': None if playing else self.last_error,
+                # Windows has no AF_UNIX IPC socket in this build. Expose a
+                # credential-redacted log summary and local log location.
+                'diagnostic': self._read_log_error() if playing else self.last_error,
+                'log_file': self.log_path,
                 'video': self._read_video_state() if playing else None,
             }
 
@@ -296,7 +300,7 @@ class NativePlayer:
         else:
             # On Windows, launch MPV from its bundled directory so its DLLs,
             # codecs and runtime data resolve consistently in the PyInstaller app.
-            args.extend(('--vo=gpu', '--gpu-api=d3d11'))
+            args.extend(('--vo=gpu', '--gpu-api=d3d11', '--gpu-context=d3d11'))
         is_pluto = (urlsplit(source).hostname == 'ipv4.pluto.tv'
                     and urlsplit(source).path.endswith('/master.m3u8'))
         if is_pluto:
@@ -323,9 +327,10 @@ class NativePlayer:
             if not valid_referrer:
                 raise ValueError('Referer de transmissao invalido')
             args.append('--referrer=' + referrer)
-        # Explicit libavformat headers are more reliable for HLS playlists and
-        # their child segments (Windows builds especially); keep the dedicated
-        # mpv switches too for compatibility with direct HTTP streams.
+        # Supply headers at mpv's HTTP layer and libavformat's request layer.
+        # HLS performs additional requests for variants, keys and media segments;
+        # headers must also be available to those child requests. Values remain
+        # catalog-owned and validated above, never client supplied.
         if user_agent is not None or referrer is not None:
             http_headers = []
             if user_agent is not None:
