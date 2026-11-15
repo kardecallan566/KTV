@@ -25,9 +25,9 @@ jobs:
         env:
           MPV_VERSION: "20261111"
           MPV_ARCHIVE: "mpv-x86_64-20261111-git-bcde6b93cc.7z"
-          MPV_SHA256: "0a9f8770587b7034fdf8d62ebcacec75267a0952c3f5a55f317297c81fa9be9c"
+          MPV_SHA256: "f259b5fd4b5c395617c948a4fadcdf55bba1c5282fb7c13e88626b3f71072baf"
         run: |
-          # Use a pinned release asset instead of querying /releases/latest.
+          # Use a pinned release asset and verify it against the digest published by GitHub.
           # This avoids unauthenticated GitHub API rate limits and makes builds reproducible.
           $downloadUrl = "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$env:MPV_VERSION/$env:MPV_ARCHIVE"
           $archive = Join-Path $env:RUNNER_TEMP $env:MPV_ARCHIVE
