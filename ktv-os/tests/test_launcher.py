@@ -80,7 +80,7 @@ class KTVOSSmokeTests(unittest.TestCase):
             self.assertEqual(catalog['channels'], [])
         else:
             self.assertTrue(catalog['enabled'])
-            self.assertGreater(len(catalog['channels']), 900)
+            self.assertGreater(len(catalog['channels']), 1800)
             self.assertFalse(catalog['playback_enabled'])
             self.assertNotIn('url', catalog['channels'][0])
             self.assertNotIn('logo', catalog['channels'][0])
