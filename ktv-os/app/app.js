@@ -897,7 +897,7 @@
       select.value=categories.indexOf(previous)!==-1?previous:'all';
       iptvFreeLoaded=true;iptvFreeVisible=36;
       var playable=Number(data.playable_count||0);
-      el('iptv-free-status').textContent=(data.warning||'')+' '+iptvFreeCache.length+' canais carregados; '+playable+' com transmissão. Atualização automática ao abrir esta seção.';
+      el('iptv-free-status').textContent=(data.warning||'')+' '+iptvFreeCache.length+' canais carregados; '+playable+' com transmissão. Atualização automática ao abrir esta seção e a cada 30 minutos.';
       renderIptvFreeChannels();
       if(onComplete)onComplete();
     });
@@ -914,6 +914,8 @@
     loadIptvFreeChannels(function(){button.disabled=false;});
   });
   el('iptv-free-more').addEventListener('click',function(){iptvFreeVisible+=36;renderIptvFreeChannels();});
+  // Recheck the GitHub source periodically while KTV remains open.
+  window.setInterval(function(){if(!document.hidden)loadIptvFreeChannels();},30*60*1000);
 
   // User-supplied Pluto TV catalog is fetched only on demand. Never expose signed URLs.
   // Additional public GitHub indexes, strictly checked by server allowlist.
