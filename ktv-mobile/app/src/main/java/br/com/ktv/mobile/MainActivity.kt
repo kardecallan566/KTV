@@ -375,7 +375,7 @@ private fun PlayerScreen(channel: TvChannel, isFullscreen: Boolean, onFullscreen
   val metadata = MediaMetadata.Builder()
    .setTitle(channel.name)
    .setArtist(channel.category.ifBlank { "TV ao vivo • KTV" })
-   .setMediaType(MediaMetadata.MEDIA_TYPE_TV)
+   .setMediaType(MediaMetadata.MEDIA_TYPE_TV_CHANNEL)
    .apply { if (!channel.logo.isNullOrBlank()) setArtworkUri(Uri.parse(channel.logo)) }
    .build()
   MediaItem.Builder()
