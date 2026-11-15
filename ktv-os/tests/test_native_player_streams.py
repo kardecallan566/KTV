@@ -40,6 +40,11 @@ class NativePlayerStreamTests(unittest.TestCase):
         self.assertFalse(any(arg.startswith("--hls-bitrate=") for arg in args))
         self.assertFalse(any("reconnect_at_eof" in arg for arg in args))
 
+    def test_economy_hls_buffer_is_longer_than_previous_15_seconds(self):
+        args = self._launch_args("https://cdn.example.org/live/channel.m3u8", "economy")
+        self.assertIn("--cache-secs=30", args)
+        self.assertIn("--demuxer-readahead-secs=20", args)
+
     def test_every_session_marks_manual_close_and_uses_private_input_config(self):
         player = NativePlayer(executable="/usr/bin/mpv", popen=lambda *args, **kwargs: FakeProcess())
         try:
