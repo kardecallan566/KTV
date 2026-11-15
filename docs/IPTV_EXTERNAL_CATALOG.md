@@ -28,7 +28,7 @@ O JSON versionado contém somente identificadores, nomes, categorias e o campo `
 
 ## Atualização no Windows
 
-A interface **Canais → Playlist externa → Atualizar metadados** chama a rota local `POST /api/iptv-free/refresh`. A rota só executa no Windows. O módulo usa a variável:
+A interface **Canais → Playlist externa → Atualizar metadados** chama a rota local `POST /api/iptv-free/refresh`. A seção e as rotas de catálogo/atualização só ficam habilitadas no Windows; Linux e Raspberry Pi não exibem essa seção. O módulo usa a variável:
 
 ```python
 SOURCE_URL = os.environ.get(
