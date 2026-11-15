@@ -22,13 +22,21 @@ jobs:
         run: choco install 7zip --yes --no-progress
       - name: Download MPV for Windows
         shell: pwsh
+        env:
+          MPV_VERSION: "20261111"
+          MPV_ARCHIVE: "mpv-x86_64-20261111-git-bcde6b93cc.7z"
+          MPV_SHA256: "0a9f8770587b7034fdf8d62ebcacec75267a0952c3f5a55f317297c81fa9be9c"
         run: |
-          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest"
-          $asset = $release.assets | Where-Object { $_.name -like "mpv-x86_64-*.7z" -and $_.name -notlike "*-v3-*" } | Select-Object -First 1
-          if (-not $asset) { throw "Não foi encontrado um pacote MPV x86_64 compatível na última versão." }
-          $archive = Join-Path $env:RUNNER_TEMP $asset.name
+          # Use a pinned release asset instead of querying /releases/latest.
+          # This avoids unauthenticated GitHub API rate limits and makes builds reproducible.
+          $downloadUrl = "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$env:MPV_VERSION/$env:MPV_ARCHIVE"
+          $archive = Join-Path $env:RUNNER_TEMP $env:MPV_ARCHIVE
           $extract = Join-Path $env:RUNNER_TEMP "mpv-windows"
-          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $archive
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $archive
+          $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $env:MPV_SHA256) {
+            throw "SHA256 inválido para o pacote MPV. Esperado: $env:MPV_SHA256; recebido: $actualHash"
+          }
           New-Item -ItemType Directory -Path $extract -Force | Out-Null
           & "$env:ProgramFiles\7-Zip\7z.exe" x $archive "-o$extract" -y
           if ($LASTEXITCODE -ne 0) { throw "Falha ao extrair o pacote MPV." }
