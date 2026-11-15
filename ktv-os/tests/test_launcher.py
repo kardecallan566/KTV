@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+from unittest import mock
 from urllib.error import HTTPError
 from urllib.request import urlopen, Request
 
@@ -33,6 +34,12 @@ class KTVOSSmokeTests(unittest.TestCase):
     def fetch(self, path, headers=None):
         with urlopen(Request(self.url + path, headers=headers or {}), timeout=5) as response:
             return response.status, response.read(), response.headers
+
+    def post_json(self, path, payload):
+        request = Request(self.url + path, data=json.dumps(payload).encode('utf-8'),
+                          headers={'Content-Type': 'application/json'}, method='POST')
+        with urlopen(request, timeout=5) as response:
+            return response.status, response.read()
 
     def test_ui_loads_and_health(self):
         code, html, _ = self.fetch('/')
@@ -87,6 +94,26 @@ class KTVOSSmokeTests(unittest.TestCase):
             self.assertIsInstance(catalog['channels'][0]['playable'], bool)
         _, personal_raw, _ = self.fetch('/api/channels')
         self.assertEqual(json.loads(personal_raw)['channels'], [])
+    def test_external_iptv_channel_resolves_private_stream_and_plays(self):
+        self.state.mkdir(parents=True, exist_ok=True)
+        (self.state / 'iptv_free_catalog.json').write_text(json.dumps({
+            'schema': 'ktv-iptv-playlist-v3',
+            'channels': [{
+                'id': 'demo-123', 'name': 'Canal Demo', 'category': 'Teste',
+                'categories': ['Teste'], 'tvg_id': 'demo.br', 'logo': None,
+                'streams': [
+                    {'format': 'hls', 'url': 'https://example.org/live.m3u8'},
+                    {'format': 'ts', 'url': 'https://example.org/live.ts'}
+                ]
+            }]
+        }), encoding='utf-8')
+        with mock.patch.object(m.NativePlayer, 'play', return_value={'playing': True}) as play:
+            _, body = self.post_json('/api/player/play', {
+                'kind': 'iptv_free', 'id': 'demo-123', 'format': 'ts'
+            })
+        self.assertEqual(play.call_args.args[0], 'https://example.org/live.ts')
+        self.assertNotIn(b'https://example.org/live.ts', body)
+
     def test_usb_devices_are_metadata_only(self):
         _, raw, _ = self.fetch('/api/devices')
         self.assertIsInstance(json.loads(raw)['devices'], list)
