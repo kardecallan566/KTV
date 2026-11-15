@@ -402,8 +402,8 @@ class NativePlayer:
         self.ipc_dir = tempfile.mkdtemp(prefix='ktv-mpv-')
         bindings = os.path.join(self.ipc_dir, 'ktv-keys.conf')
         try:
-            with open(bindings, 'w', encoding='ascii', newline='\\n') as config:
-                config.write('q quit 77\\nQ quit 77\\nCLOSE_WIN quit 77\\n')
+            with open(bindings, 'w', encoding='ascii', newline='\n') as config:
+                config.write('q quit 77\nQ quit 77\nCLOSE_WIN quit 77\n')
             if os.name == 'posix':
                 os.chmod(bindings, 0o600)
             args.append('--input-conf=' + bindings)
