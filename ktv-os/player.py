@@ -17,9 +17,9 @@ from urllib.parse import urlsplit
 from stream_urls import validate_stream_url, validate_pluto_url, StreamURLError
 
 QUALITY_PROFILES = {
-    'economy': {'hls_bitrate': 'min', 'forward': '12MiB', 'back': '4MiB', 'cache_secs': 15, 'readahead_secs': 10},
-    'balanced': {'hls_bitrate': '4000000', 'forward': '32MiB', 'back': '8MiB', 'cache_secs': 30, 'readahead_secs': 25},
-    'best': {'hls_bitrate': 'max', 'forward': '64MiB', 'back': '16MiB', 'cache_secs': 40, 'readahead_secs': 32},
+    'economy': {'hls_bitrate': 'min', 'forward': '12MiB', 'back': '4MiB', 'cache_secs': 30, 'readahead_secs': 20},
+    'balanced': {'hls_bitrate': '4000000', 'forward': '32MiB', 'back': '8MiB', 'cache_secs': 45, 'readahead_secs': 35},
+    'best': {'hls_bitrate': 'max', 'forward': '64MiB', 'back': '16MiB', 'cache_secs': 60, 'readahead_secs': 45},
 }
 # All property names are fixed: the browser cannot choose mpv commands.
 VIDEO_PROPERTIES = (
@@ -396,17 +396,24 @@ class NativePlayer:
             ))
             if is_hls:
                 args.append('--hls-bitrate=' + chosen['hls_bitrate'])
-        # mpv IPC is a local diagnostic socket, never a public TCP endpoint.
-        if os.name == 'posix' and hasattr(socket, 'AF_UNIX'):
-            self.ipc_dir = tempfile.mkdtemp(prefix='ktv-mpv-')
-            self.ipc_path = os.path.join(self.ipc_dir, 'control.sock')
-            args.append('--input-ipc-server=' + self.ipc_path)
-            if is_pluto:
-                bindings=os.path.join(self.ipc_dir,'pluto-keys.conf')
-                with open(bindings,'w',encoding='ascii') as config:
-                    config.write('q quit 77\nQ quit 77\nCLOSE_WIN quit 77\n')
-                os.chmod(bindings,0o600)
-                args.append('--input-conf='+bindings)
+        # Keep a private per-session directory for MPV controls on every OS.
+        # Explicit Q/CLOSE_WIN exits use code 77 so the watchdog can distinguish
+        # a user closing the player from an unexpected stream/process exit.
+        self.ipc_dir = tempfile.mkdtemp(prefix='ktv-mpv-')
+        bindings = os.path.join(self.ipc_dir, 'ktv-keys.conf')
+        try:
+            with open(bindings, 'w', encoding='ascii', newline='\\n') as config:
+                config.write('q quit 77\\nQ quit 77\\nCLOSE_WIN quit 77\\n')
+            if os.name == 'posix':
+                os.chmod(bindings, 0o600)
+            args.append('--input-conf=' + bindings)
+            # MPV IPC is a local diagnostic socket, never a public TCP endpoint.
+            if os.name == 'posix' and hasattr(socket, 'AF_UNIX'):
+                self.ipc_path = os.path.join(self.ipc_dir, 'control.sock')
+                args.append('--input-ipc-server=' + self.ipc_path)
+        except OSError:
+            self._clear_ipc()
+            raise
         args.extend(('--', source))
         with self.lock:
             try:
