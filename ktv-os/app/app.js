@@ -256,6 +256,18 @@
           'O canal foi interrompido; KTV OS está renovando o link e tentando voltar ao ar.';
         return;
       }
+      // Keep polling while the watchdog is relaunching a live M3U/HLS stream.
+      // Otherwise the UI would stop monitoring on the first exited MPV process
+      // and hide the stop control before the automatic retry completes.
+      if(!err && data.player && !data.player.playing && data.watchdog &&
+         (data.watchdog.state==='recovering' || data.watchdog.recovery_in_progress)){
+        nativeActive=true;
+        playerStop.hidden=false;
+        el('quality-telemetry').textContent='A transmissão foi interrompida; reconectando automaticamente…';
+        if(!overlay.hidden)el('dialog-message').textContent=
+          'O player encerrou inesperadamente. O KTV está tentando abrir o canal novamente.';
+        return;
+      }
       if(err || !data.player || !data.player.playing){
         if(!err && nativeActive && data.player && !data.player.playing){
           nativeActive=false;
