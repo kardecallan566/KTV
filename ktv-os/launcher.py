@@ -379,13 +379,13 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             try:
                 catalog_path = self.server.state_dir / 'iptv_free_catalog.json'
                 channels = validated_iptv_free_catalog(catalog_path)
-                # First launch upgrades the bundled metadata snapshot by fetching
-                # the live playlist. A failed refresh never destroys the last cache.
-                if not any(item.get('streams') for item in channels):
-                    try:
-                        channels = refresh_iptv_free_catalog(catalog_path)
-                    except IPTVFreeCatalogError:
-                        pass
+                # Refresh on every app launch / catalogue load so playlist edits
+                # are picked up automatically. On network failure, keep the last
+                # successfully downloaded local catalogue.
+                try:
+                    channels = refresh_iptv_free_catalog(catalog_path)
+                except IPTVFreeCatalogError:
+                    pass
                 public_items = [{'id': item['id'], 'name': item['name'],
                                  'category': item['category'], 'categories': item['categories'],
                                  'tvg_id': item['tvg_id'], 'logo': item.get('logo'),
