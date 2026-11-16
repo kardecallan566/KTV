@@ -36,7 +36,7 @@ class IPTVCacheMonitorTests(unittest.TestCase):
             monitor.SAMPLE_SECONDS=0.02
             monitor.STALL_SECONDS=0
             monitor.LOW_BUFFER_SECONDS=8
-            monitor.REFRESH_COOLDOWN=0
+            monitor.REFRESH_COOLDOWN=1
             try:
                 with mock.patch.object(m,'refresh_catalog') as refresh:
                     monitor.activate('channel-1','Canal')
