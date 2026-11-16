@@ -71,6 +71,32 @@ http://localhost/private.m3u8
             self.assertIn("https://stream.example.org/live.m3u8", stored)
             self.assertEqual(iptv_free_channel(channels[0]["id"], target)["streams"][0]["format"], "hls")
 
+    def test_tiny_live_playlist_uses_larger_known_good_snapshot(self):
+        from iptv_free_catalog import FALLBACK_SOURCE_URL
+
+        primary = b'#EXTM3U\\n#EXTINF:-1,Canal 1\\nhttps://stream.example.org/1.ts\\n'
+        fallback = b'#EXTM3U\\n#EXTINF:-1,Canal 1\\nhttps://stream.example.org/1.ts\\n#EXTINF:-1,Canal 2\\nhttps://stream.example.org/2.ts\\n'
+
+        class FakeResponse:
+            def __init__(self, url, payload):
+                self.url, self.payload = url, payload
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def geturl(self): return self.url
+            def read(self, limit): return self.payload
+
+        def fake_open(request, timeout):
+            url = request.full_url
+            return FakeResponse(url, fallback if url == FALLBACK_SOURCE_URL else primary)
+
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp) / "state" / "iptv_free_catalog.json"
+            with mock.patch("iptv_free_catalog.urlopen", side_effect=fake_open):
+                channels = refresh_catalog(target, SOURCE_URL)
+            self.assertEqual(len(channels), 2)
+            stored = json.loads(target.read_text(encoding="utf-8"))
+            self.assertEqual(stored["source"], "GitHub M3U fallback snapshot")
+
     def test_catalog_rejects_legacy_unknown_schema(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "catalog.json"
