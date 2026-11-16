@@ -295,6 +295,14 @@
         if(data.watchdog.recovery_in_progress)parts.push('Tentativa de recuperação em andamento');
         else if(data.watchdog.recovery_attempts>0)parts.push('Reconexões: '+data.watchdog.recovery_attempts+'/3');
       }
+      if(data.iptv_cache&&data.iptv_cache.active){
+        var cache=data.iptv_cache;
+        parts.push('IPTV cache: '+(cache.buffer_seconds===null?'—':cache.buffer_seconds+' s'));
+        if(cache.state==='refreshing_playlist')parts.push('Playlist atualizando em background');
+        else if(cache.state==='refreshed')parts.push('Links atualizados sem reiniciar o player');
+        else if(cache.state==='refresh_failed')parts.push('Refresh falhou; reprodução atual mantida');
+        if(cache.stall_seconds>=5)parts.push('Cache sem crescimento: '+cache.stall_seconds+' s');
+      }
       if(v.width && v.height)parts.push(v.width+'×'+v.height);
       if(v.codec)parts.push('Codec: '+v.codec);
       if(v.fps)parts.push('FPS: '+v.fps);
