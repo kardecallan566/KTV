@@ -13,6 +13,8 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
+import ctypes
 import uuid
 from urllib.parse import urlsplit
 from stream_urls import validate_stream_url, validate_pluto_url, StreamURLError
@@ -129,7 +131,59 @@ class NativePlayer:
                     candidates.append(line)
         return ' | '.join(candidates[-3:])[:700] or None
 
+    def _read_video_state_windows(self):
+        """Read a minimal cache snapshot from MPV's private Windows named pipe."""
+        kernel = ctypes.windll.kernel32
+        try:
+            if not kernel.WaitNamedPipeW(self.ipc_path, 150):
+                return None
+            handle = kernel.CreateFileW(self.ipc_path, 0xC0000000, 0, None, 3, 0x80, None)
+            if handle == ctypes.c_void_p(-1).value:
+                return None
+            values = {}
+            try:
+                payload = (json.dumps({'command':['get_property','demuxer-cache-duration'],'request_id':1})+'\\n'+
+                           json.dumps({'command':['get_property','time-pos'],'request_id':2})+'\\n').encode('utf-8')
+                written = ctypes.c_ulong(0)
+                if not kernel.WriteFile(handle,payload,len(payload),ctypes.byref(written),None):
+                    return None
+                deadline=time.monotonic()+0.2
+                received=b''
+                while time.monotonic()<deadline:
+                    available=ctypes.c_ulong(0)
+                    if not kernel.PeekNamedPipe(handle,None,0,None,ctypes.byref(available),None):
+                        break
+                    if not available.value:
+                        time.sleep(0.008)
+                        continue
+                    buffer=ctypes.create_string_buffer(min(available.value,2048))
+                    read=ctypes.c_ulong(0)
+                    if not kernel.ReadFile(handle,buffer,len(buffer),ctypes.byref(read),None):
+                        break
+                    received+=buffer.raw[:read.value]
+                    while b'\\n' in received:
+                        line,received=received.split(b'\\n',1)
+                        try: reply=json.loads(line)
+                        except (ValueError,UnicodeDecodeError): continue
+                        if isinstance(reply,dict) and reply.get('error')=='success':
+                            values[reply.get('request_id')]=reply.get('data')
+                        if len(values)>=2: break
+            finally:
+                kernel.CloseHandle(handle)
+            if not values: return None
+            return {'time_pos':_number(values.get(2),8640000),'paused':False,'eof_reached':False,
+                    'video_rendered':False,'video_track':False,'audio_track':False,
+                    'width':None,'height':None,'fps':None,'codec':None,'hardware_decoder':None,
+                    'dropped_frames':None,'vo_dropped_frames':None,'vo_delayed_frames':None,
+                    'decoder_dropped_frames':None,'buffer_seconds':_number(values.get(1),3600),
+                    'audio_pts':None,'audio_speed':None,'audio_bitrate':None,'audio_codec':None,
+                    'audio_output':False,'av_sync':None}
+        except (OSError,ValueError,AttributeError):
+            return None
+
     def _read_video_state(self):
+        if os.name == 'nt':
+            return self._read_video_state_windows() if self.ipc_path else None
         if not self.ipc_path or not hasattr(socket, 'AF_UNIX'):
             return None
         properties = {}
