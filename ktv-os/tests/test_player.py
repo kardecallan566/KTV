@@ -58,6 +58,16 @@ class NativePlayerTests(unittest.TestCase):
         self.assertIn('--gpu-context=d3d11', calls[0])
         player.stop()
 
+    def test_windows_hls_uses_private_named_pipe_for_cache_telemetry(self):
+        calls=[]
+        player=m.NativePlayer(executable='mpv.exe',popen=lambda argv,**kw:(calls.append(argv) or MockProcess()))
+        with mock.patch.object(m.os,'name','nt'):
+            player.play('https://example.com/live.m3u8','Canal')
+        ipc=next((arg for arg in calls[0] if arg.startswith('--input-ipc-server=')),None)
+        self.assertIsNotNone(ipc)
+        self.assertIn('\\\\.\\pipe\\ktv-mpv-',ipc)
+        player.stop()
+
     def test_catalog_headers_are_passed_as_mpv_arguments(self):
         calls = []
         player = m.NativePlayer(executable='/usr/bin/mpv', popen=lambda argv, **kw: (calls.append(argv) or MockProcess()))
