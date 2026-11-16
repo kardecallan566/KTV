@@ -1,8 +1,8 @@
-# KTV OS — Alpha 0.21
+# KTV OS — Alpha 0.28.1
 
 Interface de TV para computador conectado a uma televisão por HDMI. Esta pasta **não é ainda uma distribuição Linux, nem um firmware Samsung**. É um *shell* de TV rodando no navegador do computador. Isolado do KTV Orsay em ../tv-orsay/.
 
-**Estado atual:** esta página mantém instruções e histórico de versões antigas. A versão mais recente do código é a **Alpha 0.21**, e a [ISO AMD64 foi gerada com sucesso no GitHub Actions](https://github.com/kardecallan566/KTV/actions/runs/40762109771). Baixe o artefato enquanto estiver disponível; a validação física ainda é necessária. Consulte o [documento consolidado de estado e roadmap](../docs/ESTADO_E_ROADMAP_DO_PROJETO.md) antes de seguir instruções antigas; a ISO atual é AMD64 para PC e não é uma imagem Raspberry Pi.
+**Estado atual:** esta página mantém instruções e histórico de versões antigas. A versão atual do código é a **Alpha 0.28.1**, e a [ISO AMD64 foi gerada com sucesso no GitHub Actions](https://github.com/kardecallan566/KTV/actions/runs/40762109771). Baixe o artefato enquanto estiver disponível; a validação física ainda é necessária. Consulte o [documento consolidado de estado e roadmap](../docs/ESTADO_E_ROADMAP_DO_PROJETO.md) antes de seguir instruções antigas; a ISO atual é AMD64 para PC e não é uma imagem Raspberry Pi.
 
 ## Teste imediato no Windows (PC -> HDMI -> Samsung)
 
@@ -50,7 +50,7 @@ Edite esse arquivo e entre em "Canais" novamente. Somente URLs HTTP/HTTPS direta
 
 ## Playlist externa — sincronização M3U no Windows
 
-A seção **Playlist externa** sincroniza automaticamente a playlist M3U do GitHub ao abrir a área de canais. A fonte padrão é configurada em `ktv-os/iptv_free_catalog.py`. O parser associa cada registro `#EXTINF` ao endereço de transmissão seguinte e preserva nome, categoria, identificador, logo e variantes HLS (`.m3u8`) e TS (`.ts`). A playlist observada contém 1.834 canais únicos em 53 categorias, com 3.662 variantes de transmissão.
+A seção **Playlist externa** sincroniza automaticamente a playlist M3U do GitHub ao abrir a área de canais. A fonte padrão é configurada em `ktv-os/iptv_free_catalog.py`. O parser associa cada registro `#EXTINF` ao endereço de transmissão seguinte e preserva nome, categoria, identificador, logo e variantes HLS (`.m3u8`) e TS (`.ts`). A revisão completa conhecida contém cerca de 1.834 canais únicos em 53 categorias e 3.662 variantes de transmissão. Se a playlist `main.m3u` publicada cair inesperadamente para poucos canais, o KTV tenta usar essa revisão completa de segurança, sem sobrescrever o catálogo com a lista reduzida.
 
 Os endereços ficam no catálogo local do usuário; a interface web envia ao servidor somente o ID do canal e o formato selecionado. O servidor resolve o endereço e o entrega ao MPV. Se a playlist não puder ser atualizada, a última cópia válida continua disponível. Os canais pessoais e os catálogos público, comunitário e Pluto permanecem separados. A integração é habilitada somente no KTV Windows.
 
