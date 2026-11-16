@@ -134,7 +134,18 @@ class NativePlayer:
     def _read_video_state_windows(self):
         """Read a minimal cache snapshot from MPV's private Windows named pipe."""
         kernel = ctypes.windll.kernel32
+        kernel.WaitNamedPipeW.argtypes = [ctypes.c_wchar_p, ctypes.c_ulong]
+        kernel.WaitNamedPipeW.restype = ctypes.c_int
+        kernel.CreateFileW.argtypes = [ctypes.c_wchar_p, ctypes.c_ulong, ctypes.c_ulong,
+                                       ctypes.c_void_p, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p]
         kernel.CreateFileW.restype = ctypes.c_void_p
+        kernel.WriteFile.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong,
+                                     ctypes.POINTER(ctypes.c_ulong), ctypes.c_void_p]
+        kernel.PeekNamedPipe.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong,
+                                         ctypes.c_void_p, ctypes.POINTER(ctypes.c_ulong), ctypes.c_void_p]
+        kernel.ReadFile.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong,
+                                    ctypes.POINTER(ctypes.c_ulong), ctypes.c_void_p]
+        kernel.CloseHandle.argtypes = [ctypes.c_void_p]
         try:
             if not kernel.WaitNamedPipeW(self.ipc_path, 150):
                 return None
@@ -146,7 +157,8 @@ class NativePlayer:
                 payload = (json.dumps({'command':['get_property','demuxer-cache-duration'],'request_id':1})+'\\n'+
                            json.dumps({'command':['get_property','time-pos'],'request_id':2})+'\\n').encode('utf-8')
                 written = ctypes.c_ulong(0)
-                if not kernel.WriteFile(handle,payload,len(payload),ctypes.byref(written),None):
+                request_buffer = ctypes.create_string_buffer(payload)
+                if not kernel.WriteFile(handle,request_buffer,len(payload),ctypes.byref(written),None):
                     return None
                 deadline=time.monotonic()+0.2
                 received=b''
