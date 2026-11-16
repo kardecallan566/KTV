@@ -20,6 +20,9 @@ BUNDLED_CATALOG_PATH = Path(__file__).with_name("iptv_free_catalog.json")
 DEFAULT_STATE_DIR = Path(os.environ.get("KTV_STATE_DIR", str(Path.home() / ".config" / "ktv-os"))).expanduser()
 STATE_CATALOG_PATH = DEFAULT_STATE_DIR / "iptv_free_catalog.json"
 SOURCE_URL = os.environ.get("KTV_EXTERNAL_PLAYLIST_URL", "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u")
+# Pinned complete snapshot (3,662 streams), used only to guard tiny accidental updates.
+FALLBACK_SOURCE_URL = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
+MIN_LIVE_CHANNELS = 100
 MAX_SOURCE_BYTES = 8 * 1024 * 1024
 MAX_CHANNELS = 5000
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,79}$")
@@ -189,26 +192,40 @@ def load_catalog(path=None):
 def refresh_catalog(path=None, source_url=None):
     """Download the configured playlist and atomically replace the private local catalogue."""
     source_url = _validate_source_url(source_url or SOURCE_URL)
-    request = Request(source_url, headers={"User-Agent": "KTV-Windows-Playlist/1.0"})
-    try:
+    def download_and_parse(candidate_url):
+        request = Request(candidate_url, headers={"User-Agent": "KTV-Windows-Playlist/1.1"})
         with urlopen(request, timeout=20) as response:
             final_url = _validate_source_url(response.geturl())
-            if urlsplit(final_url).hostname != urlsplit(source_url).hostname:
+            if urlsplit(final_url).hostname != urlsplit(candidate_url).hostname:
                 raise IPTVFreeCatalogError("Redirecionamento de fonte nao permitido")
             payload = response.read(MAX_SOURCE_BYTES + 1)
         if len(payload) > MAX_SOURCE_BYTES:
             raise IPTVFreeCatalogError("Arquivo M3U excede 8 MB")
-        content = payload.decode("utf-8-sig")
+        return parse_m3u_playlist(payload.decode("utf-8-sig"))
+
+    try:
+        channels = download_and_parse(source_url)
     except IPTVFreeCatalogError:
         raise
     except Exception as exc:
         raise IPTVFreeCatalogError("Nao foi possivel atualizar a playlist M3U") from exc
-    channels = parse_m3u_playlist(content)
     if not channels or not any(item["streams"] for item in channels):
         raise IPTVFreeCatalogError("A fonte M3U nao contem canais com transmissoes validas")
+
+    source_label = "GitHub M3U"
+    # Protect the local catalogue when a publication unexpectedly collapses
+    # to a handful of records. The pinned snapshot is used only if larger.
+    if len(channels) < MIN_LIVE_CHANNELS and source_url != FALLBACK_SOURCE_URL:
+        try:
+            fallback = download_and_parse(FALLBACK_SOURCE_URL)
+            if len(fallback) > len(channels) and any(item["streams"] for item in fallback):
+                channels = fallback
+                source_label = "GitHub M3U fallback snapshot"
+        except Exception:
+            pass
     target = Path(path) if path is not None else STATE_CATALOG_PATH
     target.parent.mkdir(parents=True, exist_ok=True)
-    data = {"schema": "ktv-iptv-playlist-v3", "source": "GitHub M3U",
+    data = {"schema": "ktv-iptv-playlist-v3", "source": source_label,
             "updated_at": int(time.time()), "channels": channels}
     temp_name = None
     try:
