@@ -134,6 +134,7 @@ class NativePlayer:
     def _read_video_state_windows(self):
         """Read a minimal cache snapshot from MPV's private Windows named pipe."""
         kernel = ctypes.windll.kernel32
+        kernel.CreateFileW.restype = ctypes.c_void_p
         try:
             if not kernel.WaitNamedPipeW(self.ipc_path, 150):
                 return None
