@@ -446,7 +446,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
             return self.send_json({'player':player_status,
                                    'recovery':self.server.pluto_recovery.status(),
                                    'watchdog':self.server.player_watchdog.tick(),
-                                   'profile':detect_playback_profile()})
+                                   'profile':detect_playback_profile(),
+                                   'iptv_cache':self.server.iptv_cache_monitor.status()})
         if path == '/api/media':
             params = parse_qs(url.query)
             source = params.get('source', ['local'])[0]
