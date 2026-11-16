@@ -154,8 +154,8 @@ class NativePlayer:
                 return None
             values = {}
             try:
-                payload = (json.dumps({'command':['get_property','demuxer-cache-duration'],'request_id':1})+'\\n'+
-                           json.dumps({'command':['get_property','time-pos'],'request_id':2})+'\\n').encode('utf-8')
+                payload = (json.dumps({'command':['get_property','demuxer-cache-duration'],'request_id':1})+'\n'+
+                           json.dumps({'command':['get_property','time-pos'],'request_id':2})+'\n').encode('utf-8')
                 written = ctypes.c_ulong(0)
                 request_buffer = ctypes.create_string_buffer(payload)
                 if not kernel.WriteFile(handle,request_buffer,len(payload),ctypes.byref(written),None):
@@ -174,8 +174,8 @@ class NativePlayer:
                     if not kernel.ReadFile(handle,buffer,len(buffer),ctypes.byref(read),None):
                         break
                     received+=buffer.raw[:read.value]
-                    while b'\\n' in received:
-                        line,received=received.split(b'\\n',1)
+                    while b'\n' in received:
+                        line,received=received.split(b'\n',1)
                         try: reply=json.loads(line)
                         except (ValueError,UnicodeDecodeError): continue
                         if isinstance(reply,dict) and reply.get('error')=='success':
