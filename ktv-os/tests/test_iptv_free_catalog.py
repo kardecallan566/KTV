@@ -74,8 +74,8 @@ http://localhost/private.m3u8
     def test_tiny_live_playlist_uses_larger_known_good_snapshot(self):
         from iptv_free_catalog import FALLBACK_SOURCE_URL
 
-        primary = b'#EXTM3U\\n#EXTINF:-1,Canal 1\\nhttps://stream.example.org/1.ts\\n'
-        fallback = b'#EXTM3U\\n#EXTINF:-1,Canal 1\\nhttps://stream.example.org/1.ts\\n#EXTINF:-1,Canal 2\\nhttps://stream.example.org/2.ts\\n'
+        primary = b'#EXTM3U\n#EXTINF:-1,Canal 1\nhttps://stream.example.org/1.ts\n'
+        fallback = b'#EXTM3U\n#EXTINF:-1,Canal 1\nhttps://stream.example.org/1.ts\n#EXTINF:-1,Canal 2\nhttps://stream.example.org/2.ts\n'
 
         class FakeResponse:
             def __init__(self, url, payload):
