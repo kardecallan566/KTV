@@ -46,6 +46,7 @@ from system_actions import SystemActions, SystemActionError
 from remote_control import RemoteControl
 from stability_engine import detect_playback_profile
 from performance_monitor import PerformanceMonitor
+from iptv_cache_monitor import IPTVCacheMonitor
 from threading import Event, Thread
 APP = ROOT / 'app'
 STATE = Path(os.environ.get('KTV_STATE_DIR', str(Path.home() / '.config' / 'ktv-os'))).expanduser()  # USB opcional
@@ -171,6 +172,7 @@ class KTVOSServer(ThreadingHTTPServer):
         if self.media_dir and not self.media_dir.is_dir():
             raise ValueError('--media-dir deve ser uma pasta existente')
         self.player = player if player is not None else NativePlayer()
+        self.iptv_cache_monitor = IPTVCacheMonitor(self.player, self.state_dir / 'iptv_free_catalog.json')
         self.pluto_recovery = (pluto_recovery if pluto_recovery is not None
                                else PlutoRecovery(self.pluto, self.player))
         self.player_watchdog = PlayerWatchdog(
@@ -287,7 +289,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                                    'usb_direct_tv': self.server.antenna.available(), 'player': self.server.player.status(),
                                    'pluto_recovery': self.server.pluto_recovery.status(),
                                    'persistence': self.server.persistence.status(usb_mounts()),
-                                   'playback_profile': detect_playback_profile()})
+                                   'playback_profile': detect_playback_profile(),\n                                   'iptv_cache': self.server.iptv_cache_monitor.status()})
         if path == '/api/system/status':
             return self.send_json({'system': self.server.system_actions.status()})
         if path == '/api/performance':
@@ -682,6 +684,7 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                 return self.send_json({'error':str(exc)},400)
         if path == '/api/player/stop':
             self.server.pluto_recovery.cancel()
+            self.server.iptv_cache_monitor.deactivate()
             self.server.player.stop()
             self.server.player_watchdog.set_session(None, None, None, None, recoverable=False)
             self.server.antenna.stop()
@@ -690,6 +693,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
         try:
             # Invalidate an in-flight watchdog retry before any manual source change.
             self.server.player_watchdog.set_session(None, None, None, None, recoverable=False)
+            if kind != 'iptv_free':
+                self.server.iptv_cache_monitor.deactivate()
             if kind == 'antenna':
                 self.server.pluto_recovery.cancel()
                 self.server.player.stop()
@@ -770,6 +775,8 @@ class KTVOSHandler(BaseHTTPRequestHandler):
                             urlsplit(source).path.lower().endswith(('.m3u8', '.ts'))))
             if kind == 'pluto':
                 self.server.pluto_recovery.activate(payload.get('id'),quality,decode)
+            if kind == 'iptv_free':
+                self.server.iptv_cache_monitor.activate(payload.get('id'), title)
         except (ValueError, OSError) as exc:
             return self.send_json({'error': str(exc)}, 400)
         except RuntimeError as exc:
@@ -855,6 +862,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        server.iptv_cache_monitor.close()
         server.player.close()
         server.server_close()
 
