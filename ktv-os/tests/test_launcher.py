@@ -113,6 +113,13 @@ class KTVOSSmokeTests(unittest.TestCase):
             })
         self.assertEqual(play.call_args.args[0], 'https://example.org/live.ts')
         self.assertNotIn(b'https://example.org/live.ts', body)
+        _, status_raw, _ = self.fetch('/api/player/status')
+        cache_status = json.loads(status_raw)['iptv_cache']
+        self.assertTrue(cache_status['active'])
+        self.assertEqual(cache_status['channel']['id'], 'demo-123')
+        self.post_json('/api/player/stop', {})
+        _, stopped_raw, _ = self.fetch('/api/player/status')
+        self.assertFalse(json.loads(stopped_raw)['iptv_cache']['active'])
 
     def test_usb_devices_are_metadata_only(self):
         _, raw, _ = self.fetch('/api/devices')
