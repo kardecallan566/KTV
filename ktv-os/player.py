@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import uuid
 from urllib.parse import urlsplit
 from stream_urls import validate_stream_url, validate_pluto_url, StreamURLError
 
@@ -411,6 +412,9 @@ class NativePlayer:
                 # MPV IPC is a local diagnostic socket, never a public TCP endpoint.
                 if os.name == 'posix' and hasattr(socket, 'AF_UNIX'):
                     self.ipc_path = os.path.join(self.ipc_dir, 'control.sock')
+                    args.append('--input-ipc-server=' + self.ipc_path)
+                elif os.name == 'nt':
+                    self.ipc_path = r'\\.\pipe\ktv-mpv-' + uuid.uuid4().hex
                     args.append('--input-ipc-server=' + self.ipc_path)
             except OSError:
                 self._clear_ipc()
