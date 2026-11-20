@@ -52,11 +52,11 @@ Quando FFmpeg está disponível, o modo automático prepara o canal solicitado s
 - recebe o HLS original no computador;
 - converte o vídeo para H.264, perfil Main, pixel format YUV420P e até 720p;
 - converte o áudio para AAC estéreo;
-- gera uma nova saída HLS com segmentos MPEG-TS curtos;
+- gera uma nova saída HLS com segmentos MPEG-TS de 5 segundos e janela de 12 segmentos para oferecer mais margem de buffer;
 - entrega à Samsung somente a playlist e os segmentos já preparados;
 - mantém apenas o canal solicitado em transcodificação para evitar ocupar CPU com centenas de canais que ninguém está assistindo.
 
-A conversão começa quando a TV solicita o manifesto do canal. A primeira abertura pode demorar alguns segundos enquanto o FFmpeg inicializa e gera os primeiros segmentos. O HLS publica arquivos temporários somente depois de concluir cada segmento. O FFmpeg não força reconexão em EOF ou HTTP 404, pois o demuxer HLS já atualiza suas playlists e repetir recursos expirados pode travar o fluxo. Cada canal só é convertido quando um dispositivo solicita seu manifesto ou segmentos; se não houver novas solicitações por 30 segundos, o processo daquele canal é encerrado automaticamente. Canais não acessados nunca são convertidos. O catálogo atualiza a cada cinco minutos sem reiniciar a sessão ativa. O diagnóstico de cada processo FFmpeg é gravado em `data/hls/ID-DO-CANAL/ffmpeg.log`.
+A conversão começa quando a TV solicita o manifesto do canal. A primeira abertura pode demorar alguns segundos enquanto o FFmpeg inicializa e gera os primeiros segmentos. O HLS publica arquivos temporários somente depois de concluir cada segmento. O FFmpeg não força reconexão em EOF ou HTTP 404, pois o demuxer HLS já atualiza suas playlists e repetir recursos expirados pode travar o fluxo. Cada canal só é convertido quando um dispositivo solicita seu manifesto ou segmentos; se não houver novas solicitações por 90 segundos, o processo daquele canal é encerrado automaticamente. Enquanto há espectadores, um monitor verifica se novos segmentos estão sendo produzidos; se a origem parar de entregar dados por cerca de 35 segundos, o KTV reinicia automaticamente a conexão, respeitando um intervalo mínimo entre tentativas. Canais não acessados nunca são convertidos. O catálogo atualiza a cada cinco minutos sem reiniciar a sessão ativa. O diagnóstico de cada processo FFmpeg é gravado em `data/hls/ID-DO-CANAL/ffmpeg.log`.
 
 O modo automático usa FFmpeg se ele estiver instalado. Sem FFmpeg, o servidor entra em modo direto e entrega o endereço original — nesse modo não há conversão nem redução da carga de compatibilidade na TV.
 
@@ -109,7 +109,7 @@ A Samsung ainda precisa decodificar e exibir o H.264/AAC; isso é inerente à re
 
 Nem todo canal é garantido: links indisponíveis, DRM, formatos de entrada não suportados pelo FFmpeg ou restrições do provedor podem impedir a conversão. Este servidor não remove DRM.
 
-Versão: **0.4.2**
+Versão: **0.4.3**
 
 
 Na versão 0.3.3, a página inicial de diagnóstico foi simplificada para navegadores Samsung antigos e não oferece links diretos para endpoints JSON/M3U. Esses endpoints continuam disponíveis para o aplicativo KTV e para players compatíveis. A versão 0.4.0 acrescenta o catálogo `/watch` e o player HTML5 `/watch/ID`, sem remover as rotas existentes.
