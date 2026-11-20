@@ -16,7 +16,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -218,15 +218,22 @@ class Handler(BaseHTTPRequestHandler):
                 source = self.server.source or "Não carregada"
                 error = self.server.last_error or "Nenhum"
             title = "Diagnóstico KTV Server" if path.startswith("/tv-info") else "KTV Server IPTV"
-            html = """<!doctype html><html lang="pt-BR"><meta charset="utf-8">
-<title>{title}</title><meta name="viewport" content="width=device-width,initial-scale=1">
-<body style="font:16px Arial;background:#101827;color:#f5f7fa;padding:28px">
-<h1>{title}</h1><p>Status: <b style="color:#35c98a">ONLINE</b></p>
-<p>Versão: {version}</p><p>Canais HLS: {channels}</p><p>Processamento: {mode}</p>
-<p>Origem: {source}</p><p>Último erro: {error}</p>
-<p><a style="color:#78baff" href="/api/health">API de saúde</a> ·
-<a style="color:#78baff" href="/api/state">Catálogo JSON</a> ·
-<a style="color:#78baff" href="/playlist.m3u">Playlist M3U</a></p></body></html>""".format(
+            # Página de diagnóstico deliberadamente simples para navegadores Samsung antigos.
+            # Não inclui links para JSON/M3U, pois o navegador pode tentar baixá-los.
+            html = """<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>{title}</title></head>
+<body bgcolor="#101827" text="#f5f7fa">
+<h2>{title}</h2>
+<p>STATUS: ONLINE</p>
+<p>VERSAO: {version}</p>
+<p>CANAIS HLS: {channels}</p>
+<p>PROCESSAMENTO: {mode}</p>
+<p>ORIGEM: {source}</p>
+<p>ULTIMO ERRO: {error}</p>
+<hr>
+<p>Servidor ativo. Esta pagina e apenas informativa.</p>
+<p>Configure o endereco do servidor no aplicativo KTV da TV.</p>
+</body></html>""".format(
                 title=title, version=VERSION, channels=channels, mode=mode,
                 source=source, error=error)
             return self.respond(200, html, "text/html; charset=utf-8")
