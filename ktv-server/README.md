@@ -72,6 +72,10 @@ Para desativar a conversão:
 py server.py --mode direct
 ```
 
+## Compatibilidade com Samsung Legacy
+
+A rota `/api/state` mantém o contrato esperado pelo aplicativo Samsung: `version` numérico, `items`, `index` e `playing`. Para reduzir o trabalho do navegador antigo, cada item contém somente `name`, `type`, `url` e `duration`. O JSON é compacto e caracteres fora de ASCII são escapados, evitando dependência de interpretação de codificação no firmware.
+
 ## Endereços
 
 - `http://IP-DO-PC/api/state` — integração com o aplicativo Samsung.
@@ -89,4 +93,4 @@ A Samsung ainda precisa decodificar e exibir o H.264/AAC; isso é inerente à re
 
 Nem todo canal é garantido: links indisponíveis, DRM, formatos de entrada não suportados pelo FFmpeg ou restrições do provedor podem impedir a conversão. Este servidor não remove DRM.
 
-Versão: **0.3.1**
+Versão: **0.3.2**
