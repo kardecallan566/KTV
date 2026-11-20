@@ -1,6 +1,6 @@
 # KTV Server IPTV
 
-Servidor independente para preparar canais IPTV no computador e entregar um HLS mais compatível ao aplicativo KTV instalado na Samsung Smart TV.
+Servidor independente para preparar canais IPTV no computador e entregar HLS compatível ao aplicativo KTV ou ao navegador da Samsung Smart TV.
 
 ## Executar no Windows
 
@@ -82,10 +82,26 @@ A rota `/api/state` mantém o contrato esperado pelo aplicativo Samsung: `versio
 - `http://IP-DO-PC/api/channels` — catálogo JSON.
 - `http://IP-DO-PC/playlist.m3u` — playlist de saída.
 - `http://IP-DO-PC/` e `/tv-info/` — páginas de diagnóstico compatíveis com versões anteriores.
+- `http://IP-DO-PC/watch` — catálogo de canais para abrir diretamente no navegador da TV.
+- `http://IP-DO-PC/watch/ID-DO-CANAL` — player HTML5 para um canal específico (o ID é obtido ao abrir o catálogo).
 - `http://IP-DO-PC/state` — alias legado do catálogo JSON; equivale a `/api/state`.
 - `http://IP-DO-PC/api/health` — diagnóstico, quantidade de canais e modo de processamento.
 
-Configure no aplicativo KTV da TV o endereço base exibido no terminal. Libere a porta escolhida no Firewall do Windows para redes privadas.
+### Assistir diretamente pelo navegador da Samsung
+
+Com o servidor ligado, abra no navegador da TV:
+
+```text
+http://IP-DO-PC/watch
+```
+
+Pesquise o canal e selecione-o. O servidor abre uma página HTML5 com player de vídeo e controles. Se o FFmpeg estiver ativo, o player recebe o HLS convertido pelo próprio computador em H.264/AAC e segmentos MPEG-TS. O primeiro acesso pode levar alguns segundos para preparar o fluxo.
+
+Se o navegador não iniciar sozinho, pressione PLAY no controle remoto. Alguns navegadores antigos bloqueiam reprodução automática com áudio. Esta página usa HLS nativo do navegador e não depende de bibliotecas JavaScript modernas; portanto, a reprodução depende de o firmware Samsung oferecer suporte a vídeo HTML5/HLS e aos codecs entregues.
+
+Para esse teste, mantenha o modo automático ou use `--mode transcode`. No modo `direct`, o navegador recebe a URL HLS original, que pode não ser compatível com a TV. Se o player mostrar erro ou tentar baixar o manifesto, isso indica uma limitação do navegador/firmware ou da fonte, e não confirma falha do catálogo do aplicativo.
+
+Configure também no aplicativo KTV da TV o endereço base exibido no terminal. Libere a porta escolhida no Firewall do Windows para redes privadas.
 
 ## Limites importantes
 
@@ -93,7 +109,7 @@ A Samsung ainda precisa decodificar e exibir o H.264/AAC; isso é inerente à re
 
 Nem todo canal é garantido: links indisponíveis, DRM, formatos de entrada não suportados pelo FFmpeg ou restrições do provedor podem impedir a conversão. Este servidor não remove DRM.
 
-Versão: **0.3.3**
+Versão: **0.4.0**
 
 
-Na versão 0.3.3, a página inicial de diagnóstico foi simplificada para navegadores Samsung antigos e não oferece links diretos para endpoints JSON/M3U. Esses endpoints continuam disponíveis para o aplicativo KTV e para players compatíveis.
+Na versão 0.3.3, a página inicial de diagnóstico foi simplificada para navegadores Samsung antigos e não oferece links diretos para endpoints JSON/M3U. Esses endpoints continuam disponíveis para o aplicativo KTV e para players compatíveis. A versão 0.4.0 acrescenta o catálogo `/watch` e o player HTML5 `/watch/ID`, sem remover as rotas existentes.
