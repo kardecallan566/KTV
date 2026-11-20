@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -154,8 +154,10 @@ class KTVServer(ThreadingHTTPServer):
             command = [
                 self.ffmpeg, "-hide_banner", "-loglevel", "warning", "-nostdin",
                 "-y", "-fflags", "+genpts+discardcorrupt",
-                "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
-                "-rw_timeout", "15000000", "-user_agent", "KTV-Server/{}".format(VERSION),
+                "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "10",
+                "-reconnect_at_eof", "1", "-reconnect_on_network_error", "1",
+                "-reconnect_on_http_error", "4xx,5xx",
+                "-rw_timeout", "30000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
                 "-vf", "scale='min(1280,iw)':-2", "-r", "25",
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
@@ -164,13 +166,17 @@ class KTVServer(ThreadingHTTPServer):
                 "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",
                 "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100",
                 "-f", "hls", "-hls_time", "4", "-hls_list_size", "8",
-                "-hls_flags", "delete_segments+independent_segments+omit_endlist",
+                "-hls_delete_threshold", "10",
+                "-hls_flags", "delete_segments+independent_segments+omit_endlist+temp_file",
                 "-hls_segment_filename", segment, output
             ]
             try:
-                proc = subprocess.Popen(command, stdin=subprocess.DEVNULL,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                # Preserve FFmpeg stderr to diagnose source and codec failures.
+                log_path = folder / "ffmpeg.log"
+                with open(log_path, "ab") as log_file:
+                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                        stdout=subprocess.DEVNULL, stderr=log_file,
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
                 self.processes[identity] = proc
                 return True
             except OSError as exc:
