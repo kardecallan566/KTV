@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.4.3"
+VERSION = "0.5.0"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -170,15 +170,33 @@ class KTVServer(ThreadingHTTPServer):
                     if now - progress >= self.stall_timeout and now - self.last_restart.get(identity, 0) >= self.restart_cooldown:
                         item = self.active_items.get(identity)
                         if item:
-                            print("[KTV] Sem novos segmentos; reconectando origem do canal {}".format(
-                                identity), flush=True)
-                            proc.terminate()
-                            self.processes.pop(identity, None)
-                            self.last_progress.pop(identity, None)
                             restart.append(dict(item))
             for item in restart:
-                self.start_transcode(item)
+                self.restart_transcode(item, "sem novos segmentos")
 
+    def restart_transcode(self, item, reason="fluxo parado"):
+        identity = item["id"]
+        with self.lock:
+            now = time.time()
+            if now - self.last_restart.get(identity, 0) < self.restart_cooldown:
+                return False
+            proc = self.processes.get(identity)
+            if proc and proc.poll() is None:
+                print("[KTV] Recuperando canal {}: {}".format(identity, reason), flush=True)
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=4)
+                except Exception:
+                    try:
+                        proc.kill()
+                        proc.wait(timeout=2)
+                    except Exception:
+                        pass
+            self.processes.pop(identity, None)
+            self.last_access.pop(identity, None)
+            self.last_progress.pop(identity, None)
+            self.active_items.pop(identity, None)
+        return self.start_transcode(item)
 
     def start_transcode(self, item):
         identity = item["id"]
@@ -203,7 +221,7 @@ class KTVServer(ThreadingHTTPServer):
                 # O demuxer HLS atualiza playlists sozinho. Reconectar em EOF/404
                 # força a releitura de recursos expirados e pode travar o fluxo em loop.
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "10",
-                "-rw_timeout", "30000000", "-user_agent", "KTV-Server/{}".format(VERSION),
+                "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
                 "-vf", "scale='min(1280,iw)':-2", "-r", "25",
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
@@ -341,14 +359,50 @@ class Handler(BaseHTTPRequestHandler):
 <title>{}</title></head>
 <body bgcolor="#000000" text="#ffffff">
 <h3>{}</h3>
-<video controls autoplay playsinline width="100%" height="auto">
+<video id="ktv-player" controls autoplay playsinline width="100%" height="auto">
 <source src="{}" type="application/vnd.apple.mpegurl">
 Seu navegador nao oferece suporte a video HLS.
 </video>
-<p>Se o video nao iniciar automaticamente, pressione PLAY.</p>
+<p id="ktv-status">Reproducao automatica e recuperacao de conexao ativadas.</p>
 <p><a href="/watch">Voltar aos canais</a></p>
+<script type="text/javascript">
+(function () {{
+    var video = document.getElementById("ktv-player");
+    var source = "{}";
+    var lastTime = -1;
+    var lastProgress = new Date().getTime();
+    var recovering = false;
+    function recover() {{
+        if (recovering || !video) return;
+        recovering = true;
+        lastProgress = new Date().getTime();
+        lastTime = -1;
+        try {{
+            video.pause();
+            video.src = source + (source.indexOf("?") >= 0 ? "&" : "?") + "retry=" + lastProgress;
+            video.load();
+            var result = video.play();
+            if (result && result.catch) result.catch(function () {{}});
+        }} catch (e) {{}}
+        window.setTimeout(function () {{ recovering = false; }}, 10000);
+    }}
+    video.addEventListener("error", function () {{
+        window.setTimeout(recover, 2000);
+    }}, false);
+    window.setInterval(function () {{
+        if (!video || video.paused || video.ended) return;
+        var now = new Date().getTime();
+        if (video.currentTime > lastTime + 0.4) {{
+            lastTime = video.currentTime;
+            lastProgress = now;
+        }} else if (now - lastProgress > 20000) {{
+            recover();
+        }}
+    }}, 5000);
+}}());
+</script>
 </body></html>""".format(html_lib.escape(item["name"]), html_lib.escape(item["name"]),
-                         html_lib.escape(stream_url, quote=True))
+                         html_lib.escape(stream_url, quote=True), html_lib.escape(stream_url, quote=True))
             return self.respond(200, page, "text/html; charset=utf-8")
         if path == "/api/health":
             with self.server.lock:
