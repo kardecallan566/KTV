@@ -20,15 +20,15 @@ Execute `start_server.bat` ou:
 py server.py
 ```
 
-Por padrão, o servidor usa a porta TCP 8787. O terminal mostra o endereço para configurar no pacote KTV da TV, o endereço do painel e um token administrativo. Mantenha o terminal aberto durante o uso.
+Por padrão, o servidor usa a porta TCP 80, mantendo compatibilidade com o endereço base usado pelo cliente Orsay legado. O terminal mostra o endereço para configurar no pacote KTV da TV, o endereço do painel e um token administrativo. Mantenha o terminal aberto durante o uso.
 
 Se precisar informar manualmente o IP do computador:
 
 ```powershell
-py server.py --ip 192.168.1.20 --port 8787
+py server.py --ip 192.168.1.20 --port 80
 ```
 
-Abra o painel em `http://IP-DO-PC:8787/admin/`. Cole no painel o token exibido no terminal. Libere Python/porta 8787 no Firewall do Windows apenas para redes privadas.
+Abra o painel em `http://IP-DO-PC:8787/admin/`. Cole no painel o token exibido no terminal. Libere Python/porta 80 no Firewall do Windows apenas para redes privadas.
 
 ## Integração com o KTV Orsay
 
