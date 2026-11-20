@@ -400,6 +400,7 @@ def main():
     print("Servidor:      {}".format(base))
     print("API Samsung:   {}/api/state".format(base))
     print("Playlist M3U:  {}/playlist.m3u".format(base))
+    print("TV no navegador: {}/watch".format(base))
     print("Canais HLS:    {}".format(len(server.channels)))
     print("Processamento: {}".format("FFmpeg H.264/AAC no servidor" if server.transcode else "direto (sem transcodificação)"))
     if server.transcode:
