@@ -171,6 +171,15 @@ class Handler(BaseHTTPRequestHandler):
             event = params.get("event", ["unknown"])[0][:64]
             self.server.events[client] = {"event": event, "ip": self.client_address[0], "seen": time.time()}
             return self.json(200, {"ok": True})
+        if path == "/api/library":
+            if not self.authorized():
+                return self.json(401, {"error": "Token administrativo inválido"})
+            items = []
+            for file in sorted(MEDIA.iterdir()):
+                if file.is_file() and file.suffix.lower() in ALLOWED:
+                    kind = "image" if file.suffix.lower() in (".jpg", ".jpeg", ".png", ".gif", ".webp") else "video"
+                    items.append({"id": file.name, "name": file.name, "type": kind, "bytes": file.stat().st_size})
+            return self.json(200, {"items": items})
         if path == "/api/status":
             if not self.authorized():
                 return self.json(401, {"error": "Token administrativo inválido"})
