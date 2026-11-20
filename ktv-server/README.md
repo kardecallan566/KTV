@@ -1,58 +1,90 @@
 # KTV Server IPTV
 
-Servidor independente para disponibilizar canais IPTV HLS ao aplicativo KTV já instalado na Samsung Smart TV. Esta pasta contém somente o servidor; não é necessário alterar ou reinstalar o aplicativo da TV.
+Servidor independente para preparar canais IPTV no computador e entregar um HLS mais compatível ao aplicativo KTV instalado na Samsung Smart TV.
 
-## Executar
+## Executar no Windows
 
-Requisitos: Python 3.9+ e computador/TV na mesma rede local.
+Requisitos:
+- Python 3.9+
+- FFmpeg instalado e disponível no PATH (recomendado para o modo de processamento)
+- TV e computador na mesma rede local
 
-No Windows, abra o terminal nesta pasta e execute:
+Abra o terminal nesta pasta e execute:
 
 ```powershell
 py server.py
 ```
 
-Ou dê duplo clique em `start_server.bat`.
+Ou execute `start_server.bat`.
 
-O terminal informa o IP do computador, a quantidade de canais HLS carregados e o endereço que deve estar configurado como servidor no aplicativo KTV da TV. Por padrão usa a porta 80.
+O terminal mostra o endereço do servidor, o número de canais e se o processamento FFmpeg está ativo. O padrão usa a porta 80.
 
-Se a porta 80 já estiver ocupada ou você não puder usá-la:
+### Instalar FFmpeg
+
+Instale uma compilação FFmpeg para Windows e adicione a pasta `bin` ao PATH do Windows. Feche e abra novamente o terminal; confirme com:
+
+```powershell
+ffmpeg -version
+```
+
+Se o executável estiver em outro local, inicie informando o caminho:
+
+```powershell
+py server.py --ffmpeg "C:\\ffmpeg\\bin\\ffmpeg.exe"
+```
+
+Se a porta 80 estiver ocupada:
 
 ```powershell
 py server.py --port 8787
 ```
 
-Se quiser usar outra playlist M3U:
+Para escolher outra playlist:
 
 ```powershell
 py server.py --playlist "https://exemplo.com/lista.m3u"
 ```
 
-Para informar manualmente o IP anunciado à TV:
+## Processamento feito no computador
+
+Quando FFmpeg está disponível, o modo automático prepara o canal solicitado sob demanda:
+
+- recebe o HLS original no computador;
+- converte o vídeo para H.264, perfil Main, pixel format YUV420P e até 720p;
+- converte o áudio para AAC estéreo;
+- gera uma nova saída HLS com segmentos MPEG-TS curtos;
+- entrega à Samsung somente a playlist e os segmentos já preparados;
+- mantém apenas o canal solicitado em transcodificação para evitar ocupar CPU com centenas de canais que ninguém está assistindo.
+
+A conversão começa quando a TV solicita o manifesto do canal. A primeira abertura pode demorar alguns segundos enquanto o FFmpeg inicializa e gera os primeiros segmentos. O catálogo atualiza a cada cinco minutos sem reiniciar a sessão ativa.
+
+O modo automático usa FFmpeg se ele estiver instalado. Sem FFmpeg, o servidor entra em modo direto e entrega o endereço original — nesse modo não há conversão nem redução da carga de compatibilidade na TV.
+
+Para exigir transcodificação e falhar se FFmpeg não estiver instalado:
 
 ```powershell
-py server.py --ip 192.168.1.20
+py server.py --mode transcode
 ```
 
-## O que o servidor faz
+Para desativar a conversão:
 
-- Baixa a playlist M3U configurada e extrai os canais com URLs HLS (.m3u8).
-- Carrega a playlist reserva histórica se a lista principal estiver vazia, indisponível ou reduzida.
-- Mantém o catálogo em memória e atualiza a playlist a cada cinco minutos, sem interromper a sessão do canal que a TV já estiver reproduzindo.
-- Entrega ao KTV Orsay o estado esperado em `/api/state`, com cada canal como item `hls` e sua URL de transmissão.
-- Disponibiliza `/api/channels`, `/playlist.m3u` e `/api/health` para diagnóstico.
+```powershell
+py server.py --mode direct
+```
 
 ## Endereços
 
 - `http://IP-DO-PC/api/state` — integração com o aplicativo Samsung.
 - `http://IP-DO-PC/api/channels` — catálogo JSON.
-- `http://IP-DO-PC/playlist.m3u` — playlist gerada pelo servidor.
-- `http://IP-DO-PC/api/health` — estado do servidor.
+- `http://IP-DO-PC/playlist.m3u` — playlist de saída.
+- `http://IP-DO-PC/api/health` — diagnóstico, quantidade de canais e modo de processamento.
 
-A TV e o computador precisam estar na mesma rede. Permita a porta escolhida no Firewall do Windows para redes privadas. Não exponha o servidor diretamente à Internet.
+Configure no aplicativo KTV da TV o endereço base exibido no terminal. Libere a porta escolhida no Firewall do Windows para redes privadas.
 
-## Compatibilidade
+## Limites importantes
 
-O cliente KTV Orsay usa o player HLS nativo da Samsung. Por isso, o servidor anuncia URLs HLS diretamente; não converte fluxos TS, não transcodifica vídeo e não promete que todo canal da playlist será compatível com o firmware da TV. A reprodução depende também da disponibilidade do link de origem e dos codecs/limitações do aparelho.
+A Samsung ainda precisa decodificar e exibir o H.264/AAC; isso é inerente à reprodução de vídeo. O servidor assume a conversão de codecs, preparação HLS e gestão do fluxo. A transcodificação exige CPU e pode exigir bastante processamento; por padrão há somente um canal convertido por vez. A capacidade depende do processador do computador e da resolução/bitrate da fonte.
 
-Versão: **0.2.0**
+Nem todo canal é garantido: links indisponíveis, DRM, formatos de entrada não suportados pelo FFmpeg ou restrições do provedor podem impedir a conversão. Este servidor não remove DRM.
+
+Versão: **0.3.0**
