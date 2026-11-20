@@ -1,284 +1,194 @@
 #!/usr/bin/env python3
-"""KTV Server - servidor local independente para Samsung Smart TV Orsay.
-Compatível com o contrato usado por tv-orsay/js/app.js.
-Somente biblioteca padrão do Python.
-"""
+"""KTV Server: entrega canais IPTV HLS ao aplicativo Samsung KTV Orsay."""
 import argparse
 import json
-import mimetypes
-import os
-import secrets
+import re
+import socket
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.error import URLError
+from urllib.parse import urljoin, urlsplit
+from urllib.request import Request, urlopen
 
-VERSION = "0.1.0"
-ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data"
-MEDIA = DATA / "media"
-STATE_FILE = DATA / "state.json"
-ALLOWED = {".mp4", ".m4v", ".jpg", ".jpeg", ".png", ".gif", ".webp"}
-MAX_UPLOAD = 100 * 1024 * 1024
+VERSION = "0.2.0"
+DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
+FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
+MIN_CHANNELS = 100
+REFRESH_SECONDS = 300
 
 
-def load_state():
-    DATA.mkdir(parents=True, exist_ok=True)
-    MEDIA.mkdir(parents=True, exist_ok=True)
-    if STATE_FILE.exists():
-        try:
-            value = json.loads(STATE_FILE.read_text(encoding="utf-8"))
-            if isinstance(value, dict) and isinstance(value.get("items"), list):
-                value.setdefault("version", 1)
-                value.setdefault("index", 0)
-                value.setdefault("playing", True)
-                return value
-        except (OSError, ValueError):
-            pass
-    return {"version": 1, "items": [], "index": 0, "playing": True}
+def parse_m3u(content, hls_only=True):
+    channels = []
+    meta = None
+    for raw in content.replace("\r", "").split("\n"):
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#EXTINF:"):
+            attrs = dict((k.lower(), v) for k, v in re.findall(r'([\w-]+)="([^"]*)"', line))
+            name = line.rsplit(",", 1)[-1].strip() if "," in line else attrs.get("tvg-name", "Canal")
+            meta = {"name": name or attrs.get("tvg-name", "Canal"),
+                    "category": attrs.get("group-title", "Outros"),
+                    "logo": attrs.get("tvg-logo", ""),
+                    "tvg_id": attrs.get("tvg-id", "")}
+        elif not line.startswith("#") and meta:
+            url = urljoin(DEFAULT_PLAYLIST, line)
+            path = urlsplit(url).path.lower()
+            if not (url.startswith("http://") or url.startswith("https://")):
+                meta = None
+                continue
+            if hls_only and not (".m3u8" in path or "m3u8" in url.lower()):
+                meta = None
+                continue
+            channel = dict(meta)
+            channel.update({"type": "hls", "url": url, "duration": 0})
+            channels.append(channel)
+            meta = None
+    # URLs repetidas são removidas sem alterar a ordem da playlist.
+    seen = set()
+    unique = []
+    for item in channels:
+        if item["url"] not in seen:
+            seen.add(item["url"])
+            unique.append(item)
+    return unique
+
+
+def download_playlist(url):
+    request = Request(url, headers={"User-Agent": "KTV-Server/{}".format(VERSION),
+                                    "Accept": "application/x-mpegURL,audio/x-mpegurl,*/*"})
+    with urlopen(request, timeout=25) as response:
+        data = response.read(25 * 1024 * 1024 + 1)
+    if len(data) > 25 * 1024 * 1024:
+        raise ValueError("Playlist excede 25 MB")
+    return data.decode("utf-8-sig", errors="replace")
 
 
 class KTVServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address, host_url):
+    def __init__(self, address, playlist_url, fallback_url):
         super().__init__(address, Handler)
-        self.host_url = host_url.rstrip("/")
-        self.token = secrets.token_urlsafe(24)
+        self.playlist_url = playlist_url
+        self.fallback_url = fallback_url
         self.lock = threading.RLock()
-        self.state = load_state()
+        self.channels = []
+        self.version = 1
+        self.last_refresh = 0
+        self.last_error = ""
+        self.source = ""
         self.clients = {}
         self.events = {}
-        self.tv_probes = []
+        self.refresh_playlist()
+        self.refresh_thread = threading.Thread(target=self.refresh_loop, daemon=True)
+        self.refresh_thread.start()
 
-    def save(self):
-        tmp = STATE_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self.state, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(tmp, STATE_FILE)
+    def refresh_playlist(self):
+        try:
+            text = download_playlist(self.playlist_url)
+            channels = parse_m3u(text)
+            source = self.playlist_url
+            if len(channels) < MIN_CHANNELS and self.fallback_url:
+                fallback_text = download_playlist(self.fallback_url)
+                fallback_channels = parse_m3u(fallback_text)
+                if len(fallback_channels) > len(channels):
+                    channels, source = fallback_channels, self.fallback_url
+            if not channels:
+                raise ValueError("Nenhum canal HLS válido foi encontrado na playlist")
+            with self.lock:
+                if [x["url"] for x in channels] != [x["url"] for x in self.channels]:
+                    self.channels = channels
+                    self.version += 1
+                self.source = source
+                self.last_refresh = time.time()
+                self.last_error = ""
+            print("[KTV] Playlist carregada: {} canais HLS".format(len(channels)), flush=True)
+            return True
+        except Exception as exc:
+            with self.lock:
+                self.last_error = str(exc)
+                self.last_refresh = time.time()
+            print("[KTV] Falha ao atualizar playlist: {}".format(exc), flush=True)
+            return False
+
+    def refresh_loop(self):
+        while True:
+            time.sleep(REFRESH_SECONDS)
+            self.refresh_playlist()
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "KTV-Server/0.1.0"
+    server_version = "KTV-IPTV/{}".format(VERSION)
 
     def log_message(self, fmt, *args):
-        print("[KTV Server] " + (fmt % args), flush=True)
+        print("[KTV] " + (fmt % args), flush=True)
 
-    def send_bytes(self, status, body, mime="application/json; charset=utf-8", extra=None):
+    def respond(self, status, body, mime="application/json; charset=utf-8"):
+        encoded = body if isinstance(body, bytes) else body.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", mime)
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("X-Content-Type-Options", "nosniff")
-        if extra:
-            for key, value in extra.items():
-                self.send_header(key, value)
         self.end_headers()
         try:
-            self.wfile.write(body)
+            self.wfile.write(encoded)
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def json(self, status, value):
-        self.send_bytes(status, json.dumps(value, ensure_ascii=False).encode("utf-8"))
-
-    def read_json(self, limit=1024 * 1024):
-        try:
-            length = int(self.headers.get("Content-Length", "0"))
-        except ValueError:
-            return None
-        if length < 0 or length > limit:
-            return None
-        try:
-            value = json.loads(self.rfile.read(length).decode("utf-8"))
-            return value if isinstance(value, dict) else None
-        except (UnicodeError, ValueError):
-            return None
-
-    def authorized(self):
-        from hmac import compare_digest
-        return compare_digest(self.headers.get("X-KTV-Token", ""), self.server.token)
-
-    def media_file(self, path):
-        if not path.is_file():
-            return self.json(404, {"error": "Arquivo não encontrado"})
-        size = path.stat().st_size
-        start, end, status = 0, max(0, size - 1), 200
-        header = self.headers.get("Range", "")
-        if header:
-            import re
-            match = re.fullmatch(r"bytes=(\d*)-(\d*)", header)
-            if not match or (not match.group(1) and not match.group(2)):
-                return self.send_bytes(416, b"", extra={"Content-Range": "bytes */{}".format(size)})
-            try:
-                if not match.group(1):
-                    start = max(0, size - int(match.group(2)))
-                else:
-                    start = int(match.group(1))
-                    if match.group(2):
-                        end = min(end, int(match.group(2)))
-                if size == 0 or start > end or start >= size:
-                    return self.send_bytes(416, b"", extra={"Content-Range": "bytes */{}".format(size)})
-            except ValueError:
-                return self.send_bytes(416, b"", extra={"Content-Range": "bytes */{}".format(size)})
-            status = 206
-        length = end - start + 1
-        self.send_response(status)
-        self.send_header("Content-Type", mimetypes.guess_type(path.name)[0] or "application/octet-stream")
-        self.send_header("Content-Length", str(length))
-        self.send_header("Accept-Ranges", "bytes")
-        self.send_header("Cache-Control", "no-store")
-        if status == 206:
-            self.send_header("Content-Range", "bytes {}-{}/{}".format(start, end, size))
-        self.end_headers()
-        try:
-            with path.open("rb") as stream:
-                stream.seek(start)
-                remaining = length
-                while remaining:
-                    chunk = stream.read(min(64 * 1024, remaining))
-                    if not chunk:
-                        break
-                    self.wfile.write(chunk)
-                    remaining -= len(chunk)
-        except (BrokenPipeError, ConnectionResetError):
-            pass
+    def json(self, status, data):
+        return self.respond(status, json.dumps(data, ensure_ascii=False))
 
     def do_GET(self):
         parsed = urlsplit(self.path)
-        path = unquote(parsed.path)
-        if path in ("/", "/admin", "/admin/"):
-            return self.media_file(ROOT / "admin" / "index.html")
+        path = parsed.path
         if path == "/api/health":
-            return self.json(200, {"app": "KTV Server", "version": VERSION, "status": "ok"})
-        if path == "/api/tv-probe":
-            self.server.tv_probes.append({"ip": self.client_address[0],
-                "user_agent": self.headers.get("User-Agent", "")[:240], "seen": time.time()})
-            self.server.tv_probes = self.server.tv_probes[-20:]
-            return self.json(200, {"ok": True})
-        if path == "/api/state":
-            client = parse_qs(parsed.query).get("client", ["orsay"])[0]
             with self.server.lock:
-                self.server.clients[client[:32]] = {"ip": self.client_address[0], "seen": time.time()}
-                data = dict(self.server.state)
-                data["items"] = [dict(item, url=(item["url"] if item.get("type") == "hls"
-                    else self.server.host_url + "/media/" + item["id"])) for item in data["items"]]
-            return self.json(200, data)
+                return self.json(200, {"app": "KTV Server IPTV", "version": VERSION,
+                    "status": "ok", "channels": len(self.server.channels),
+                    "source": self.server.source, "last_error": self.server.last_error})
+        if path == "/api/state":
+            from urllib.parse import parse_qs
+            client = parse_qs(parsed.query).get("client", ["samsung"])[0][:40]
+            with self.server.lock:
+                self.server.clients[client] = {"ip": self.client_address[0], "seen": time.time()}
+                channels = [dict(item) for item in self.server.channels]
+                version = self.server.version
+            return self.json(200, {"version": version, "items": channels, "index": 0, "playing": True})
+        if path == "/api/channels":
+            with self.server.lock:
+                return self.json(200, {"count": len(self.server.channels), "items": self.server.channels})
+        if path == "/playlist.m3u":
+            with self.server.lock:
+                items = list(self.server.channels)
+            lines = ["#EXTM3U"]
+            for item in items:
+                attrs = ' tvg-logo="{}" group-title="{}"'.format(
+                    item["logo"].replace('"', ""), item["category"].replace('"', ""))
+                lines.append("#EXTINF:-1{} ,{}".format(attrs, item["name"].replace(",", " ")))
+                lines.append(item["url"])
+            return self.respond(200, "\n".join(lines) + "\n", "audio/x-mpegurl; charset=utf-8")
         if path == "/api/event":
+            from urllib.parse import parse_qs
             params = parse_qs(parsed.query)
-            client = params.get("client", ["tv"])[0][:32]
-            event = params.get("event", ["unknown"])[0][:64]
+            client = params.get("client", ["samsung"])[0][:40]
+            event = params.get("event", ["unknown"])[0][:80]
             self.server.events[client] = {"event": event, "ip": self.client_address[0], "seen": time.time()}
             return self.json(200, {"ok": True})
-        if path == "/api/library":
-            if not self.authorized():
-                return self.json(401, {"error": "Token administrativo inválido"})
-            items = []
-            for file in sorted(MEDIA.iterdir()):
-                if file.is_file() and file.suffix.lower() in ALLOWED:
-                    kind = "image" if file.suffix.lower() in (".jpg", ".jpeg", ".png", ".gif", ".webp") else "video"
-                    items.append({"id": file.name, "name": file.name, "type": kind, "bytes": file.stat().st_size})
-            return self.json(200, {"items": items})
-        if path == "/api/status":
-            if not self.authorized():
-                return self.json(401, {"error": "Token administrativo inválido"})
-            now = time.time()
-            with self.server.lock:
-                clients = {k: {"ip": v["ip"], "last_seen_seconds": round(now-v["seen"])}
-                           for k, v in self.server.clients.items()}
-                events = {k: {"event": v["event"], "ip": v["ip"], "seconds_ago": round(now-v["seen"])}
-                          for k, v in self.server.events.items()}
-                return self.json(200, {"version": VERSION, "clients": clients,
-                    "events": events, "tv_probes": self.server.tv_probes,
-                    "state_version": self.server.state["version"]})
-        if path.startswith("/media/"):
-            name = path[len("/media/"):]
-            if not name or "/" in name or "\\" in name or name.startswith("."):
-                return self.json(404, {"error": "Caminho inválido"})
-            file = MEDIA / name
-            if file.suffix.lower() not in ALLOWED:
-                return self.json(404, {"error": "Formato não permitido"})
-            return self.media_file(file)
         return self.json(404, {"error": "Rota não encontrada"})
-
-    def do_POST(self):
-        path = urlsplit(self.path).path
-        if not self.authorized():
-            return self.json(401, {"error": "Token administrativo inválido"})
-        if path == "/api/admin/upload":
-            try:
-                size = int(self.headers.get("Content-Length", "0"))
-            except ValueError:
-                size = 0
-            name = unquote(parse_qs(urlsplit(self.path).query).get("filename", [""])[0])
-            suffix = Path(name).suffix.lower()
-            if size <= 0 or size > MAX_UPLOAD or suffix not in ALLOWED:
-                return self.json(400, {"error": "Arquivo inválido ou maior que 100 MB"})
-            safe = secrets.token_hex(8) + suffix
-            target = MEDIA / safe
-            remaining = size
-            try:
-                with target.open("xb") as output:
-                    while remaining:
-                        chunk = self.rfile.read(min(64 * 1024, remaining))
-                        if not chunk:
-                            raise OSError("Upload incompleto")
-                        output.write(chunk)
-                        remaining -= len(chunk)
-            except OSError:
-                target.unlink(missing_ok=True)
-                return self.json(400, {"error": "Falha ao receber arquivo"})
-            return self.json(201, {"id": safe, "name": name})
-        if path not in ("/api/admin/state", "/api/admin/command"):
-            return self.json(404, {"error": "Rota não encontrada"})
-        data = self.read_json()
-        if data is None:
-            return self.json(400, {"error": "JSON inválido"})
-        with self.server.lock:
-            state = dict(self.server.state)
-            if path.endswith("/state"):
-                ids = data.get("ids")
-                if not isinstance(ids, list) or len(ids) > 200:
-                    return self.json(400, {"error": "Lista de mídias inválida"})
-                items = []
-                for identity in ids:
-                    if not isinstance(identity, str) or Path(identity).name != identity:
-                        return self.json(400, {"error": "Identificador inválido"})
-                    file = MEDIA / identity
-                    if not file.is_file() or file.suffix.lower() not in ALLOWED:
-                        return self.json(400, {"error": "Mídia não encontrada: " + identity})
-                    kind = "image" if file.suffix.lower() in (".jpg", ".jpeg", ".png", ".gif", ".webp") else "video"
-                    items.append({"id": identity, "name": identity, "type": kind, "duration": 10})
-                state.update(items=items, index=0, playing=True)
-            else:
-                command = data.get("command")
-                count = len(state["items"])
-                if command == "next" and count:
-                    state["index"] = (state["index"] + 1) % count
-                elif command == "previous" and count:
-                    state["index"] = (state["index"] - 1) % count
-                elif command == "play":
-                    state["playing"] = True
-                elif command == "pause":
-                    state["playing"] = False
-                elif command == "clear":
-                    state.update(items=[], index=0, playing=True)
-                else:
-                    return self.json(400, {"error": "Comando inválido"})
-            state["version"] += 1
-            self.server.state = state
-            self.server.save()
-        return self.json(200, state)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="KTV Server para Samsung Smart TV")
+    parser = argparse.ArgumentParser(description="Servidor IPTV HLS para Samsung KTV Orsay")
     parser.add_argument("--host", default="0.0.0.0", help="Interface de rede")
-    parser.add_argument("--port", type=int, default=80, help="Porta HTTP (padrão 80, compatível com o cliente Orsay instalado)")
-    parser.add_argument("--ip", default="", help="IP do computador anunciado para a TV")
+    parser.add_argument("--port", type=int, default=80, help="Porta HTTP (padrão 80)")
+    parser.add_argument("--ip", default="", help="IP do computador exibido para configurar na TV")
+    parser.add_argument("--playlist", default=DEFAULT_PLAYLIST, help="URL da playlist M3U")
+    parser.add_argument("--no-fallback", action="store_true", help="Desativa playlist reserva")
     args = parser.parse_args()
-    import socket
     ip = args.ip
     if not ip:
         probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -289,16 +199,16 @@ def main():
             ip = "127.0.0.1"
         finally:
             probe.close()
-    base = "http://{}:{}".format(ip, args.port)
-    server = KTVServer((args.host, args.port), base)
-    print("\n=== KTV SERVER v{} ===".format(VERSION))
-    print("Painel:       {}".format(base + "/admin/"))
-    print("URL para TV:  {}".format(base))
-    print("Diagnóstico:  {}".format(base + "/api/health"))
-    print("Token admin:  {}".format(server.token))
-    print("Mídias:       {}".format(MEDIA))
-    print("Apenas rede local confiável. Não exponha esta porta à Internet.")
-    print("CTRL+C para encerrar.\n", flush=True)
+    fallback = "" if args.no_fallback else FALLBACK_PLAYLIST
+    server = KTVServer((args.host, args.port), args.playlist, fallback)
+    print("\n=== KTV SERVER IPTV v{} ===".format(VERSION))
+    print("Servidor:      http://{}:{}/".format(ip, args.port))
+    print("API Samsung:   http://{}:{}/api/state".format(ip, args.port))
+    print("Playlist M3U:  http://{}:{}/playlist.m3u".format(ip, args.port))
+    print("Canais HLS:    {}".format(len(server.channels)))
+    print("Origem:        {}".format(server.source or args.playlist))
+    print("Configure o endereço base do servidor no KTV instalado na Samsung.")
+    print("TV e computador devem estar na mesma rede. CTRL+C encerra.\n", flush=True)
     try:
         server.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:
