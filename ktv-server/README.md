@@ -93,4 +93,7 @@ A Samsung ainda precisa decodificar e exibir o H.264/AAC; isso é inerente à re
 
 Nem todo canal é garantido: links indisponíveis, DRM, formatos de entrada não suportados pelo FFmpeg ou restrições do provedor podem impedir a conversão. Este servidor não remove DRM.
 
-Versão: **0.3.2**
+Versão: **0.3.3**
+
+
+Na versão 0.3.3, a página inicial de diagnóstico foi simplificada para navegadores Samsung antigos e não oferece links diretos para endpoints JSON/M3U. Esses endpoints continuam disponíveis para o aplicativo KTV e para players compatíveis.
