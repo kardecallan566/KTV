@@ -1,56 +1,58 @@
-# KTV Server
+# KTV Server IPTV
 
-Servidor local independente para conectar o aplicativo **KTV Orsay** da Samsung Smart TV ao computador. Este módulo é separado do KTV OS e não altera os arquivos do aplicativo instalado na TV.
+Servidor independente para disponibilizar canais IPTV HLS ao aplicativo KTV já instalado na Samsung Smart TV. Esta pasta contém somente o servidor; não é necessário alterar ou reinstalar o aplicativo da TV.
 
-**Versão inicial: 0.1.0**
+## Executar
 
-## Requisitos
+Requisitos: Python 3.9+ e computador/TV na mesma rede local.
 
-- Windows 10/11, Linux ou macOS
-- Python 3.9 ou superior
-- Computador e TV na mesma rede local
-
-Não exige pacotes Python externos.
-
-## Iniciar no Windows
-
-Execute `start_server.bat` ou:
+No Windows, abra o terminal nesta pasta e execute:
 
 ```powershell
 py server.py
 ```
 
-Por padrão, o servidor usa a porta TCP 80, mantendo compatibilidade com o endereço base usado pelo cliente Orsay legado. O terminal mostra o endereço para configurar no pacote KTV da TV, o endereço do painel e um token administrativo. Mantenha o terminal aberto durante o uso.
+Ou dê duplo clique em `start_server.bat`.
 
-Se precisar informar manualmente o IP do computador:
+O terminal informa o IP do computador, a quantidade de canais HLS carregados e o endereço que deve estar configurado como servidor no aplicativo KTV da TV. Por padrão usa a porta 80.
+
+Se a porta 80 já estiver ocupada ou você não puder usá-la:
 
 ```powershell
-py server.py --ip 192.168.1.20 --port 80
+py server.py --port 8787
 ```
 
-Abra o painel em `http://IP-DO-PC:8787/admin/`. Cole no painel o token exibido no terminal. Libere Python/porta 80 no Firewall do Windows apenas para redes privadas.
+Se quiser usar outra playlist M3U:
 
-## Integração com o KTV Orsay
+```powershell
+py server.py --playlist "https://exemplo.com/lista.m3u"
+```
 
-O servidor mantém compatibilidade com as rotas consumidas pelo cliente atual:
+Para informar manualmente o IP anunciado à TV:
 
-- `GET /api/health`
-- `GET /api/state?client=orsay`
-- `GET /api/event?client=orsay&event=...`
-- `GET /api/status` (autenticado)
-- `GET /media/NOME` com suporte a HTTP Range para busca em vídeos
-- `POST /api/admin/upload` (autenticado)
-- `POST /api/admin/state` (autenticado)
-- `POST /api/admin/command` (autenticado)
+```powershell
+py server.py --ip 192.168.1.20
+```
 
-O endereço base do servidor precisa ser configurado no arquivo de runtime do pacote da TV. O cliente Orsay continua separado e não é alterado por este módulo.
+## O que o servidor faz
 
-## Segurança
+- Baixa a playlist M3U configurada e extrai os canais com URLs HLS (.m3u8).
+- Carrega a playlist reserva histórica se a lista principal estiver vazia, indisponível ou reduzida.
+- Mantém o catálogo em memória e atualiza a playlist a cada cinco minutos, sem interromper a sessão do canal que a TV já estiver reproduzindo.
+- Entrega ao KTV Orsay o estado esperado em `/api/state`, com cada canal como item `hls` e sua URL de transmissão.
+- Disponibiliza `/api/channels`, `/playlist.m3u` e `/api/health` para diagnóstico.
 
-- O token administrativo é gerado a cada inicialização e exibido apenas no terminal.
-- Uploads são limitados a 100 MB e extensões permitidas.
-- Não exponha a porta do servidor diretamente à Internet. Use somente em uma rede local confiável.
+## Endereços
 
-## Estado desta versão
+- `http://IP-DO-PC/api/state` — integração com o aplicativo Samsung.
+- `http://IP-DO-PC/api/channels` — catálogo JSON.
+- `http://IP-DO-PC/playlist.m3u` — playlist gerada pelo servidor.
+- `http://IP-DO-PC/api/health` — estado do servidor.
 
-Esta é a primeira separação do servidor em uma pasta própria. Inclui API compatível com o cliente Orsay, painel web inicial, armazenamento local, upload de mídia, fila de reprodução, telemetria de clientes e suporte a HTTP Range. A integração de ponta a ponta com a TV ainda precisa ser validada após configurar o endereço do novo servidor.
+A TV e o computador precisam estar na mesma rede. Permita a porta escolhida no Firewall do Windows para redes privadas. Não exponha o servidor diretamente à Internet.
+
+## Compatibilidade
+
+O cliente KTV Orsay usa o player HLS nativo da Samsung. Por isso, o servidor anuncia URLs HLS diretamente; não converte fluxos TS, não transcodifica vídeo e não promete que todo canal da playlist será compatível com o firmware da TV. A reprodução depende também da disponibilidade do link de origem e dos codecs/limitações do aparelho.
+
+Versão: **0.2.0**
