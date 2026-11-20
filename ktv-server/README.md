@@ -77,6 +77,8 @@ py server.py --mode direct
 - `http://IP-DO-PC/api/state` — integração com o aplicativo Samsung.
 - `http://IP-DO-PC/api/channels` — catálogo JSON.
 - `http://IP-DO-PC/playlist.m3u` — playlist de saída.
+- `http://IP-DO-PC/` e `/tv-info/` — páginas de diagnóstico compatíveis com versões anteriores.
+- `http://IP-DO-PC/state` — alias legado do catálogo JSON; equivale a `/api/state`.
 - `http://IP-DO-PC/api/health` — diagnóstico, quantidade de canais e modo de processamento.
 
 Configure no aplicativo KTV da TV o endereço base exibido no terminal. Libere a porta escolhida no Firewall do Windows para redes privadas.
@@ -87,4 +89,4 @@ A Samsung ainda precisa decodificar e exibir o H.264/AAC; isso é inerente à re
 
 Nem todo canal é garantido: links indisponíveis, DRM, formatos de entrada não suportados pelo FFmpeg ou restrições do provedor podem impedir a conversão. Este servidor não remove DRM.
 
-Versão: **0.3.0**
+Versão: **0.3.1**
