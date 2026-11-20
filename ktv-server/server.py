@@ -18,7 +18,7 @@ MIN_CHANNELS = 100
 REFRESH_SECONDS = 300
 
 
-def parse_m3u(content, hls_only=True):
+def parse_m3u(content, base_url=DEFAULT_PLAYLIST, hls_only=True):
     channels = []
     meta = None
     for raw in content.replace("\r", "").split("\n"):
@@ -33,7 +33,7 @@ def parse_m3u(content, hls_only=True):
                     "logo": attrs.get("tvg-logo", ""),
                     "tvg_id": attrs.get("tvg-id", "")}
         elif not line.startswith("#") and meta:
-            url = urljoin(DEFAULT_PLAYLIST, line)
+            url = urljoin(base_url, line)
             path = urlsplit(url).path.lower()
             if not (url.startswith("http://") or url.startswith("https://")):
                 meta = None
@@ -86,32 +86,38 @@ class KTVServer(ThreadingHTTPServer):
         self.refresh_thread.start()
 
     def refresh_playlist(self):
-        try:
-            text = download_playlist(self.playlist_url)
-            channels = parse_m3u(text)
-            source = self.playlist_url
-            if len(channels) < MIN_CHANNELS and self.fallback_url:
-                fallback_text = download_playlist(self.fallback_url)
-                fallback_channels = parse_m3u(fallback_text)
-                if len(fallback_channels) > len(channels):
-                    channels, source = fallback_channels, self.fallback_url
-            if not channels:
-                raise ValueError("Nenhum canal HLS válido foi encontrado na playlist")
+        errors = []
+        candidates = [(self.playlist_url, "principal")]
+        if self.fallback_url:
+            candidates.append((self.fallback_url, "reserva"))
+        best_channels = []
+        best_source = ""
+        for url, label in candidates:
+            try:
+                content = download_playlist(url)
+                channels = parse_m3u(content, base_url=url)
+                if len(channels) > len(best_channels):
+                    best_channels, best_source = channels, url
+                if label == "principal" and len(channels) >= MIN_CHANNELS:
+                    break
+            except Exception as exc:
+                errors.append("{}: {}".format(label, exc))
+        if not best_channels:
+            message = "; ".join(errors) or "Nenhum canal HLS válido encontrado"
             with self.lock:
-                if [x["url"] for x in channels] != [x["url"] for x in self.channels]:
-                    self.channels = channels
-                    self.version += 1
-                self.source = source
+                self.last_error = message
                 self.last_refresh = time.time()
-                self.last_error = ""
-            print("[KTV] Playlist carregada: {} canais HLS".format(len(channels)), flush=True)
-            return True
-        except Exception as exc:
-            with self.lock:
-                self.last_error = str(exc)
-                self.last_refresh = time.time()
-            print("[KTV] Falha ao atualizar playlist: {}".format(exc), flush=True)
+            print("[KTV] Falha ao carregar playlists: {}".format(message), flush=True)
             return False
+        with self.lock:
+            if [x["url"] for x in best_channels] != [x["url"] for x in self.channels]:
+                self.channels = best_channels
+                self.version += 1
+            self.source = best_source
+            self.last_refresh = time.time()
+            self.last_error = "; ".join(errors)
+        print("[KTV] Playlist carregada: {} canais HLS".format(len(best_channels)), flush=True)
+        return True
 
     def refresh_loop(self):
         while True:
