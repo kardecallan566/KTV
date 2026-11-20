@@ -275,7 +275,7 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(description="KTV Server para Samsung Smart TV")
     parser.add_argument("--host", default="0.0.0.0", help="Interface de rede")
-    parser.add_argument("--port", type=int, default=8787, help="Porta HTTP (padrão 8787)")
+    parser.add_argument("--port", type=int, default=80, help="Porta HTTP (padrão 80, compatível com o cliente Orsay instalado)")
     parser.add_argument("--ip", default="", help="IP do computador anunciado para a TV")
     args = parser.parse_args()
     import socket
