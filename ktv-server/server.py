@@ -251,7 +251,7 @@ class Handler(BaseHTTPRequestHandler):
             for channel in shown:
                 href = "/watch/{}".format(channel["id"])
                 rows.append('<li><a href="{}">{}</a> <small>{}</small></li>'.format(
-                    href, html_lib.escape(channel["name"]), html.escape(channel["category"])))
+                    href, html_lib.escape(channel["name"]), html_lib.escape(channel["category"])))
             if not rows:
                 rows.append("<li>Nenhum canal encontrado.</li>")
             more = "<p>Mostrando os primeiros 150 resultados. Refine a busca para localizar outros canais.</p>" if len(channels) > 150 else ""
@@ -263,7 +263,7 @@ class Handler(BaseHTTPRequestHandler):
 <input type="submit" value="Buscar"></form>
 <p>Canais encontrados: {}</p>{}
 <ul>{}</ul><p><a href="/">Voltar ao diagnóstico</a></p>
-</body></html>""".format(html.escape(term, quote=True), len(channels), more, "".join(rows))
+</body></html>""".format(html_lib.escape(term, quote=True), len(channels), more, "".join(rows))
             return self.respond(200, page, "text/html; charset=utf-8")
         if path.startswith("/watch/"):
             identity = path[len("/watch/"):].strip("/")
@@ -287,8 +287,8 @@ Seu navegador nao oferece suporte a video HLS.
 </video>
 <p>Se o video nao iniciar automaticamente, pressione PLAY.</p>
 <p><a href="/watch">Voltar aos canais</a></p>
-</body></html>""".format(html.escape(item["name"]), html.escape(item["name"]),
-                         html.escape(stream_url, quote=True))
+</body></html>""".format(html_lib.escape(item["name"]), html_lib.escape(item["name"]),
+                         html_lib.escape(stream_url, quote=True))
             return self.respond(200, page, "text/html; charset=utf-8")
         if path == "/api/health":
             with self.server.lock:
