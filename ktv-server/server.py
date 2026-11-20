@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.4.1"
+VERSION = "0.4.2"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -82,11 +82,15 @@ class KTVServer(ThreadingHTTPServer):
         self.channels, self.version = [], 1
         self.last_refresh, self.last_error, self.source = 0, "", ""
         self.processes = {}
+        self.last_access = {}
+        self.idle_timeout = 30
         DATA.mkdir(parents=True, exist_ok=True)
         HLS_CACHE.mkdir(parents=True, exist_ok=True)
         self.refresh_playlist()
         self.refresh_thread = threading.Thread(target=self.refresh_loop, daemon=True)
         self.refresh_thread.start()
+        self.idle_thread = threading.Thread(target=self.stop_idle_transcodes, daemon=True)
+        self.idle_thread.start()
 
     def refresh_playlist(self):
         errors, best, source = [], [], ""
@@ -128,19 +132,30 @@ class KTVServer(ThreadingHTTPServer):
         with self.lock:
             return next((dict(x) for x in self.channels if x["id"] == identity), None)
 
+    def stop_idle_transcodes(self):
+        while True:
+            time.sleep(5)
+            now = time.time()
+            with self.lock:
+                for identity, proc in list(self.processes.items()):
+                    last = self.last_access.get(identity, 0)
+                    if proc.poll() is not None:
+                        self.processes.pop(identity, None)
+                        self.last_access.pop(identity, None)
+                    elif now - last >= self.idle_timeout:
+                        print("[KTV] Sem espectadores em {}s; encerrando transcodificação {}".format(
+                            self.idle_timeout, identity), flush=True)
+                        proc.terminate()
+                        self.processes.pop(identity, None)
+                        self.last_access.pop(identity, None)
+
     def start_transcode(self, item):
         identity = item["id"]
         with self.lock:
             existing = self.processes.get(identity)
             if existing and existing.poll() is None:
+                self.last_access[identity] = time.time()
                 return True
-            # A TV Orsay normalmente reproduz um canal por vez: não desperdice CPU
-            # transcodificando canais que não estão sendo assistidos.
-            for other_id, proc in list(self.processes.items()):
-                if other_id != identity:
-                    if proc.poll() is None:
-                        proc.terminate()
-                    self.processes.pop(other_id, None)
             folder = HLS_CACHE / identity
             folder.mkdir(parents=True, exist_ok=True)
             for old in folder.glob("*"):
@@ -154,10 +169,10 @@ class KTVServer(ThreadingHTTPServer):
             command = [
                 self.ffmpeg, "-hide_banner", "-loglevel", "warning", "-nostdin",
                 "-y", "-fflags", "+genpts+discardcorrupt",
-                "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "10",
-                "-reconnect_at_eof", "1", "-reconnect_on_network_error", "1",
-                "-reconnect_on_http_error", "4xx,5xx",
-                "-rw_timeout", "30000000", "-user_agent", "KTV-Server/{}".format(VERSION),
+                # O demuxer HLS atualiza playlists sozinho. Reconectar em EOF/404
+                # força a releitura de recursos expirados e pode travar o fluxo em loop.
+                "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
+                "-rw_timeout", "15000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
                 "-vf", "scale='min(1280,iw)':-2", "-r", "25",
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
@@ -178,6 +193,7 @@ class KTVServer(ThreadingHTTPServer):
                         stdout=subprocess.DEVNULL, stderr=log_file,
                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
                 self.processes[identity] = proc
+                self.last_access[identity] = time.time()
                 return True
             except OSError as exc:
                 self.last_error = "Não foi possível iniciar FFmpeg: {}".format(exc)
@@ -189,6 +205,7 @@ class KTVServer(ThreadingHTTPServer):
                 if proc.poll() is None:
                     proc.terminate()
             self.processes.clear()
+            self.last_access.clear()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -356,6 +373,9 @@ Seu navegador nao oferece suporte a video HLS.
                     if proc is not None and proc.poll() is not None:
                         break
                     time.sleep(0.25)
+            with self.server.lock:
+                if identity in self.server.processes:
+                    self.server.last_access[identity] = time.time()
             file = HLS_CACHE / identity / filename
             if not file.is_file():
                 return self.respond(503, json.dumps({"error": "Preparando fluxo HLS; tente novamente"}),
