@@ -16,7 +16,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -211,6 +211,25 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = unquote(urlsplit(self.path).path)
+        if path in ("/", "/tv-info", "/tv-info/"):
+            with self.server.lock:
+                channels = len(self.server.channels)
+                mode = "FFmpeg H.264/AAC" if self.server.transcode else "Direto"
+                source = self.server.source or "Não carregada"
+                error = self.server.last_error or "Nenhum"
+            title = "Diagnóstico KTV Server" if path.startswith("/tv-info") else "KTV Server IPTV"
+            html = """<!doctype html><html lang="pt-BR"><meta charset="utf-8">
+<title>{title}</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<body style="font:16px Arial;background:#101827;color:#f5f7fa;padding:28px">
+<h1>{title}</h1><p>Status: <b style="color:#35c98a">ONLINE</b></p>
+<p>Versão: {version}</p><p>Canais HLS: {channels}</p><p>Processamento: {mode}</p>
+<p>Origem: {source}</p><p>Último erro: {error}</p>
+<p><a style="color:#78baff" href="/api/health">API de saúde</a> ·
+<a style="color:#78baff" href="/api/state">Catálogo JSON</a> ·
+<a style="color:#78baff" href="/playlist.m3u">Playlist M3U</a></p></body></html>""".format(
+                title=title, version=VERSION, channels=channels, mode=mode,
+                source=source, error=error)
+            return self.respond(200, html, "text/html; charset=utf-8")
         if path == "/api/health":
             with self.server.lock:
                 return self.json(200, {"app": "KTV Server IPTV", "version": VERSION,
@@ -218,7 +237,7 @@ class Handler(BaseHTTPRequestHandler):
                     "processing": "ffmpeg-h264-aac" if self.server.transcode else "direct",
                     "ffmpeg": bool(self.server.ffmpeg), "source": self.server.source,
                     "last_error": self.server.last_error})
-        if path == "/api/state":
+        if path in ("/api/state", "/state"):
             client = parse_qs(urlsplit(self.path).query).get("client", ["samsung"])[0][:40]
             with self.server.lock:
                 items = []
