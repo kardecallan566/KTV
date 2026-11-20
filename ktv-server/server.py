@@ -16,7 +16,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -207,7 +207,7 @@ class Handler(BaseHTTPRequestHandler):
             pass
 
     def json(self, status, data):
-        return self.respond(status, json.dumps(data, ensure_ascii=False))
+        return self.respond(status, json.dumps(data, ensure_ascii=True, separators=(",", ":")))
 
     def do_GET(self):
         path = unquote(urlsplit(self.path).path)
@@ -242,10 +242,12 @@ class Handler(BaseHTTPRequestHandler):
             with self.server.lock:
                 items = []
                 for channel in self.server.channels:
-                    item = {k: v for k, v in channel.items() if k != "source_url"}
-                    item["url"] = (self.server.base_url + "/live/" + channel["id"] + "/index.m3u8"
-                                   if self.server.transcode else channel["source_url"])
-                    items.append(item)
+                    # Contrato mínimo consumido pelo app Samsung Legacy (JavaScript ES5).
+                    # Evita enviar metadados que a TV não utiliza e reduz o JSON recebido.
+                    url = (self.server.base_url + "/live/" + channel["id"] + "/index.m3u8"
+                           if self.server.transcode else channel["source_url"])
+                    items.append({"name": channel["name"], "type": "hls",
+                                  "url": url, "duration": 0})
                 version = self.server.version
             return self.json(200, {"version": version, "items": items, "index": 0, "playing": True})
         if path == "/api/channels":
