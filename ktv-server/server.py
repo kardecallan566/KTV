@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.4.2"
+VERSION = "0.4.3"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -83,7 +83,12 @@ class KTVServer(ThreadingHTTPServer):
         self.last_refresh, self.last_error, self.source = 0, "", ""
         self.processes = {}
         self.last_access = {}
-        self.idle_timeout = 30
+        self.last_progress = {}
+        self.last_restart = {}
+        self.active_items = {}
+        self.idle_timeout = 90
+        self.stall_timeout = 35
+        self.restart_cooldown = 30
         DATA.mkdir(parents=True, exist_ok=True)
         HLS_CACHE.mkdir(parents=True, exist_ok=True)
         self.refresh_playlist()
@@ -136,18 +141,44 @@ class KTVServer(ThreadingHTTPServer):
         while True:
             time.sleep(5)
             now = time.time()
+            restart = []
             with self.lock:
                 for identity, proc in list(self.processes.items()):
-                    last = self.last_access.get(identity, 0)
                     if proc.poll() is not None:
                         self.processes.pop(identity, None)
                         self.last_access.pop(identity, None)
-                    elif now - last >= self.idle_timeout:
-                        print("[KTV] Sem espectadores em {}s; encerrando transcodificação {}".format(
+                        self.last_progress.pop(identity, None)
+                        self.active_items.pop(identity, None)
+                        continue
+                    folder = HLS_CACHE / identity
+                    segments = list(folder.glob("segment_*.ts"))
+                    if segments:
+                        newest = max(x.stat().st_mtime for x in segments)
+                        if newest > self.last_progress.get(identity, 0):
+                            self.last_progress[identity] = newest
+                    last_access = self.last_access.get(identity, 0)
+                    if now - last_access >= self.idle_timeout:
+                        print("[KTV] Sem requisicoes de espectadores em {}s; encerrando {}".format(
                             self.idle_timeout, identity), flush=True)
                         proc.terminate()
                         self.processes.pop(identity, None)
                         self.last_access.pop(identity, None)
+                        self.last_progress.pop(identity, None)
+                        self.active_items.pop(identity, None)
+                        continue
+                    progress = self.last_progress.get(identity, self.last_restart.get(identity, now))
+                    if now - progress >= self.stall_timeout and now - self.last_restart.get(identity, 0) >= self.restart_cooldown:
+                        item = self.active_items.get(identity)
+                        if item:
+                            print("[KTV] Sem novos segmentos; reconectando origem do canal {}".format(
+                                identity), flush=True)
+                            proc.terminate()
+                            self.processes.pop(identity, None)
+                            self.last_progress.pop(identity, None)
+                            restart.append(dict(item))
+            for item in restart:
+                self.start_transcode(item)
+
 
     def start_transcode(self, item):
         identity = item["id"]
@@ -192,8 +223,12 @@ class KTVServer(ThreadingHTTPServer):
                     proc = subprocess.Popen(command, stdin=subprocess.DEVNULL,
                         stdout=subprocess.DEVNULL, stderr=log_file,
                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                now = time.time()
                 self.processes[identity] = proc
-                self.last_access[identity] = time.time()
+                self.last_access[identity] = now
+                self.last_progress[identity] = now
+                self.last_restart[identity] = now
+                self.active_items[identity] = dict(item)
                 return True
             except OSError as exc:
                 self.last_error = "Não foi possível iniciar FFmpeg: {}".format(exc)
@@ -206,6 +241,8 @@ class KTVServer(ThreadingHTTPServer):
                     proc.terminate()
             self.processes.clear()
             self.last_access.clear()
+            self.last_progress.clear()
+            self.active_items.clear()
 
 
 class Handler(BaseHTTPRequestHandler):
