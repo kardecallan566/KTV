@@ -3,8 +3,20 @@ name: KTV Legacy and OS tests
 on:
   push:
     branches: [main]
+    paths:
+      - "tests/**"
+      - "installer-local/**"
+      - "tv-orsay/**"
+      - "ktv-os/**"
+      - ".github/workflows/ktv-tests.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "tests/**"
+      - "installer-local/**"
+      - "tv-orsay/**"
+      - "ktv-os/**"
+      - ".github/workflows/ktv-tests.yml"
 
 jobs:
   ktv-regression:
