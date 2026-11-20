@@ -2,6 +2,7 @@
 """KTV Server: prepara IPTV para Samsung Orsay usando FFmpeg no computador."""
 import argparse
 import hashlib
+import html
 import json
 import mimetypes
 import re
@@ -16,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.3.3"
+VERSION = "0.4.0"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -237,6 +238,58 @@ class Handler(BaseHTTPRequestHandler):
                 title=title, version=VERSION, channels=channels, mode=mode,
                 source=source, error=error)
             return self.respond(200, html, "text/html; charset=utf-8")
+        if path == "/watch" or path == "/watch/":
+            query = parse_qs(urlsplit(self.path).query)
+            term = query.get("q", [""])[0].strip().lower()[:80]
+            with self.server.lock:
+                channels = [dict(x) for x in self.server.channels]
+            if term:
+                channels = [x for x in channels if term in x["name"].lower()
+                            or term in x["category"].lower()]
+            shown = channels[:150]
+            rows = []
+            for channel in shown:
+                href = "/watch/{}".format(channel["id"])
+                rows.append('<li><a href="{}">{}</a> <small>{}</small></li>'.format(
+                    href, html.escape(channel["name"]), html.escape(channel["category"])))
+            if not rows:
+                rows.append("<li>Nenhum canal encontrado.</li>")
+            more = "<p>Mostrando os primeiros 150 resultados. Refine a busca para localizar outros canais.</p>" if len(channels) > 150 else ""
+            page = """<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KTV - Canais</title></head><body bgcolor="#101827" text="#f5f7fa">
+<h2>KTV - TV Online</h2><p>Escolha um canal para abrir no navegador da TV.</p>
+<form action="/watch" method="get"><input name="q" value="{}" placeholder="Buscar canal ou categoria">
+<input type="submit" value="Buscar"></form>
+<p>Canais encontrados: {}</p>{}
+<ul>{}</ul><p><a href="/">Voltar ao diagnóstico</a></p>
+</body></html>""".format(html.escape(term, quote=True), len(channels), more, "".join(rows))
+            return self.respond(200, page, "text/html; charset=utf-8")
+        if path.startswith("/watch/"):
+            identity = path[len("/watch/"):].strip("/")
+            if not re.fullmatch(r"[a-f0-9]{16}", identity):
+                return self.respond(404, "<html><body>Canal inválido. <a href='/watch'>Voltar</a></body></html>",
+                                    "text/html; charset=utf-8")
+            item = self.server.channel(identity)
+            if not item:
+                return self.respond(404, "<html><body>Canal não encontrado. <a href='/watch'>Voltar</a></body></html>",
+                                    "text/html; charset=utf-8")
+            stream_url = ("/live/{}/index.m3u8".format(identity)
+                          if self.server.transcode else item["source_url"])
+            page = """<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{}</title></head>
+<body bgcolor="#000000" text="#ffffff">
+<h3>{}</h3>
+<video controls autoplay playsinline width="100%" height="auto">
+<source src="{}" type="application/vnd.apple.mpegurl">
+Seu navegador nao oferece suporte a video HLS.
+</video>
+<p>Se o video nao iniciar automaticamente, pressione PLAY.</p>
+<p><a href="/watch">Voltar aos canais</a></p>
+</body></html>""".format(html.escape(item["name"]), html.escape(item["name"]),
+                         html.escape(stream_url, quote=True))
+            return self.respond(200, page, "text/html; charset=utf-8")
         if path == "/api/health":
             with self.server.lock:
                 return self.json(200, {"app": "KTV Server IPTV", "version": VERSION,
@@ -283,8 +336,20 @@ class Handler(BaseHTTPRequestHandler):
             item = self.server.channel(identity)
             if not item:
                 return self.json(404, {"error": "Canal não encontrado"})
-            if filename == "index.m3u8" and not self.server.start_transcode(item):
-                return self.json(503, {"error": self.server.last_error})
+            if filename == "index.m3u8":
+                if not self.server.start_transcode(item):
+                    return self.json(503, {"error": self.server.last_error})
+                # Aguarda o primeiro manifesto/segmento para evitar que a TV receba
+                # um erro imediato enquanto o FFmpeg ainda inicializa o fluxo.
+                deadline = time.time() + 15
+                manifest = HLS_CACHE / identity / "index.m3u8"
+                while time.time() < deadline:
+                    if manifest.is_file() and manifest.stat().st_size > 0:
+                        break
+                    proc = self.server.processes.get(identity)
+                    if proc is not None and proc.poll() is not None:
+                        break
+                    time.sleep(0.25)
             file = HLS_CACHE / identity / filename
             if not file.is_file():
                 return self.respond(503, json.dumps({"error": "Preparando fluxo HLS; tente novamente"}),
