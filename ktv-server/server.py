@@ -202,8 +202,8 @@ class KTVServer(ThreadingHTTPServer):
                 "-y", "-fflags", "+genpts+discardcorrupt",
                 # O demuxer HLS atualiza playlists sozinho. Reconectar em EOF/404
                 # força a releitura de recursos expirados e pode travar o fluxo em loop.
-                "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
-                "-rw_timeout", "15000000", "-user_agent", "KTV-Server/{}".format(VERSION),
+                "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "10",
+                "-rw_timeout", "30000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
                 "-vf", "scale='min(1280,iw)':-2", "-r", "25",
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
@@ -211,8 +211,8 @@ class KTVServer(ThreadingHTTPServer):
                 "-b:v", "2500k", "-maxrate", "2800k", "-bufsize", "5000k",
                 "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",
                 "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100",
-                "-f", "hls", "-hls_time", "4", "-hls_list_size", "8",
-                "-hls_delete_threshold", "10",
+                "-f", "hls", "-hls_time", "5", "-hls_list_size", "12",
+                "-hls_delete_threshold", "15",
                 "-hls_flags", "delete_segments+independent_segments+omit_endlist+temp_file",
                 "-hls_segment_filename", segment, output
             ]
