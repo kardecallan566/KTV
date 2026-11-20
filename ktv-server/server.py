@@ -2,7 +2,7 @@
 """KTV Server: prepara IPTV para Samsung Orsay usando FFmpeg no computador."""
 import argparse
 import hashlib
-import html
+import html as html_lib
 import json
 import mimetypes
 import re
@@ -251,7 +251,7 @@ class Handler(BaseHTTPRequestHandler):
             for channel in shown:
                 href = "/watch/{}".format(channel["id"])
                 rows.append('<li><a href="{}">{}</a> <small>{}</small></li>'.format(
-                    href, html.escape(channel["name"]), html.escape(channel["category"])))
+                    href, html_lib.escape(channel["name"]), html.escape(channel["category"])))
             if not rows:
                 rows.append("<li>Nenhum canal encontrado.</li>")
             more = "<p>Mostrando os primeiros 150 resultados. Refine a busca para localizar outros canais.</p>" if len(channels) > 150 else ""
