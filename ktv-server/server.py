@@ -259,8 +259,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(503, {"error": self.server.last_error})
             file = HLS_CACHE / identity / filename
             if not file.is_file():
-                return self.json(503, {"error": "Preparando fluxo HLS; tente novamente"},
-                                 extra={"Retry-After": "2"})
+                return self.respond(503, json.dumps({"error": "Preparando fluxo HLS; tente novamente"}),
+                                extra={"Retry-After": "2"})
             mime = "application/vnd.apple.mpegurl" if filename.endswith(".m3u8") else "video/mp2t"
             try:
                 return self.respond(200, file.read_bytes(), mime)
