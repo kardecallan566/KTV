@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -221,7 +221,7 @@ class KTVServer(ThreadingHTTPServer):
                 # O demuxer HLS atualiza playlists sozinho. Reconectar em EOF/404
                 # força a releitura de recursos expirados e pode travar o fluxo em loop.
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "10",
-                "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
+                # Desativa keep-alive no demuxer HLS para evitar reutilizar conexões HTTP\n                # que a origem já encerrou (erro recorrente: keepalive request failed).\n                "-http_persistent", "0",\n                "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
                 "-vf", "scale='min(1280,iw)':-2", "-r", "25",
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
