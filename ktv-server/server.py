@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.5.2"
+VERSION = "0.6.0"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -86,6 +86,7 @@ class KTVServer(ThreadingHTTPServer):
         self.last_progress = {}
         self.last_restart = {}
         self.active_items = {}
+        self.last_exit = {}
         self.idle_timeout = 90
         self.stall_timeout = 35
         self.restart_cooldown = 30
@@ -145,6 +146,9 @@ class KTVServer(ThreadingHTTPServer):
             with self.lock:
                 for identity, proc in list(self.processes.items()):
                     if proc.poll() is not None:
+                        self.last_exit[identity] = proc.poll()
+                        print("[KTV] FFmpeg encerrou canal {} (código {})".format(
+                            identity, proc.poll()), flush=True)
                         self.processes.pop(identity, None)
                         self.last_access.pop(identity, None)
                         self.last_progress.pop(identity, None)
@@ -224,14 +228,23 @@ class KTVServer(ThreadingHTTPServer):
                 "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
                 "-vf", "scale='min(1280,iw)':-2", "-r", "25",
+                # Perfil Baseline e sem B-frames ampliam a compatibilidade com TVs Samsung antigas.
+                # GOP de 5s alinhado ao HLS: cada segmento começa em um keyframe.
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
-                "-profile:v", "main", "-level", "3.1", "-pix_fmt", "yuv420p",
+                "-profile:v", "baseline", "-level", "3.0", "-pix_fmt", "yuv420p",
+                "-bf", "0", "-refs", "1",
                 "-b:v", "2500k", "-maxrate", "2800k", "-bufsize", "5000k",
-                "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",
-                "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100",
-                "-f", "hls", "-hls_time", "5", "-hls_list_size", "12",
+                "-g", "125", "-keyint_min", "125", "-sc_threshold", "0",
+                "-force_key_frames", "expr:gte(t,n_forced*5)",
+                "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "128k", "-ac", "2", "-ar", "44100",
+                "-avoid_negative_ts", "make_zero",
+                "-f", "hls", "-hls_segment_type", "mpegts",
+                "-hls_time", "5", "-hls_list_size", "12",
                 "-hls_delete_threshold", "15",
                 "-hls_flags", "delete_segments+independent_segments+omit_endlist+temp_file",
+                # Numeração única evita que a TV reutilize em cache o segmento 00000
+                # depois de uma recuperação/reinicialização do FFmpeg.
+                "-start_number", str(int(time.time()) % 100000),
                 "-hls_segment_filename", segment, output
             ]
             try:
@@ -411,6 +424,37 @@ Seu navegador nao oferece suporte a video HLS.
                     "processing": "ffmpeg-h264-aac" if self.server.transcode else "direct",
                     "ffmpeg": bool(self.server.ffmpeg), "source": self.server.source,
                     "last_error": self.server.last_error})
+        if path.startswith("/api/stream/"):
+            identity = path[len("/api/stream/"):].strip("/")
+            if not re.fullmatch(r"[a-f0-9]{16}", identity):
+                return self.json(400, {"error": "ID de canal inválido"})
+            folder = HLS_CACHE / identity
+            manifest = folder / "index.m3u8"
+            segments = sorted(folder.glob("segment_*.ts")) if folder.exists() else []
+            with self.server.lock:
+                proc = self.server.processes.get(identity)
+                running = bool(proc and proc.poll() is None)
+                exit_code = self.server.last_exit.get(identity)
+                last_access = self.server.last_access.get(identity)
+                last_restart = self.server.last_restart.get(identity)
+            newest_age = None
+            if segments:
+                try:
+                    newest_age = round(max(0, time.time() - max(x.stat().st_mtime for x in segments)), 1)
+                except OSError:
+                    pass
+            manifest_text = ""
+            if manifest.is_file():
+                try:
+                    manifest_text = manifest.read_text(encoding="utf-8", errors="replace")[:12000]
+                except OSError:
+                    pass
+            return self.json(200, {
+                "channel": identity, "ffmpeg_running": running, "ffmpeg_exit_code": exit_code,
+                "segment_count": len(segments), "newest_segment_age_seconds": newest_age,
+                "manifest_exists": bool(manifest_text), "manifest": manifest_text,
+                "last_request_epoch": last_access, "last_restart_epoch": last_restart
+            })
         if path in ("/api/state", "/state"):
             client = parse_qs(urlsplit(self.path).query).get("client", ["samsung"])[0][:40]
             with self.server.lock:
