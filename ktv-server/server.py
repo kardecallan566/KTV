@@ -231,7 +231,7 @@ class KTVServer(ThreadingHTTPServer):
                 # Perfil Baseline e sem B-frames ampliam a compatibilidade com TVs Samsung antigas.
                 # GOP de 5s alinhado ao HLS: cada segmento começa em um keyframe.
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
-                "-profile:v", "baseline", "-level", "3.0", "-pix_fmt", "yuv420p",
+                "-profile:v", "baseline", "-level", "3.1", "-pix_fmt", "yuv420p",
                 "-bf", "0", "-refs", "1",
                 "-b:v", "2500k", "-maxrate", "2800k", "-bufsize", "5000k",
                 "-g", "125", "-keyint_min", "125", "-sc_threshold", "0",
