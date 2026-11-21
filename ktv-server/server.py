@@ -221,7 +221,7 @@ class KTVServer(ThreadingHTTPServer):
                 # O demuxer HLS atualiza playlists sozinho. Reconectar em EOF/404
                 # força a releitura de recursos expirados e pode travar o fluxo em loop.
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "10",
-                # Desativa keep-alive no demuxer HLS para evitar reutilizar conexões HTTP\n                # que a origem já encerrou (erro recorrente: keepalive request failed).\n                "-http_persistent", "0",\n                "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
+                "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
                 "-vf", "scale='min(1280,iw)':-2", "-r", "25",
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
