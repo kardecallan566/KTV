@@ -50,13 +50,13 @@ py server.py --playlist "https://exemplo.com/lista.m3u"
 Quando FFmpeg está disponível, o modo automático prepara o canal solicitado sob demanda:
 
 - recebe o HLS original no computador;
-- converte o vídeo para H.264, perfil Main, pixel format YUV420P e até 1280 pixels de largura;
+- converte o vídeo para H.264, perfil Baseline, sem B-frames, pixel format YUV420P e até 1280 pixels de largura;
 - converte o áudio para AAC estéreo;
-- gera uma nova saída HLS com segmentos MPEG-TS de 5 segundos e janela de 12 segmentos para oferecer mais margem de buffer;
+- gera uma nova saída HLS com segmentos MPEG-TS de 5 segundos, keyframes alinhados e janela de 12 segmentos para oferecer mais margem de buffer;
 - entrega à Samsung somente a playlist e os segmentos já preparados;
 - mantém apenas o canal solicitado em transcodificação para evitar ocupar CPU com centenas de canais que ninguém está assistindo.
 
-A conversão começa quando a TV solicita o manifesto do canal. A primeira abertura pode demorar alguns segundos enquanto o FFmpeg inicializa e gera os primeiros segmentos. O HLS publica arquivos temporários somente depois de concluir cada segmento. O FFmpeg não força reconexão em EOF ou HTTP 404, pois repetir recursos expirados pode travar o fluxo. A versão 0.5.1 testou conexões HTTP não persistentes na leitura HLS, mas esse experimento foi revertido na versão 0.5.2 após piora da estabilidade observada em testes. Cada canal só é convertido quando um dispositivo solicita seu manifesto ou segmentos; se não houver novas solicitações por 90 segundos, o processo daquele canal é encerrado automaticamente. Enquanto há espectadores, um monitor verifica se novos segmentos estão sendo produzidos; se a origem parar de entregar dados por cerca de 35 segundos, o KTV encerra o processo FFmpeg antigo, aguarda sua finalização e inicia uma nova conexão, respeitando um intervalo mínimo entre tentativas. No player `/watch/ID`, um monitor adicional detecta quando o tempo do vídeo deixa de avançar por 20 segundos e tenta recarregar o fluxo automaticamente, sem exigir que o usuário volte à lista de canais. Canais não acessados nunca são convertidos. O catálogo atualiza a cada cinco minutos sem reiniciar a sessão ativa. O diagnóstico de cada processo FFmpeg é gravado em `data/hls/ID-DO-CANAL/ffmpeg.log`.
+A conversão começa quando a TV solicita o manifesto do canal. A primeira abertura pode demorar alguns segundos enquanto o FFmpeg inicializa e gera os primeiros segmentos. O HLS publica arquivos temporários somente depois de concluir cada segmento. O FFmpeg não força reconexão em EOF ou HTTP 404, pois repetir recursos expirados pode travar o fluxo. A versão 0.5.1 testou conexões HTTP não persistentes na leitura HLS, mas esse experimento foi revertido na versão 0.5.2 após piora da estabilidade observada em testes. Cada canal só é convertido quando um dispositivo solicita seu manifesto ou segmentos; se não houver novas solicitações por 90 segundos, o processo daquele canal é encerrado automaticamente. Enquanto há espectadores, um monitor verifica se novos segmentos estão sendo produzidos; se a origem parar de entregar dados por cerca de 35 segundos, o KTV encerra o processo FFmpeg antigo, aguarda sua finalização e inicia uma nova conexão, respeitando um intervalo mínimo entre tentativas. No player `/watch/ID`, um monitor adicional detecta quando o tempo do vídeo deixa de avançar por 20 segundos e tenta recarregar o fluxo automaticamente, sem exigir que o usuário volte à lista de canais. Canais não acessados nunca são convertidos. O catálogo atualiza a cada cinco minutos sem reiniciar a sessão ativa. O diagnóstico de cada processo FFmpeg é gravado em `data/hls/ID-DO-CANAL/ffmpeg.log`. A numeração dos segmentos muda a cada inicialização para evitar que a TV reutilize segmentos antigos em cache. A rota `/api/stream/ID-DO-CANAL` informa se o FFmpeg está ativo, quantos segmentos existem, a idade do segmento mais recente e o manifesto HLS atual, sem expor a URL de origem ou seus tokens.
 
 O modo automático usa FFmpeg se ele estiver instalado. Sem FFmpeg, o servidor entra em modo direto e entrega o endereço original — nesse modo não há conversão nem redução da carga de compatibilidade na TV.
 
@@ -86,6 +86,7 @@ A rota `/api/state` mantém o contrato esperado pelo aplicativo Samsung: `versio
 - `http://IP-DO-PC/watch/ID-DO-CANAL` — player HTML5 para um canal específico (o ID é obtido ao abrir o catálogo).
 - `http://IP-DO-PC/state` — alias legado do catálogo JSON; equivale a `/api/state`.
 - `http://IP-DO-PC/api/health` — diagnóstico, quantidade de canais e modo de processamento.
+- `http://IP-DO-PC/api/stream/ID-DO-CANAL` — diagnóstico técnico do HLS de um canal específico.
 
 ### Assistir diretamente pelo navegador da Samsung
 
@@ -109,7 +110,7 @@ A Samsung ainda precisa decodificar e exibir o H.264/AAC; isso é inerente à re
 
 Nem todo canal é garantido: links indisponíveis, DRM, formatos de entrada não suportados pelo FFmpeg ou restrições do provedor podem impedir a conversão. Este servidor não remove DRM.
 
-Versão: **0.5.2**
+Versão: **0.6.0**
 
 
-Na versão 0.3.3, a página inicial de diagnóstico foi simplificada para navegadores Samsung antigos e não oferece links diretos para endpoints JSON/M3U. Esses endpoints continuam disponíveis para o aplicativo KTV e para players compatíveis. A versão 0.4.0 acrescenta o catálogo `/watch` e o player HTML5 `/watch/ID`, sem remover as rotas existentes. A versão 0.5.0 reforça a recuperação de processos FFmpeg travados e adiciona recuperação automática no player do navegador. A versão 0.5.1 testou conexões HTTP não persistentes; a versão 0.5.2 reverte essa experiência e retorna ao comportamento padrão do FFmpeg.
+Na versão 0.3.3, a página inicial de diagnóstico foi simplificada para navegadores Samsung antigos e não oferece links diretos para endpoints JSON/M3U. Esses endpoints continuam disponíveis para o aplicativo KTV e para players compatíveis. A versão 0.4.0 acrescenta o catálogo `/watch` e o player HTML5 `/watch/ID`, sem remover as rotas existentes. A versão 0.5.0 reforça a recuperação de processos FFmpeg travados e adiciona recuperação automática no player do navegador. A versão 0.5.1 testou conexões HTTP não persistentes; a versão 0.5.2 reverte essa experiência e retorna ao comportamento padrão do FFmpeg. A versão 0.6.0 ajusta o H.264 para perfil Baseline, alinha os keyframes aos segmentos HLS, usa numeração exclusiva de segmentos após reinícios e adiciona diagnóstico individual do fluxo.
