@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -278,6 +278,7 @@ class KTVServer(ThreadingHTTPServer):
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "KTV-Server/{}".format(VERSION)
+    protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
         print("[KTV] " + (fmt % args), flush=True)
@@ -400,57 +401,43 @@ class Handler(BaseHTTPRequestHandler):
             if not item:
                 return self.respond(404, "<html><body>Canal não encontrado. <a href='/watch'>Voltar</a></body></html>",
                                     "text/html; charset=utf-8")
-            stream_url = ("/live/{}/index.m3u8".format(identity)
-                          if self.server.transcode else item["source_url"])
+            hls_url = "/live/{}/index.m3u8".format(identity)
+            mp4_url = "/live-mp4/{}".format(identity)
+            direct_url = item["source_url"]
             page = """<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{}</title></head>
-<body bgcolor="#000000" text="#ffffff">
-<h3>{}</h3>
-<video id="ktv-player" controls autoplay playsinline width="100%" height="auto">
-<source src="{}" type="application/vnd.apple.mpegurl">
-Seu navegador nao oferece suporte a video HLS.
-</video>
-<p id="ktv-status">Reproducao automatica e recuperacao de conexao ativadas.</p>
-<p><a href="/watch">Voltar aos canais</a></p>
+<title>{}</title></head><body bgcolor="#000000" text="#ffffff">
+<h3>{}</h3><video id="ktv-player" controls autoplay playsinline width="100%" height="auto"></video>
+<p id="ktv-status">Detectando formato de reprodução...</p><p><a href="/watch">Voltar aos canais</a></p>
 <script type="text/javascript">
 (function () {{
-    var video = document.getElementById("ktv-player");
-    var source = "{}";
-    var lastTime = -1;
-    var lastProgress = new Date().getTime();
-    var recovering = false;
-    function recover() {{
-        if (recovering || !video) return;
-        recovering = true;
-        lastProgress = new Date().getTime();
-        lastTime = -1;
-        try {{
-            video.pause();
-            video.src = source + (source.indexOf("?") >= 0 ? "&" : "?") + "retry=" + lastProgress;
-            video.load();
-            var result = video.play();
-            if (result && result.catch) result.catch(function () {{}});
-        }} catch (e) {{}}
-        window.setTimeout(function () {{ recovering = false; }}, 10000);
-    }}
-    video.addEventListener("error", function () {{
-        window.setTimeout(recover, 2000);
-    }}, false);
-    window.setInterval(function () {{
-        if (!video || video.paused || video.ended) return;
-        var now = new Date().getTime();
-        if (video.currentTime > lastTime + 0.4) {{
-            lastTime = video.currentTime;
-            lastProgress = now;
-        }} else if (now - lastProgress > 20000) {{
-            recover();
-        }}
-    }}, 5000);
+ var v=document.getElementById("ktv-player"), s=document.getElementById("ktv-status");
+ var hls="{}", mp4="{}", direct="{}", transcode="{}";
+ var hs="", ms="";
+ try {{ hs=v.canPlayType("application/vnd.apple.mpegurl")||v.canPlayType("application/x-mpegURL")||""; }} catch(e) {{}}
+ try {{ ms=v.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"')||v.canPlayType("video/mp4")||""; }} catch(e) {{}}
+ var source=hs?hls:((ms&&transcode==="True")?mp4:direct);
+ var mode=source===hls?"HLS":(source===mp4?"MP4 fragmentado":"origem direta");
+ s.innerHTML="Modo selecionado: "+mode;
+ v.src=source;
+ try {{ v.load(); v.play(); }} catch(e) {{}}
+ var last=-1, progress=new Date().getTime(), busy=false;
+ function recover() {{
+  if(busy)return; busy=true; progress=new Date().getTime(); last=-1;
+  try {{ v.src=source+(source.indexOf("?")>=0?"&":"?")+"retry="+progress; v.load(); v.play(); }} catch(e) {{}}
+  window.setTimeout(function(){{busy=false;}},12000);
+ }}
+ v.addEventListener("error",function(){{s.innerHTML="Falha no modo "+mode;window.setTimeout(recover,3000);}},false);
+ window.setInterval(function(){{
+  if(v.paused||v.ended)return;
+  var now=new Date().getTime();
+  if(v.currentTime>last+0.3){{last=v.currentTime;progress=now;}}
+  else if(now-progress>25000)recover();
+ }},5000);
 }}());
-</script>
-</body></html>""".format(html_lib.escape(item["name"]), html_lib.escape(item["name"]),
-                         html_lib.escape(stream_url, quote=True), html_lib.escape(stream_url, quote=True))
+</script></body></html>""".format(html_lib.escape(item["name"]), html_lib.escape(item["name"]),
+ html_lib.escape(hls_url, quote=True), html_lib.escape(mp4_url, quote=True),
+ html_lib.escape(direct_url, quote=True), str(self.server.transcode))
             return self.respond(200, page, "text/html; charset=utf-8")
         if path == "/api/health":
             with self.server.lock:
@@ -519,6 +506,67 @@ Seu navegador nao oferece suporte a video HLS.
                        if self.server.transcode else item["source_url"])
                 lines.append(url)
             return self.respond(200, "\n".join(lines) + "\n", "audio/x-mpegurl; charset=utf-8")
+        if path.startswith("/live-mp4/"):
+            identity = path[len("/live-mp4/"):].strip("/")
+            if not re.fullmatch(r"[a-f0-9]{16}", identity):
+                return self.json(404, {"error": "Canal inválido"})
+            item = self.server.channel(identity)
+            if not item:
+                return self.json(404, {"error": "Canal não encontrado"})
+            if not self.server.transcode:
+                return self.respond(503, "FFmpeg indisponível", "text/plain; charset=utf-8")
+            # MP4 fragmentado por HTTP chunked para navegadores sem HLS nativo.
+            folder = HLS_CACHE / identity
+            folder.mkdir(parents=True, exist_ok=True)
+            command = [
+                self.server.ffmpeg, "-hide_banner", "-loglevel", "warning", "-nostdin",
+                "-fflags", "+genpts+discardcorrupt", "-reconnect", "1",
+                "-reconnect_streamed", "1", "-reconnect_delay_max", "8",
+                "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
+                "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
+                "-vf", "scale='min(854,iw)':-2", "-r", "25",
+                "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
+                "-profile:v", "baseline", "-level", "3.1", "-pix_fmt", "yuv420p",
+                "-bf", "0", "-refs", "1", "-b:v", "900k", "-maxrate", "1100k",
+                "-bufsize", "1800k", "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",
+                "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "96k", "-ac", "2", "-ar", "44100",
+                "-movflags", "+frag_keyframe+empty_moov+default_base_moof",
+                "-frag_duration", "1000000", "-f", "mp4", "pipe:1"
+            ]
+            proc = None
+            try:
+                with open(folder / "ffmpeg-mp4.log", "ab") as log_file:
+                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                        stderr=log_file, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), bufsize=0)
+                self.send_response(200)
+                self.send_header("Content-Type", "video/mp4")
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+                self.send_header("Connection", "close")
+                self.send_header("Transfer-Encoding", "chunked")
+                self.end_headers()
+                while True:
+                    chunk = proc.stdout.read(65536)
+                    if not chunk: break
+                    self.wfile.write(("%X\r\n" % len(chunk)).encode("ascii"))
+                    self.wfile.write(chunk)
+                    self.wfile.write(b"\r\n")
+                    self.wfile.flush()
+                self.wfile.write(b"0\r\n\r\n")
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
+            finally:
+                if proc:
+                    try:
+                        if proc.poll() is None:
+                            proc.terminate()
+                            proc.wait(timeout=3)
+                    except Exception:
+                        try: proc.kill()
+                        except Exception: pass
+                    try: proc.stdout.close()
+                    except Exception: pass
+            self.close_connection = True
+            return
         if path.startswith("/live/"):
             parts = path.strip("/").split("/")
             if len(parts) != 3 or not re.fullmatch(r"[a-f0-9]{16}", parts[1]):
