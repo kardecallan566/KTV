@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.9.1"
+VERSION = "1.0.0"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -427,7 +427,19 @@ class Handler(BaseHTTPRequestHandler):
   s.innerHTML="Modo MJPEG + áudio MP3. Qualidade otimizada para rede local.";
   img.src=mjpeg;
   a.style.display="block";
+  function reconnectAudio() {{
+   if(a._retrying) return;
+   a._retrying=true;
+   window.setTimeout(function() {{
+    a.src=audio+(audio.indexOf("?")>=0?"&":"?")+"retry="+new Date().getTime();
+    try {{ a.load(); a.play(); }} catch(e) {{}}
+    a._retrying=false;
+   }},2500);
+  }}
   a.src=audio;
+  a.addEventListener("error",reconnectAudio,false);
+  a.addEventListener("stalled",reconnectAudio,false);
+  a.addEventListener("ended",reconnectAudio,false);
   try {{ a.load(); a.play(); }} catch(e) {{}}
  }} else {{
   s.innerHTML="HLS não detectado; tentando origem direta";
@@ -529,36 +541,54 @@ class Handler(BaseHTTPRequestHandler):
                 "-ac", "2", "-ar", "44100", "-c:a", "libmp3lame",
                 "-b:a", "96k", "-flush_packets", "1", "-f", "mp3", "pipe:1"
             ]
-            proc = None
+            started = time.time()
+            attempts = 0
+            total_bytes = 0
+            disconnected = False
             try:
-                with open(folder / "ffmpeg-audio.log", "ab") as log_file:
-                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                        stderr=log_file, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), bufsize=0)
                 self.send_response(200)
                 self.send_header("Content-Type", "audio/mpeg")
                 self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
                 self.send_header("Connection", "close")
                 self.end_headers()
-                while True:
-                    chunk = proc.stdout.read(4096)
-                    if not chunk:
+                while attempts < 1000 and not disconnected:
+                    proc = None
+                    attempt_bytes = 0
+                    try:
+                        with open(folder / "ffmpeg-audio.log", "ab") as log_file:
+                            proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=log_file, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), bufsize=0)
+                            while True:
+                                chunk = proc.stdout.read(4096)
+                                if not chunk:
+                                    break
+                                self.wfile.write(chunk)
+                                self.wfile.flush()
+                                attempt_bytes += len(chunk)
+                                total_bytes += len(chunk)
+                        try:
+                            exit_code = proc.wait(timeout=3)
+                        except subprocess.TimeoutExpired:
+                            proc.terminate()
+                            try:
+                                exit_code = proc.wait(timeout=2)
+                            except subprocess.TimeoutExpired:
+                                proc.kill()
+                                exit_code = proc.wait()
+                    except (BrokenPipeError, ConnectionResetError, OSError):
+                        disconnected = True
                         break
-                    self.wfile.write(chunk)
-                    self.wfile.flush()
+                    attempts += 1
+                    print("[KTV] Áudio {} sessão {} encerrou; bytes={}, código={}".format(
+                        identity, attempts, attempt_bytes, exit_code), flush=True)
+                    if not disconnected:
+                        time.sleep(1 if attempt_bytes else 3)
+                print("[KTV] Áudio {} conexão finalizada; total={} bytes, duração={}s, sessões={}".format(
+                    identity, total_bytes, round(time.time()-started, 1), attempts), flush=True)
             except (BrokenPipeError, ConnectionResetError, OSError):
                 print("[KTV] Cliente desconectou do áudio {}".format(identity), flush=True)
             finally:
-                if proc:
-                    try:
-                        if proc.poll() is None:
-                            proc.terminate()
-                            proc.wait(timeout=3)
-                    except Exception:
-                        try: proc.kill()
-                        except Exception: pass
-                    try: proc.stdout.close()
-                    except Exception: pass
-            self.close_connection = True
+                self.close_connection = True
             return
         if path.startswith("/live-mjpeg/"):
             identity = path[len("/live-mjpeg/"):].strip("/")
@@ -577,8 +607,8 @@ class Handler(BaseHTTPRequestHandler):
                 "-reconnect_streamed", "1", "-reconnect_delay_max", "8",
                 "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-an",
-                "-vf", "fps=12,scale='min(854,iw)':-2",
-                "-threads", "2", "-c:v", "mjpeg", "-q:v", "6",
+                "-vf", "fps=10,scale='min(854,iw)':-2",
+                "-threads", "2", "-c:v", "mjpeg", "-q:v", "7",
                 "-flush_packets", "1", "-f", "mpjpeg",
                 "-boundary_tag", "ktvframe", "pipe:1"
             ]
