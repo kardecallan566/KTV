@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.9.0"
+VERSION = "0.9.1"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -582,41 +582,56 @@ class Handler(BaseHTTPRequestHandler):
                 "-flush_packets", "1", "-f", "mpjpeg",
                 "-boundary_tag", "ktvframe", "pipe:1"
             ]
-            proc = None
-            bytes_sent = 0
+            total_bytes = 0
             started = time.time()
+            attempts = 0
+            disconnected = False
             try:
-                with open(folder / "ffmpeg-mjpeg.log", "ab") as log_file:
-                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                        stderr=log_file, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), bufsize=0)
                 self.send_response(200)
                 self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=ktvframe")
                 self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
                 self.send_header("Connection", "close")
                 self.end_headers()
-                while True:
-                    chunk = proc.stdout.read(2048)
-                    if not chunk:
+                # Mantém a conexão HTTP da TV aberta mesmo quando a origem IPTV
+                # encerra uma sessão FFmpeg. Reinicia somente o processo de origem.
+                while attempts < 1000 and not disconnected:
+                    proc = None
+                    attempt_bytes = 0
+                    try:
+                        with open(folder / "ffmpeg-mjpeg.log", "ab") as log_file:
+                            proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=log_file, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), bufsize=0)
+                            while True:
+                                chunk = proc.stdout.read(2048)
+                                if not chunk:
+                                    break
+                                self.wfile.write(chunk)
+                                self.wfile.flush()
+                                attempt_bytes += len(chunk)
+                                total_bytes += len(chunk)
+                        try:
+                            exit_code = proc.wait(timeout=3)
+                        except subprocess.TimeoutExpired:
+                            proc.terminate()
+                            try:
+                                exit_code = proc.wait(timeout=2)
+                            except subprocess.TimeoutExpired:
+                                proc.kill()
+                                exit_code = proc.wait()
+                    except (BrokenPipeError, ConnectionResetError, OSError):
+                        disconnected = True
                         break
-                    self.wfile.write(chunk)
-                    self.wfile.flush()
-                    bytes_sent += len(chunk)
-                print("[KTV] MJPEG {} encerrou; bytes={}, duração={}s, código={}".format(
-                    identity, bytes_sent, round(time.time()-started, 1), proc.poll()), flush=True)
+                    attempts += 1
+                    print("[KTV] MJPEG {} sessão {} encerrou; bytes={}, código={}".format(
+                        identity, attempts, attempt_bytes, exit_code), flush=True)
+                    if not disconnected:
+                        time.sleep(1 if attempt_bytes else 3)
+                print("[KTV] MJPEG {} conexão finalizada; total={} bytes, duração={}s, sessões={}".format(
+                    identity, total_bytes, round(time.time()-started, 1), attempts), flush=True)
             except (BrokenPipeError, ConnectionResetError, OSError):
                 print("[KTV] Cliente desconectou do MJPEG {}".format(identity), flush=True)
             finally:
-                if proc:
-                    try:
-                        if proc.poll() is None:
-                            proc.terminate()
-                            proc.wait(timeout=3)
-                    except Exception:
-                        try: proc.kill()
-                        except Exception: pass
-                    try: proc.stdout.close()
-                    except Exception: pass
-            self.close_connection = True
+                self.close_connection = True
             return
         if path.startswith("/live-mp4/"):
             identity = path[len("/live-mp4/"):].strip("/")
