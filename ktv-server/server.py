@@ -434,7 +434,8 @@ class Handler(BaseHTTPRequestHandler):
 }}());
 </script></body></html>""".format(html_lib.escape(item["name"]), html_lib.escape(item["name"]),
  html_lib.escape(hls_url, quote=True), html_lib.escape(mp4_url, quote=True),
- html_lib.escape(direct_url, quote=True), str(self.server.transcode))
+ html_lib.escape(identity, quote=True), html_lib.escape(direct_url, quote=True),
+ str(self.server.transcode))
             return self.respond(200, page, "text/html; charset=utf-8")
         if path == "/api/health":
             with self.server.lock:
