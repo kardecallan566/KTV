@@ -429,7 +429,7 @@ class Handler(BaseHTTPRequestHandler):
   s.innerHTML="HLS não detectado; tentando origem direta";
   v.src=direct;
   try {{ v.load(); v.play(); }} catch(e) {{}}
- }
+ }}
  v.addEventListener("error",function(){{s.innerHTML="Falha ao decodificar o fluxo. Recarregue a página ou teste outro canal."; }},false);
 }}());
 </script></body></html>""".format(html_lib.escape(item["name"]), html_lib.escape(item["name"]),
