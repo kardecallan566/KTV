@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -227,13 +227,13 @@ class KTVServer(ThreadingHTTPServer):
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "10",
                 "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
-                "-vf", "scale='min(1280,iw)':-2", "-r", "25",
+                "-vf", "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease", "-r", "25",
                 # Perfil Baseline e sem B-frames ampliam a compatibilidade com TVs Samsung antigas.
                 # GOP de 5s alinhado ao HLS: cada segmento começa em um keyframe.
                 "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
                 "-profile:v", "baseline", "-level", "3.1", "-pix_fmt", "yuv420p",
                 "-bf", "0", "-refs", "1",
-                "-b:v", "2500k", "-maxrate", "2800k", "-bufsize", "5000k",
+                "-b:v", "3500k", "-maxrate", "4000k", "-bufsize", "7000k",
                 "-g", "125", "-keyint_min", "125", "-sc_threshold", "0",
                 "-force_key_frames", "expr:gte(t,n_forced*5)",
                 "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "128k", "-ac", "2", "-ar", "44100",
@@ -424,7 +424,7 @@ class Handler(BaseHTTPRequestHandler):
  }} else if(transcode==="True") {{
   v.style.display="none";
   img.style.display="block";
-  s.innerHTML="Modo MJPEG + áudio MP3. Qualidade otimizada para rede local.";
+  s.innerHTML="Modo MJPEG 720p + áudio MP3. Use Wi-Fi 5 GHz ou cabo para melhor estabilidade.";
   img.src=mjpeg;
   a.style.display="block";
   function reconnectAudio() {{
@@ -607,7 +607,7 @@ class Handler(BaseHTTPRequestHandler):
                 "-reconnect_streamed", "1", "-reconnect_delay_max", "8",
                 "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-an",
-                "-vf", "fps=10,scale='min(854,iw)':-2",
+                "-vf", "fps=10,scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease",
                 "-threads", "2", "-c:v", "mjpeg", "-q:v", "7",
                 "-flush_packets", "1", "-f", "mpjpeg",
                 "-boundary_tag", "ktvframe", "pipe:1"
@@ -681,11 +681,11 @@ class Handler(BaseHTTPRequestHandler):
                 "-reconnect_streamed", "1", "-reconnect_delay_max", "8",
                 "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
                 "-i", item["source_url"], "-map", "0:v:0", "-map", "0:a:0?",
-                "-vf", "scale='min(854,iw)':-2", "-r", "25",
+                "-vf", "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease", "-r", "25",
                 "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
                 "-profile:v", "baseline", "-level", "3.1", "-pix_fmt", "yuv420p",
-                "-bf", "0", "-refs", "1", "-b:v", "900k", "-maxrate", "1100k",
-                "-bufsize", "1800k", "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",
+                "-bf", "0", "-refs", "1", "-b:v", "2500k", "-maxrate", "3000k",
+                "-bufsize", "5000k", "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",
                 "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "96k", "-ac", "2", "-ar", "44100",
                 "-movflags", "+frag_keyframe+empty_moov+default_base_moof",
                 "-frag_duration", "1000000", "-f", "mp4", "pipe:1"
