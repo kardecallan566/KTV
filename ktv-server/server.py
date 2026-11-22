@@ -329,6 +329,41 @@ class Handler(BaseHTTPRequestHandler):
                 title=title, version=VERSION, channels=channels, mode=mode,
                 source=source, error=error)
             return self.respond(200, html, "text/html; charset=utf-8")
+        if path in ("/tv-test", "/tv-test/"):
+            # Diagnóstico ES5 para navegadores Samsung antigos: mede suporte real a HLS
+            # e codecs sem iniciar uma transcodificação ou consumir banda do canal.
+            page = """<!DOCTYPE html><html><head><meta charset="utf-8"><title>KTV - Teste da TV</title></head>
+<body bgcolor="#101827" text="#ffffff"><h2>KTV - Compatibilidade da TV</h2>
+<p id="browser">Verificando navegador...</p><p id="hls">HLS: verificando...</p>
+<p id="mp4">MP4 H.264: verificando...</p><p id="aac">Áudio AAC: verificando...</p>
+<p id="api">Servidor local: verificando...</p>
+<p>Envie uma foto desta tela para o suporte KTV.</p><p><a href="/watch">Abrir lista de canais</a></p>
+<script type="text/javascript">
+(function () {
+ var v = document.createElement("video");
+ function set(id, value) { document.getElementById(id).innerHTML = value; }
+ var ua = navigator.userAgent || "não informado";
+ set("browser", "Navegador: " + ua);
+ var hls = "";
+ try { hls = v.canPlayType("application/vnd.apple.mpegurl") || v.canPlayType("application/x-mpegURL") || ""; } catch(e) {}
+ set("hls", "HLS nativo: " + (hls ? hls : "NÃO DETECTADO"));
+ var mp4 = "";
+ try { mp4 = v.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') || ""; } catch(e) {}
+ set("mp4", "MP4 H.264/AAC: " + (mp4 ? mp4 : "NÃO DETECTADO"));
+ var aac = "";
+ try { aac = v.canPlayType('audio/mp4; codecs="mp4a.40.2"') || ""; } catch(e) {}
+ set("aac", "Áudio AAC: " + (aac ? aac : "NÃO DETECTADO"));
+ try {
+  var x = new XMLHttpRequest();
+  x.open("GET", "/api/health", true);
+  x.onreadystatechange = function () {
+   if (x.readyState === 4) set("api", "Servidor local: " + (x.status === 200 ? "OK - " + x.responseText : "HTTP " + x.status));
+  };
+  x.send(null);
+ } catch(e) { set("api", "Servidor local: falha ao testar"); }
+}());
+</script></body></html>"""
+            return self.respond(200, page, "text/html; charset=utf-8")
         if path == "/watch" or path == "/watch/":
             query = parse_qs(urlsplit(self.path).query)
             term = query.get("q", [""])[0].strip().lower()[:80]
