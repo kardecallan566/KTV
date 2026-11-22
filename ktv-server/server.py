@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -417,29 +417,23 @@ class Handler(BaseHTTPRequestHandler):
  var hls="{}", mp4="{}", mjpeg="/live-mjpeg/{}", audio="/live-audio/{}", direct="{}", transcode="{}";
  var hs="";
  try {{ hs=v.canPlayType("application/vnd.apple.mpegurl")||v.canPlayType("application/x-mpegURL")||""; }} catch(e) {{}}
+ var mp4Support="";
+ try {{ mp4Support=v.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"')||""; }} catch(e) {{}}
  if(hs) {{
-  s.innerHTML="Modo selecionado: HLS";
+  s.innerHTML="Modo selecionado: HLS (áudio e vídeo juntos)";
   v.src=hls;
+  try {{ v.load(); v.play(); }} catch(e) {{}}
+ }} else if(transcode==="True" && mp4Support) {{
+  s.innerHTML="Modo MP4 H.264/AAC: áudio e vídeo no mesmo fluxo";
+  v.src=mp4;
   try {{ v.load(); v.play(); }} catch(e) {{}}
  }} else if(transcode==="True") {{
   v.style.display="none";
   img.style.display="block";
-  s.innerHTML="Modo MJPEG 720p + áudio MP3. Use Wi-Fi 5 GHz ou cabo para melhor estabilidade.";
+  s.innerHTML="Modo compatível MJPEG + áudio MP3 (fallback).";
   img.src=mjpeg;
   a.style.display="block";
-  function reconnectAudio() {{
-   if(a._retrying) return;
-   a._retrying=true;
-   window.setTimeout(function() {{
-    a.src=audio+(audio.indexOf("?")>=0?"&":"?")+"retry="+new Date().getTime();
-    try {{ a.load(); a.play(); }} catch(e) {{}}
-    a._retrying=false;
-   }},2500);
-  }}
   a.src=audio;
-  a.addEventListener("error",reconnectAudio,false);
-  a.addEventListener("stalled",reconnectAudio,false);
-  a.addEventListener("ended",reconnectAudio,false);
   try {{ a.load(); a.play(); }} catch(e) {{}}
  }} else {{
   s.innerHTML="HLS não detectado; tentando origem direta";
@@ -684,9 +678,9 @@ class Handler(BaseHTTPRequestHandler):
                 "-vf", "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease", "-r", "25",
                 "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
                 "-profile:v", "baseline", "-level", "3.1", "-pix_fmt", "yuv420p",
-                "-bf", "0", "-refs", "1", "-b:v", "2500k", "-maxrate", "3000k",
-                "-bufsize", "5000k", "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",
-                "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "96k", "-ac", "2", "-ar", "44100",
+                "-bf", "0", "-refs", "1", "-b:v", "1800k", "-maxrate", "2200k",
+                "-bufsize", "3600k", "-g", "50", "-keyint_min", "50", "-sc_threshold", "0",
+                "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "128k", "-ac", "2", "-ar", "44100",
                 "-movflags", "+frag_keyframe+empty_moov+default_base_moof",
                 "-frag_duration", "1000000", "-f", "mp4", "pipe:1"
             ]
