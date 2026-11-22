@@ -98,7 +98,7 @@ http://IP-DO-PC/watch
 
 Pesquise o canal e selecione-o. O servidor abre uma página HTML5 com player de vídeo e controles. Se o FFmpeg estiver ativo, o player recebe o HLS convertido pelo próprio computador em H.264/AAC e segmentos MPEG-TS. O primeiro acesso pode levar alguns segundos para preparar o fluxo.
 
-Se o navegador não iniciar sozinho, pressione PLAY no controle remoto. Alguns navegadores antigos bloqueiam reprodução automática com áudio. Esta página usa HLS nativo do navegador e não depende de bibliotecas JavaScript modernas; portanto, a reprodução depende de o firmware Samsung oferecer suporte a vídeo HTML5/HLS e aos codecs entregues.
+Se o navegador não iniciar sozinho, pressione PLAY no controle remoto. Alguns navegadores antigos bloqueiam reprodução automática com áudio. A página usa JavaScript ES5 simples e seleciona HLS ou MP4 conforme o que o navegador declara suportar. A indicação `probably` de MP4 é apenas uma estimativa do navegador, não uma garantia de reprodução.
 
 Para esse teste, mantenha o modo automático ou use `--mode transcode`. No modo `direct`, o navegador recebe a URL HLS original, que pode não ser compatível com a TV. Se o player mostrar erro ou tentar baixar o manifesto, isso indica uma limitação do navegador/firmware ou da fonte, e não confirma falha do catálogo do aplicativo.
 
@@ -110,7 +110,7 @@ A Samsung ainda precisa decodificar e exibir o H.264/AAC; isso é inerente à re
 
 Nem todo canal é garantido: links indisponíveis, DRM, formatos de entrada não suportados pelo FFmpeg ou restrições do provedor podem impedir a conversão. Este servidor não remove DRM.
 
-Versão: **0.6.0**
+Versão: **0.7.0**
 
 
-Na versão 0.3.3, a página inicial de diagnóstico foi simplificada para navegadores Samsung antigos e não oferece links diretos para endpoints JSON/M3U. Esses endpoints continuam disponíveis para o aplicativo KTV e para players compatíveis. A versão 0.4.0 acrescenta o catálogo `/watch` e o player HTML5 `/watch/ID`, sem remover as rotas existentes. A versão 0.5.0 reforça a recuperação de processos FFmpeg travados e adiciona recuperação automática no player do navegador. A versão 0.5.1 testou conexões HTTP não persistentes; a versão 0.5.2 reverte essa experiência e retorna ao comportamento padrão do FFmpeg. A versão 0.6.0 ajusta o H.264 para perfil Baseline, alinha os keyframes aos segmentos HLS, usa numeração exclusiva de segmentos após reinícios e adiciona diagnóstico individual do fluxo.
+Na versão 0.3.3, a página inicial de diagnóstico foi simplificada para navegadores Samsung antigos e não oferece links diretos para endpoints JSON/M3U. Esses endpoints continuam disponíveis para o aplicativo KTV e para players compatíveis. A versão 0.4.0 acrescenta o catálogo `/watch` e o player HTML5 `/watch/ID`, sem remover as rotas existentes. A versão 0.5.0 reforça a recuperação de processos FFmpeg travados e adiciona recuperação automática no player do navegador. A versão 0.5.1 testou conexões HTTP não persistentes; a versão 0.5.2 reverte essa experiência e retorna ao comportamento padrão do FFmpeg. A versão 0.6.0 ajusta o H.264 para perfil Baseline, alinha os keyframes aos segmentos HLS, usa numeração exclusiva de segmentos após reinícios e adiciona diagnóstico individual do fluxo. A versão 0.7.0 mantém o HLS para dispositivos compatíveis e adiciona seleção automática de um fluxo MP4 fragmentado de menor bitrate quando o navegador não detecta HLS nativo; essa alternativa é experimental até ser validada na Samsung do usuário.
