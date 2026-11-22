@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import parse_qs, unquote, urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-VERSION = "0.7.0"
+VERSION = "0.8.0"
 DEFAULT_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/refs/heads/main/main.m3u"
 FALLBACK_PLAYLIST = "https://raw.githubusercontent.com/Kaiollio-cpu/iptv_free/e0aee5e6649fd227fd5fc250249e5a222240d510/main.m3u"
 MIN_CHANNELS = 100
@@ -408,32 +408,29 @@ class Handler(BaseHTTPRequestHandler):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{}</title></head><body bgcolor="#000000" text="#ffffff">
 <h3>{}</h3><video id="ktv-player" controls autoplay playsinline width="100%" height="auto"></video>
+<img id="ktv-mjpeg" style="display:none;width:100%;height:auto" alt="Transmissão KTV">
 <p id="ktv-status">Detectando formato de reprodução...</p><p><a href="/watch">Voltar aos canais</a></p>
 <script type="text/javascript">
 (function () {{
- var v=document.getElementById("ktv-player"), s=document.getElementById("ktv-status");
- var hls="{}", mp4="{}", direct="{}", transcode="{}";
- var hs="", ms="";
+ var v=document.getElementById("ktv-player"), img=document.getElementById("ktv-mjpeg"), s=document.getElementById("ktv-status");
+ var hls="{}", mp4="{}", mjpeg="/live-mjpeg/{}", direct="{}", transcode="{}";
+ var hs="";
  try {{ hs=v.canPlayType("application/vnd.apple.mpegurl")||v.canPlayType("application/x-mpegURL")||""; }} catch(e) {{}}
- try {{ ms=v.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"')||v.canPlayType("video/mp4")||""; }} catch(e) {{}}
- var source=hs?hls:((ms&&transcode==="True")?mp4:direct);
- var mode=source===hls?"HLS":(source===mp4?"MP4 fragmentado":"origem direta");
- s.innerHTML="Modo selecionado: "+mode;
- v.src=source;
- try {{ v.load(); v.play(); }} catch(e) {{}}
- var last=-1, progress=new Date().getTime(), busy=false;
- function recover() {{
-  if(busy)return; busy=true; progress=new Date().getTime(); last=-1;
-  try {{ v.src=source+(source.indexOf("?")>=0?"&":"?")+"retry="+progress; v.load(); v.play(); }} catch(e) {{}}
-  window.setTimeout(function(){{busy=false;}},12000);
- }}
- v.addEventListener("error",function(){{s.innerHTML="Falha no modo "+mode;window.setTimeout(recover,3000);}},false);
- window.setInterval(function(){{
-  if(v.paused||v.ended)return;
-  var now=new Date().getTime();
-  if(v.currentTime>last+0.3){{last=v.currentTime;progress=now;}}
-  else if(now-progress>25000)recover();
- }},5000);
+ if(hs) {{
+  s.innerHTML="Modo selecionado: HLS";
+  v.src=hls;
+  try {{ v.load(); v.play(); }} catch(e) {{}}
+ }} else if(transcode==="True") {{
+  v.style.display="none";
+  img.style.display="block";
+  s.innerHTML="Modo selecionado: MJPEG compatível (vídeo sem áudio)";
+  img.src=mjpeg;
+ }} else {{
+  s.innerHTML="HLS não detectado; tentando origem direta";
+  v.src=direct;
+  try {{ v.load(); v.play(); }} catch(e) {{}}
+ }
+ v.addEventListener("error",function(){{s.innerHTML="Falha ao decodificar o fluxo. Recarregue a página ou teste outro canal."; }},false);
 }}());
 </script></body></html>""".format(html_lib.escape(item["name"]), html_lib.escape(item["name"]),
  html_lib.escape(hls_url, quote=True), html_lib.escape(mp4_url, quote=True),
@@ -506,6 +503,63 @@ class Handler(BaseHTTPRequestHandler):
                        if self.server.transcode else item["source_url"])
                 lines.append(url)
             return self.respond(200, "\n".join(lines) + "\n", "audio/x-mpegurl; charset=utf-8")
+        if path.startswith("/live-mjpeg/"):
+            identity = path[len("/live-mjpeg/"):].strip("/")
+            if not re.fullmatch(r"[a-f0-9]{16}", identity):
+                return self.json(404, {"error": "Canal inválido"})
+            item = self.server.channel(identity)
+            if not item:
+                return self.json(404, {"error": "Canal não encontrado"})
+            if not self.server.transcode:
+                return self.respond(503, "FFmpeg indisponível", "text/plain; charset=utf-8")
+            folder = HLS_CACHE / identity
+            folder.mkdir(parents=True, exist_ok=True)
+            command = [
+                self.server.ffmpeg, "-hide_banner", "-loglevel", "warning", "-nostdin",
+                "-fflags", "+genpts+discardcorrupt", "-reconnect", "1",
+                "-reconnect_streamed", "1", "-reconnect_delay_max", "8",
+                "-rw_timeout", "20000000", "-user_agent", "KTV-Server/{}".format(VERSION),
+                "-i", item["source_url"], "-map", "0:v:0", "-an",
+                "-vf", "fps=10,scale='min(640,iw)':-2",
+                "-c:v", "mjpeg", "-q:v", "8", "-f", "mpjpeg",
+                "-boundary_tag", "ktvframe", "pipe:1"
+            ]
+            proc = None
+            bytes_sent = 0
+            started = time.time()
+            try:
+                with open(folder / "ffmpeg-mjpeg.log", "ab") as log_file:
+                    proc = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                        stderr=log_file, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), bufsize=0)
+                self.send_response(200)
+                self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=ktvframe")
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                while True:
+                    chunk = proc.stdout.read(8192)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+                    bytes_sent += len(chunk)
+                print("[KTV] MJPEG {} encerrou; bytes={}, duração={}s, código={}".format(
+                    identity, bytes_sent, round(time.time()-started, 1), proc.poll()), flush=True)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                print("[KTV] Cliente desconectou do MJPEG {}".format(identity), flush=True)
+            finally:
+                if proc:
+                    try:
+                        if proc.poll() is None:
+                            proc.terminate()
+                            proc.wait(timeout=3)
+                    except Exception:
+                        try: proc.kill()
+                        except Exception: pass
+                    try: proc.stdout.close()
+                    except Exception: pass
+            self.close_connection = True
+            return
         if path.startswith("/live-mp4/"):
             identity = path[len("/live-mp4/"):].strip("/")
             if not re.fullmatch(r"[a-f0-9]{16}", identity):
