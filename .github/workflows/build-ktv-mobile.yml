@@ -1,0 +1,54 @@
+name: Build KTV Mobile APK
+
+on:
+  push:
+    branches: [main, "feature/ktv-mobile-apk"]
+    paths: ["ktv-mobile/**", ".github/workflows/build-ktv-mobile.yml"]
+  pull_request:
+    paths: ["ktv-mobile/**", ".github/workflows/build-ktv-mobile.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ktv-mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Compile Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK command-line tools
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: latest
+          packages: platform-tools
+      - name: Install Android platform and build tools
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Build debug APK
+        working-directory: ktv-mobile
+        run: gradle --no-daemon assembleDebug
+      - name: Rename APK
+        run: |
+          mkdir -p artifacts
+          cp ktv-mobile/app/build/outputs/apk/debug/app-debug.apk artifacts/KTV-Mobile-debug.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KTV-Mobile-debug-${{ github.run_number }}
+          path: artifacts/KTV-Mobile-debug.apk
+          if-no-files-found: error
+          retention-days: 14
